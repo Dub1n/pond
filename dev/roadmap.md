@@ -17,7 +17,7 @@ This document captures the target state for the “just works” renderer, along
 /
 ├── README.md
 ├── roadmap.md
-├── requirements-diagrams.txt
+├── requirements.txt
 ├── Makefile
 │
 ├── diagramming/
@@ -296,14 +296,14 @@ anchor:
 - [x] Expose rotation transforms in the schema (`rotation`, `rotation_anchor`, `repeat.rotate`, `repeat.about`) so declarative specs can drive radial layouts.
 - [x] Add optional orthographic rendering (`--orthographic`) that consumes the canonical scene via pyrender/pyglet to produce 3D snapshots.
 - [x] Optional behaviours: span-aware linear replicate helper (count/interval/span + direction) and mirror symmetry operations so repetitive layouts stay declarative.
-- [ ] Expand metadata mapping to align with IFC classes (prepping for Phase 4).
+- [ ] Expand metadata mapping to align with IFC classes (prepping for Phase 4) - see [phase4-prep-report](phase4-prep-report.md).
 
 ### Phase 4 – CadQuery-powered 3D kernel
 
 #### Schema & solver groundwork
 
 - [ ] Finish the outstanding Phase 3 IFC metadata alignment so every component already advertises IFC-ready class IDs before solids land.
-- [ ] Land the relationship-first schema outlined in `docs/phase4-prep-report.md` (datums, bundles, helper clauses, assemblies) behind a feature flag; keep current anchor specs readable until migration completes.
+- [ ] Land the relationship-first schema outlined in [phase4-prep-report](phase4-prep-report.md) (datums, bundles, helper clauses, assemblies) behind a feature flag; keep current anchor specs readable until migration completes.
 - [ ] Implement the constraint solver + diagnostics layer that resolves face/edge relationships, surfaces under/over-constrained components, exports constraint graphs for debugging, and blocks CLI builds when solving fails.
 - [ ] Ship the lint CLI (`scripts/lint_specs.py`), CI wiring, updated authoring docs/worksheet, and publish an Option C example spec so contributors can rehearse the new schema before the kernel swap.
 
