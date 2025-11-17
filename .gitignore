@@ -5,7 +5,6 @@ __pycache__/
 .vscode/
 .idea/
 .venv/
-.venv-diagrams/
 .ruff_cache/
 .coverage
 coverage.xml

@@ -7,13 +7,13 @@ This repository now builds the pond deck diagrams procedurally from YAML specs.
 ### Quick start
 
 ```bash
-python3 -m pip install -r requirements-diagrams.txt  # installs Shapely, trimesh, pygltflib, mapbox-earcut
+python3 -m pip install -r requirements.txt  # installs Shapely, trimesh, pygltflib, mapbox-earcut
 python3 scripts/build_diagrams.py
 ```
 
 SVGs (and PNGs when `cairosvg` is available) will be written to `diagrams/output/<spec>/<option>/`.
 Use `--no-png` if you only need SVG output. A glTF model (`model.glb` by default) is emitted alongside each option; disable it with `--no-gltf` or switch to `.gltf` with `--gltf-format gltf`.
-Pass `--orthographic` to also emit a headless 3D orthographic snapshot (`orthographic.png`); the flag requires the optional `pyrender`/`pyglet` dependencies shipped in `requirements-diagrams.txt`.
+Pass `--orthographic` to also emit a headless 3D orthographic snapshot (`orthographic.png`); the flag requires the optional `pyrender`/`pyglet` dependencies shipped in `requirements.txt`.
 
 ### Blender export
 
@@ -233,7 +233,7 @@ That way we aren’t forced into a heavyweight BIM DSL for authoring, but the da
 
 ### Maintenance cheatsheet
 
-- Install tooling with `python3 -m pip install -r requirements-diagrams.txt` (includes Shapely, trimesh, pygltflib, mapbox-earcut). Activate the repo’s `.venv` before running commands.
+- Install tooling with `python3 -m pip install -r requirements.txt` (includes Shapely, trimesh, pygltflib, mapbox-earcut). Activate the repo’s `.venv` before running commands.
 - Regenerate diagrams: `python scripts/build_diagrams.py --spec archive/diagrams/specs/deck-framing.yaml --option A --outdir diagrams/output --force`. Add `--no-gltf` or `--gltf-format gltf` as needed.
 - Render an orthographic snapshot of the canonical 3D scene: append `--orthographic` (optionally `--orthographic-size 1536`) to emit `orthographic.png`.
 - Run tests before shipping changes: `python -m unittest discover`.

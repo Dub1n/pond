@@ -4,7 +4,7 @@ This guide summarises the practical steps for editing deck-framing specs so that
 
 ## Before you edit
 
-- Activate the repository virtualenv (`source .venv/bin/activate`) and install dependencies with `python3 -m pip install -r requirements-diagrams.txt`.
+- Activate the repository virtualenv (`source .venv/bin/activate`) and install dependencies with `python3 -m pip install -r requirements.txt`.
 - Familiarise yourself with the target option in `docs/design.md`; confirm the walkway width, cantilever length, structural members, and any height metadata that the renderers expect.
 - Review existing calculations in `docs/calcs/` for similar options so you can reuse anchoring patterns.
 

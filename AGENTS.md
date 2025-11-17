@@ -11,7 +11,7 @@
 
 ## Build, Test, and Development Commands
 
-- `python3 -m pip install -r requirements-diagrams.txt` – installs Shapely, trimesh, pygltflib, mapbox-earcut, cairosvg.
+- `python3 -m pip install -r requirements.txt` – installs Shapely, trimesh, pygltflib, mapbox-earcut, cairosvg.
 - `source .venv/bin/activate` (after `python3 -m venv .venv`) – activate virtualenv before running commands.
 - `python scripts/build_diagrams.py --spec archive/diagrams/specs/deck-framing.yaml --option A --outdir diagrams/output --force` – regenerate plan/section PNG/SVG plus `model.glb` for Option A.
 - Flags: `--no-png`, `--no-gltf`, `--gltf-format gltf`, `--spec` (multi-select), `--option`.
