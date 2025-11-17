@@ -1,0 +1,108 @@
+.component {
+  fill: #f6f7f9;
+  stroke: #1f2933;
+  stroke-width: 2;
+  stroke-linejoin: round;
+}
+
+.component-water {
+  fill: #cbe7ff;
+  stroke: #1f2933;
+  stroke-width: 1.6;
+}
+
+.component-structure {
+  fill: #e3dac9;
+  stroke: #1f2933;
+  stroke-width: 1.6;
+}
+
+.component-beam {
+  fill: #c49a6c;
+  stroke: #1f2933;
+  stroke-width: 1.8;
+}
+
+.component-outline {
+  fill: none;
+  stroke: #1f2933;
+  stroke-width: 2.4;
+}
+
+.component-detail {
+  fill: none;
+  stroke: #2b8a3e;
+  stroke-width: 2;
+  stroke-dasharray: 8 6;
+}
+
+.legend {
+  fill: #1f2933;
+}
+
+.legend-title {
+  font-weight: 600;
+}
+
+.legend-key {
+  font-weight: 600;
+}
+
+.feature-label {
+  fill: #1f2933;
+  font-weight: 600;
+}
+
+.component.material-decking,
+.component-structure.material-decking,
+.material-decking {
+  fill: #d5c1a3;
+  stroke: #5f4b32;
+}
+
+.component.material-timber,
+.component-structure.material-timber,
+.material-timber {
+  fill: #c89a5b;
+  stroke: #5b3b12;
+}
+
+.component.material-joist,
+.component-structure.material-joist,
+.material-joist {
+  fill: #a98d68;
+  stroke: #49341d;
+}
+
+.component.material-water,
+.component-structure.material-water,
+.material-water,
+.component-water.material-water {
+  fill: #9fd5ff;
+  stroke: #1f2933;
+}
+
+.component.material-soil,
+.component-structure.material-soil,
+.material-soil {
+  fill: #cbb38a;
+  stroke: #4a3f2b;
+}
+
+.component.material-pad,
+.component-structure.material-pad,
+.material-pad {
+  fill: #b7c2c9;
+  stroke: #48525a;
+}
+
+.hidden-outline,
+.component.hidden-outline,
+.component-structure.hidden-outline,
+.component-beam.hidden-outline,
+.component-structure.material-joist.hidden-outline {
+  stroke: #46505a;
+  stroke-linecap: butt;
+  stroke-linejoin: round;
+  fill: none;
+}

@@ -1,0 +1,40 @@
+type: edge-attachments
+options:
+  A:
+    title: "Option A — Anchor trench"
+    aria_label: "Option A detail — liner anchored with trench 250 mm behind pond edge"
+    variant: anchor_trench
+    trench_offset_mm: 250
+    trench_depth_range_mm: [200, 300]
+    rim_above_water_mm: 60
+    trench_width_mm: 140
+    water_width_mm: 320
+    water_depth_mm: 240
+    soil_depth_mm: 260
+    scale_px_per_mm: 1.1
+  B:
+    title: "Option B — Timber clamp under deck"
+    aria_label: "Option B detail — liner clamped under picture-frame rim board"
+    variant: timber_clamp
+    water_width_mm: 320
+    water_depth_mm: 220
+    rim_board_depth_mm: 95
+    rim_board_thickness_mm: 45
+    batten_size_mm: [45, 45]
+    screw_spacing_mm: 180
+    screw_above_water_mm: 75
+    foam_thickness_mm: 10
+    deck_board_thickness_mm: 28
+    scale_px_per_mm: 1.35
+  C:
+    title: "Option C — Coping stones"
+    aria_label: "Option C detail — coping stones over concrete collar"
+    variant: coping
+    water_width_mm: 320
+    water_depth_mm: 220
+    collar_width_mm: 180
+    collar_depth_mm: 60
+    stone_thickness_mm: 40
+    shadow_gap_mm: 12
+    rim_above_water_mm: 60
+    scale_px_per_mm: 1.15
