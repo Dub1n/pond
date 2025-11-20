@@ -505,11 +505,11 @@ options:
       pond_span: 3000
       backspan: 1000
       cantilever: 250
-      walkway_gap: 430
-      joist_width: 140
+      walkway_gap: 0
+      joist_width: 47
       joist_spacing: 400
       joist_depth: 150
-      beam_width: 180
+      beam_width: 47
       inner_beam_height: 150
       beam_height: inner_beam_height
       inner_beam_width: beam_width
@@ -519,6 +519,9 @@ options:
       deck_thickness: 28
       water_depth: 900
       soil_depth: water_depth
+      corner_run: backspan + cantilever
+      corner_diagonal_length: 1768
+      corner_tie_spacing: 500
     views:
       plan:
         title: "Option C plan — 1 m backspan with 0.25 m cantilever"
@@ -539,14 +542,14 @@ options:
         size: [deck_span, deck_span]
         origin: [0, 0]
         class: component-structure
-        label: "Walkway backspan (1.0 m)"
+        label: "Deck surface (1.0 m backspan + 0.25 m overhang)"
         label_id: "C1"
         height: 28
         material: decking
         metadata:
           elevation: joist_depth
         cutouts:
-          - size: [pond_span, pond_span]
+          - size: [pond_span - 2 * cantilever, pond_span - 2 * cantilever]
             anchor:
               ref: self
               align: center
@@ -565,31 +568,8 @@ options:
         metadata:
           elevation: -900
       - type: rectangle
-        id: deck_overhang
-        size: [pond_span, pond_span]
-        anchor:
-          ref: pond_water
-          align: center
-          anchor_point: center
-        class: component-structure
-        label: "Cantilevered deck (0.25 m overhang)"
-        label_id: "C3"
-        height: 28
-        material: decking
-        vertical:
-          flush:
-            ref: pond_water
-            face: top
-          attach_face: bottom
-          offset: joist_depth
-        cutouts:
-          - size: [pond_span - 2 * cantilever, pond_span - 2 * cantilever]
-            anchor:
-              ref: self
-              align: center
-      - type: rectangle
         id: inner_beam_west
-        size: [inner_beam_width, pond_span + 2 * inner_beam_width]
+        size: [inner_beam_width, deck_span]
         placement:
           flush:
             ref: pond_water
@@ -607,7 +587,7 @@ options:
           attach_face: bottom
       - type: rectangle
         id: beam_west
-        size: [beam_width, pond_span + 2 * beam_width]
+        size: [beam_width, deck_span]
         placement:
           flush:
             ref: deck_backspan
@@ -630,10 +610,11 @@ options:
           ref: pond_water
           align: north_west
           anchor_point: north_east
-          offset: [cantilever, walkway_gap]
+          offset: [cantilever, cantilever]
         repeat:
-          count: 6
-          spacing: [0, joist_spacing]
+          count: 7
+          span: pond_span - 2 * cantilever - joist_width
+          direction: south
         class: component-structure
         label: "47×150 mm joist (1.0 m backspan + 0.25 m cantilever)"
         label_id: "C5"
@@ -652,10 +633,11 @@ options:
           align: north
           anchor_point: north
           offset:
-            south: walkway_gap + beam_width - (pad_size - joist_width) / 2
+            south: backspan + cantilever + joist_width / 2 - pad_size / 2
         repeat:
-          count: 6
-          spacing: [0, joist_spacing]
+          count: 7
+          span: pond_span - 2 * cantilever - joist_width
+          direction: south
         class: component-structure
         label: "Shallow pad foundation"
         label_id: "C6"
@@ -666,21 +648,63 @@ options:
             ref: pond_water
             face: top
           attach_face: top
-      - type: polyline
-        id: cantilever_line
-        points:
-          - [0, 0]
-          - [pond_span, 0]
+      - type: rectangle
+        id: corner_diagonal
+        size: [corner_diagonal_length, joist_width]
         anchor:
-          ref: pond_water
-          align: north
-          anchor_point: north
-          offset:
-            north: cantilever
-        class: component-detail
-        label: "0.25 m deck overhang"
-        label_id: "CL"
-        views: [plan]
+          ref: deck_backspan
+          align: north_west
+          anchor_point: north_west
+        rotation: 45
+        rotation_anchor:
+          ref: self
+          align: north_west
+        class: component-structure
+        label: "Corner joist to overhang"
+        label_id: "C8"
+        height: joist_depth
+        material: joist
+        vertical:
+          flush:
+            ref: pond_water
+            face: top
+          attach_face: bottom
+      - type: rectangle
+        id: corner_tie_horizontal
+        size: [corner_tie_spacing, joist_width]
+        anchor:
+          ref: deck_backspan
+          align: north_west
+          anchor_point: north_west
+          offset: [0, corner_tie_spacing - joist_width / 2]
+        class: component-structure
+        label: "Corner tie to diagonal"
+        label_id: "C9"
+        height: joist_depth
+        material: joist
+        vertical:
+          flush:
+            ref: pond_water
+            face: top
+          attach_face: bottom
+      - type: rectangle
+        id: corner_tie_vertical
+        size: [joist_width, corner_tie_spacing]
+        anchor:
+          ref: deck_backspan
+          align: north_west
+          anchor_point: north_west
+          offset: [corner_tie_spacing - joist_width / 2, 0]
+        class: component-structure
+        label: "Corner tie to diagonal"
+        label_id: "C9"
+        height: joist_depth
+        material: joist
+        vertical:
+          flush:
+            ref: pond_water
+            face: top
+          attach_face: bottom
       - type: rectangle
         id: soil_fill
         size: [deck_span, deck_span]
@@ -698,7 +722,8 @@ options:
           attach_face: top
         boolean:
           subtract:
-            - pads_west
+            - target: pads_west
+              include_generated: true
         cutouts:
           - size: [pond_span, pond_span]
             anchor:
@@ -706,7 +731,14 @@ options:
               align: center
     operations:
       - type: rotate
-        targets: [joists_west, pads_west, beam_west, inner_beam_west]
+        targets:
+          - joists_west
+          - pads_west
+          - beam_west
+          - inner_beam_west
+          - corner_diagonal
+          - corner_tie_horizontal
+          - corner_tie_vertical
         count: 4
         angle: 90
         include_base: true

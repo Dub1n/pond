@@ -720,7 +720,7 @@ class DiagramPlanner:
                 rotation_angle += repeat.rotate * repeat_index
 
             if rotation_angle:
-                rotation_anchor = repeat.about or component.rotation_anchor
+                rotation_anchor = (repeat.about if repeat else None) or component.rotation_anchor
                 pivot = self._resolve_rotation_point(rotation_anchor, context, parent_bounds)
                 polygon = shapely_rotate(polygon, rotation_angle, origin=pivot, use_radians=False)
                 outer = tuple(polygon.exterior.coords)

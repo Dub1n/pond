@@ -1,4 +1,4 @@
-# pond deck design – rev 3
+# pond deck design – rev 4
 
 > 1 m walk + 250 mm overhang; compact, low-profile build
 
@@ -20,12 +20,13 @@
 * rectangular deck frame around pond.
 * joists span between **outer beam** and **inner beam**, both continuous.
 * joists cantilever 250 mm beyond the inner beam.
+* corners infilled with a diagonal joist plus short perpendicular ties so the mitered corner boards stay fully supported.
 
 **member sizes (C24 UC4-treated softwood):**
 
 | member                | size      | spacing/notes                           |
 | --------------------- | --------- | --------------------------------------- |
-| joists                | 47×150 mm | 400 mm c/c                              |
+| joists                | 47×150 mm | ≈409 mm c/c (7 per side across 2.5 m)  |
 | beams (outer & inner) | 47×150 mm | continuous, flush with joist tops       |
 | blocking              | 47×150 mm | solid between joists at both beam lines |
 | deck boards           | 28×145 mm | 5–6 mm gaps, 20–30 mm overhang          |
@@ -75,6 +76,15 @@
 
 ---
 
+## corner infill (rev 4)
+
+* extend the **outer beam (C4)** and **inner beam (C4B)** so their ends fan toward the deck corners, sharing elevation with the joists; lock with blocking/hangers where members cross.
+* add a **diagonal corner joist** from each deck corner to the end of the 250 mm overhang (e.g., (0, 0) → (1.25, 1.25)), rotated through all four corners.
+* add two short **perpendicular ties** from the perimeter to that diagonal at 500 mm from each corner (e.g., (0, 0.5) → (0.5, 0.5) and (0.5, 0) → (0.5, 0.5)), also rotated 4×.
+* re-space the side joist arrays evenly across the 2.5 m overhang width: **7 joists (~409 mm c/c)**, first face flush to the overhang edge at the pond opening; the run ends flush to the opposite edge so joists stay within the cantilever band and only the diagonal needs trimming.
+
+---
+
 ## edge & liner interface
 
 * **anchor trench** 200–300 mm back from pond edge, 200–300 mm deep.
@@ -116,15 +126,16 @@
 
 ---
 
-## build sequence (rev 3)
+## build sequence (rev 4)
 
 1. dig and backfill anchor trench; lay underlay/liner.
 2. set pads/ground screws, install outer and inner beams (rebate inner).
 3. fit saddle hangers to inner beam; hang joists, fix toe-screws + strap.
 4. fit outer face-mount hangers; seat joists flush, add blocking + X-bracing.
-5. clamp liner; add fascia if needed.
-6. lay decking, slope away from pond; cut flush.
-7. final check: all tops flush, joints tight, straps taut.
+5. extend beams into corners; install diagonal corner joists and the two short ties per corner; strap/block where members intersect.
+6. clamp liner; add fascia if needed.
+7. lay decking, slope away from pond; cut flush.
+8. final check: all tops flush, joints tight, straps taut.
 
 ---
 
