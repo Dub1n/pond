@@ -6,10 +6,12 @@ This document captures the target state for the “just works” renderer, along
 
 ## Recent progress
 
-- Plan renderer now computes Shapely coverage for lower-elevation members and clips their fills before painting, ensuring deck surfaces mask joists and beams while dashed hidden outlines remain clear (beams stay temporarily green for debugging).
+- Plan renderer now computes Shapely coverage for lower-elevation members and clips their fills before painting, ensuring deck surfaces mask joists and beams while dashed hidden outlines remain clear.
 - Base CSS applies a more specific hidden-outline rule so material fills can no longer bleed through when debug overlays are active, and the renderer now emits stroke width/colour explicitly for hidden paths.
 - `RendererTests.test_hidden_beam_overlay_visible_without_fill` gained a raster assertion on deck pixels, guarding against regressions where buried framing reappears in PNG exports.
 - Partial-coverage cases are earmarked for validation in the next iteration; today’s pipeline treats fully buried members as hidden and will need refinement once partially exposed framing specs land.
+
+---
 
 ## 1. Target repository layout (draft)
 
@@ -24,41 +26,43 @@ This document captures the target state for the “just works” renderer, along
 │   ├── __init__.py
 │   ├── schema/                 # Declarative model definitions & validators
 │   │   ├── __init__.py
-│   │   ├── base.py              # Shared dataclasses / pydantic models
-│   │   ├── primitives.py        # Rectangle/polyline primitives
-│   │   ├── traits.py            # Optional behaviours (repeat, anchor)
-│   │   └── decks.py             # Domain-specific enums/rules
+│   │   ├── base.py             # Shared dataclasses / pydantic models
+│   │   ├── primitives.py       # Rectangle/polyline primitives
+│   │   ├── traits.py           # Optional behaviours (repeat, anchor, relate)
+│   │   └── decks.py            # Domain-specific enums/rules
 │   │
-│   ├── planner/                 # Turns schema → geometry
+│   ├── planner/                # Turns schema → geometry
 │   │   ├── __init__.py
-│   │   ├── geometry.py          # Shapely helpers (offsets, unions, slicing)
-│   │   ├── layouts.py           # Legend, joist grids, callouts
-│   │   ├── planner.py           # DiagramPlanner orchestrator
-│   │   └── exporters/           # GeoJSON/DXF/glTF writers (pluggable)
+│   │   ├── geometry.py         # Shapely helpers (offsets, unions, slicing)
+│   │   ├── layouts.py          # Legend, joist grids, callouts
+│   │   ├── planner.py          # DiagramPlanner orchestrator
+│   │   └── exporters/          # SVG/PNG/glTF/STEP/IFC adapters
 │   │       ├── __init__.py
 │   │       ├── svg.py
 │   │       ├── png.py
-│   │       ├── geojson.py
-│   │       └── gltf.py
+│   │       ├── gltf.py
+│   │       ├── step.py
+│   │       └── ifc.py
 │   │
 │   ├── renderers/
 │   │   ├── __init__.py
-│   │   ├── svg_scene.py         # Existing SvgScene abstraction
-│   │   ├── styles/              # Shared CSS snippets (plan, section, detail)
-│   │   └── annotations.py       # Dimension arrows, tags, legend drawing
+│   │   ├── svg_scene.py        # SvgScene abstraction
+│   │   ├── styles/             # Shared CSS snippets (plan, section, detail)
+│   │   └── annotations.py      # Dimension arrows, tags, legend drawing
 │   │
 │   └── tests/
 │       ├── __init__.py
-│       ├── fixtures/            # Sample specs / reference outputs
+│       ├── fixtures/           # Sample specs / reference outputs
 │       ├── test_schema.py
 │       ├── test_geometry.py
-│       └── test_rendering.py    # SVG snapshot tests
+│       ├── test_rendering.py
+│       └── test_exports_ifc.py # IFC/STEP export regression tests
 │
 ├── diagrams/
-│   ├── specs/                   # Author-ed YAML/JSON specs
+│   ├── specs/                  # Author-ed YAML/JSON specs
 │   │   ├── deck-framing.yaml
 │   │   └── edge-attachments.yaml
-│   └── output/                  # Generated artefacts (gitignored)
+│   └── output/                 # Generated artefacts (gitignored)
 │       └── …
 │
 ├── docs/
@@ -67,12 +71,12 @@ This document captures the target state for the “just works” renderer, along
 │
 ├── scripts/
 │   ├── build_diagrams.py       # CLI entrypoint
-│   └── validate_spec.py        # (future) standalone schema validator
+│   └── validate_spec.py        # Standalone schema/IFC validator
 │
 └── pictures/                   # Reference photos (if needed)
-```
+````
 
-This arrangement keeps the author-facing specs in `diagrams/specs/`, while the engine (schema + planner + renderers) lives under `diagramming/`.
+This arrangement keeps the author-facing specs in `diagrams/specs/`, while the engine (schema + planner + renderers + exporters) lives under `diagramming/`.
 
 ---
 
@@ -82,54 +86,56 @@ This arrangement keeps the author-facing specs in `diagrams/specs/`, while the e
 Spec (YAML/JSON)
       │
       ▼
-Schema loader (light validation)
+Schema loader (validation: structure + semantics)
       │ produces
       ▼
-Typed model (components, views, traits)
+Typed model (components, views, traits, IFC hints)
       │ into
       ▼
-DiagramPlanner
-  ├── geometry kernel (Shapely)
-  ├── layout utilities (legend, joist grids, callouts)
-  └── domain rules (cantilever checks, spacing guarantees)
-      │ yields
+Relationship-first constraint solver
+      │
       ▼
-Neutral geometry bundle (polygons, polylines, metadata)
-      │ fan-out to exporters
-      ├── SVG renderer (SvgScene + CSS styles)
-      ├── PNG (cairosvg)
-      ├── GeoJSON (future-ready interoperability)
-      └── glTF (optional 2.5D + later 3D)
+Canonical transforms + neutral geometry
+      │
+      ├─► Shapely footprints (for plan/section)
+      └─► CadQuery solids (OCC)
+               │
+               ├─► SVG/PNG (via OCC projections + SvgScene)
+               ├─► glTF (tessellated)
+               ├─► STEP/OBJ
+               └─► IFC 4.3.2 (Reference View)
 ```
 
 Key points:
 
-- **Canonical model:** All components are defined once; plans/sections/attachment views are slices or projections of that model.
-- **Geometry-first:** Shapely manages offsets/buffers; any 3D exporter extrudes the same 2D polygons via `trimesh`.
-- **Pluggable exporters:** New formats just implement `export(bundle, path, options)` without touching the planner.
-- **Behaviour traits:** The planner supports additive behaviours (“repeat”, “cantilever”, “align to…”) so domain logic is reusable.
+- **Canonical model:** All components are defined once; plans/sections/attachment views are slices or projections of the same canonical scene.
+- **Geometry-first:** Shapely manages 2D footprints; CadQuery models 3D solids. All exporters read from the canonical transforms.
+- **Pluggable exporters:** New formats just implement `export(bundle, solids, path, options)` without touching solver logic.
+- **Behaviour traits:** The planner/solver supports additive behaviours (`repeat`, `cantilever`, `align`, `relate`) so domain logic is reusable.
 
 ---
 
 ## 3. Integration points & dependencies
 
-| Purpose                                          | Dependency                  | Notes                                                                                                      |
-| ------------------------------------------------ | --------------------------- | ---------------------------------------------------------------------------------------------------------- |
-| 2D geometry ops (union, offset, slice)           | **Shapely 2.x**             | Primary kernel; deterministic and battle-tested.                                                           |
-| Optional precise offsetting / parametric helpers | Lightweight Python helpers  | We avoid bundling Node. If Shapely (plus small scripts) isn’t enough, we port the necessary Maker.js math. |
-| Legend/callout text layout                       | internal utilities (Python) | Single-pass layout using bounding boxes; no external dep needed.                                           |
-| Graph-like auto layout (future)                  | **ELK.js** or **Dagre**     | Only when needed (e.g., attachment diagrams with ports).                                                   |
-| 2D → PNG conversion                              | **cairosvg**                | Optional; unchanged.                                                                                       |
-| 2D → 3D extrusion / glTF export                  | **trimesh** + **pygltflib** | Plan/section geometry extruded to thin solids, metadata stored in glTF extras.                             |
-| IFC export (future)                              | **IfcOpenShell**            | Optional adapter to map components to Ifc classes (joist → `IfcBeam`, deck → `IfcSlab`).                   |
+| Purpose                                   | Dependency                     | Notes                                                                                 |
+| ----------------------------------------- | ------------------------------ | ------------------------------------------------------------------------------------- |
+| 2D geometry ops (union, offset, slice)    | **Shapely 2.x**                | Primary 2D kernel; deterministic and battle-tested.                                   |
+| 3D solids & projections                   | **CadQuery (OCC)**             | Primary solid modeller for Phase 4+ (IFC/STEP/glTF driven from here).                 |
+| Tessellation & glTF export                | **trimesh + pygltflib**        | Tessellate CadQuery solids and write glTF 2.0 with metadata in `extras`.              |
+| 2D → PNG conversion                       | **cairosvg**                   | Optional; unchanged.                                                                  |
+| IFC export                                | **IfcOpenShell**               | Build IFC 4.3.2 Reference View: contexts, Axis/Body reps, materials, openings, psets. |
+| Optional precise offsets/fillets (future) | Lightweight helpers / Maker.js | Only if we need fillets/mitres beyond what OCC/CadQuery provides.                     |
+| Graph-like auto layout (future)           | **ELK.js** / **Dagre**         | For complex attachment diagrams where auto-layout is beneficial.                      |
 
-glTF compatibility is a hard requirement for later phases: every planner bundle will be convertible to glTF (either natively, or via a small adapter) so that AR/3D viewers can pick it up.
+glTF + IFC compatibility are hard requirements from Phase 4 onwards: every solved model can be exported to glTF and IFC without re-solving geometry.
 
 ---
 
-## 4. Reference snippets (Phase 1 sketch)
+## 4. Reference snippets (Phase 1 sketch)
 
-**Spec fragment (Phase 1 primitives only):**
+> Historical reference: how the minimal deterministic pipeline looked before CadQuery/IFC. Still useful context for understanding the evolution of the planner, but not prescriptive for Phase 4+.
+
+**Spec fragment (Phase 1 primitives only):**
 
 ```yaml
 model:
@@ -188,50 +194,7 @@ views:
     include: [deck, joists, pond]
 ```
 
-**Pseudo-code: DiagramPlanner (Phase 1 skeleton):**
-
-```python
-def compile_plan(spec: PlanSpec) -> GeometryBundle:
-    bundle = GeometryBundle()
-
-    for comp in spec.model.components:
-        poly = resolve_rectangle(comp.params["size"])
-        poly = anchor_polygon(poly, comp.anchor, spec.model)
-        if comp.repeat:
-            polys = replicate(poly, comp.repeat)
-        else:
-            polys = [poly]
-        for geom in polys:
-            bundle.add_polygon(geom, label=comp.label, id=comp.id)
-
-    # Legend auto build
-    bundle.legend = build_legend(bundle)
-    return bundle
-
-def render_svg(bundle: GeometryBundle, style: StyleSheet) -> str:
-    scene = SvgScene()
-    for item in bundle.polygons:
-        scene.polygon(item.geom, class_=style.class_for(item))
-    add_legend(scene, bundle.legend)
-    return scene.to_string()
-```
-
-This is intentionally minimal: rectangles + anchors + repeat + labels. As later traits and templates arrive, the `replicate` helper grows and the geometry bundle gains more metadata (e.g., heights).
-
-**Anchoring semantics (Phase 1):**
-
-```yaml
-anchor:
-  ref: deck                # component we snap to
-  align: north_west        # point on the reference component
-  anchor_point: center     # point on this component that aligns (defaults to center)
-  offset: [0, 0]
-```
-
-- `align` picks the reference point (`center`, `north`, `north_east`, `north_west`, `east`, `south`, `south_east`, `south_west`, `west`).
-- `anchor_point` (optional) picks which point on the component aligns; defaults to `center` so existing specs keep working.
-- `offset` is applied after both points coincide.
-- Cut-outs reuse the same block with `ref: self` to position the void relative to the parent rectangle.
+this remains a useful low-level example but is effectively “Phase 1 era”.
 
 ---
 
@@ -259,7 +222,7 @@ anchor:
 
 ## 6. Phased roadmap
 
-### Phase 1 – Minimal deterministic pipeline (completed)
+### Phase 1 – Minimal deterministic pipeline (completed)
 
 - [x] Schema supports `rectangle` & `polyline` primitives with `anchor`, `repeat`, `label` (see `diagramming/schema`).
 - [x] Planner resolves anchors + repetition + simple spacing; outputs plan & section geometry; legend auto-generated (see `diagramming/planner`).
@@ -269,7 +232,7 @@ anchor:
 - [x] Renderer enforces white backgrounds and accepts an optional spec-level `scale` for consistent sizing; defaults remain sensible when omitted.
 - [x] Per-view overrides (`pad`, `scale`, `background`) and legend typography scaling keep outputs readable across renders.
 
-### Phase 2 – Extended geometry & exports
+### Phase 2 – Extended geometry & exports
 
 - [x] Add stored fields (`height`, `metadata`, `traits`) with default values (ignored unless provided).
 - [x] Introduce per-view overrides (`views.<name>.pad`, `views.<name>.scale`, `views.<name>.background`) while maintaining backward-compatible defaults.
@@ -284,7 +247,7 @@ anchor:
 - [x] Component-driven boolean cutouts: allow rectangles to subtract other components (e.g. soil vs. pad foundations) so overlapping geometry stays declarative.
 - [x] Introduce `GeometryBundle` abstraction.
 
-### Phase 3 – 2.5D / glTF compatibility
+### Phase 3 – 2.5D / glTF compatibility
 
 - [x] Adopt Shapely 2.x inside the planner so repeats/anchors/rotations operate on real geometries (laying the groundwork for richer traits).
 - [x] Extend `GeometryBundle` (and schema) with 3D metadata: component `height`, optional `elevation`, material/label metadata, and per-instance transforms.
@@ -293,59 +256,184 @@ anchor:
 - [x] Derive plan/section views from the canonical 3D scene when a view declares a slicing plane.
 - [x] Material palette maps (`material` keys → SVG classes + glTF colors) to keep 2D/3D visuals in sync.
 - [x] Keep planar views in sync by deriving plan/section slices from the canonical geometry bundle.
-- [x] Expose rotation transforms in the schema (`rotation`, `rotation_anchor`, `repeat.rotate`, `repeat.about`) so declarative specs can drive radial layouts.
-- [x] Add optional orthographic rendering (`--orthographic`) that consumes the canonical scene via pyrender/pyglet to produce 3D snapshots.
-- [x] Optional behaviours: span-aware linear replicate helper (count/interval/span + direction) and mirror symmetry operations so repetitive layouts stay declarative.
-- [ ] Expand metadata mapping to align with IFC classes (prepping for Phase 4) - see [phase4-prep-report](phase4-prep-report.md).
+- [x] Expose rotation transforms in the schema (`rotation`, `rotation_anchor`, `repeat.rotate`, `repeat.about`).
+- [x] Add optional orthographic rendering (`--orthographic`) via pyrender/pyglet.
+- [x] Optional behaviours: span-aware linear replicate helper and mirror symmetry operations.
+- [ ] Expand metadata mapping to align with IFC classes (prepping for Phase 4) – see `phase4-prep-report.md`.
 
-### Phase 4 – CadQuery-powered 3D kernel
+### Phase 4 – CadQuery-powered solids, relationship-first solver, and IFC 4.3.2 export
+
+Phase 4 replaces the Phase 3 anchor-based planner with a *relationship-first constraint solver*, introduces a *CadQuery (OCC) solid kernel*, and formalises a *deterministic, IFC 4.3.2-aligned export path*.
+All work in this phase must preserve the overarching goal: *semantic description → deterministic YAML → canonical transforms → solids → interoperable IFC*.
 
 #### Schema & solver groundwork
 
-- [ ] Finish the outstanding Phase 3 IFC metadata alignment so every component already advertises IFC-ready class IDs before solids land.
-- [ ] Land the relationship-first schema outlined in [phase4-prep-report](phase4-prep-report.md) (datums, bundles, helper clauses, assemblies) behind a feature flag; keep current anchor specs readable until migration completes.
-- [ ] Implement the constraint solver + diagnostics layer that resolves face/edge relationships, surfaces under/over-constrained components, exports constraint graphs for debugging, and blocks CLI builds when solving fails.
-- [ ] Ship the lint CLI (`scripts/lint_specs.py`), CI wiring, updated authoring docs/worksheet, and publish an Option C example spec so contributors can rehearse the new schema before the kernel swap.
+- [ ] **Finish outstanding Phase 3 IFC metadata alignment**
+  - Ensure every component already advertises IFC-ready metadata (`class`, `ifc.predefined_type`, `ifc.psets`) before solids land.
+  - Adopt correct IFC entities (e.g., joists → `IfcBeam` with `PredefinedType=JOIST`, not `IfcJoist`).
+  - Standardise `ifc.psets` schema for `Pset_BeamCommon`, `Pset_MemberCommon`, `Pset_SlabCommon`, etc.
+
+- [ ] **Land the full relationship-first schema** (from `phase4-prep-report.md`)
+  - Introduce datums, face bundles, helper clauses (`flush_bundle`, `touch_planes`, `touch_components`, `relate_from`), and assemblies.
+  - Ship behind a feature flag; legacy anchor specs should remain loadable until migration completes.
+
+- [ ] **Implement the constraint solver + diagnostics layer**
+  - Resolve face/edge/plane relationships deterministically.
+  - Produce canonical transforms for each component (local placement, rotation, flip, inset).
+  - Detect and surface **under-constrained**, **over-constrained**, and **inconsistent** relationships.
+  - Export the constraint graph + DOF report for debugging.
+  - Block CLI builds automatically when solving fails.
+
+- [ ] **Enforce deterministic identifiers**
+  - Stable component UUIDs seeded from `(component_id, schema_version, option_id)`.
+  - Deterministic ordering of constraints, relationships, and transforms.
+  - All geometry must be reproducible byte-for-byte given the same YAML.
+
+- [ ] **Schema → CadQuery neutral bridge definition**
+  - Finalise the canonical “neutral geometry block” emitted by the solver:
+    - Profile (rectangle/polyline), size, extrusion, local axes, material tag.
+    - Canonicalised placement (origin + orientation + extrusion direction).
+    - Component metadata (psets, labels, material, type).
+  - This becomes the unified input for CadQuery, glTF, STEP, and IFC.
 
 #### CadQuery integration & exports
 
-- [ ] Adopt CadQuery (OCC-backed) as the primary solid modeller; represent every component as a solid with canonical transforms, metadata, and material tags.
-- [ ] Build schema → CadQuery adapters (rectangles, polyline-derived extrusions, repeat/mirror helpers) so constraint-solver output generates solids directly.
-- [ ] Maintain Shapely footprints as derived projections from the solid scene for legacy compatibility/quick unions.
-- [ ] Replace vertical anchor math with solver-driven face/edge constraints resolved against CadQuery solids; record bounding boxes and collision checks from the kernel.
-- [ ] Rework plan/section renderers to consume CadQuery projections/sections: generate wires from OCC, convert to SVG primitives, and apply existing styling/legend routines.
-- [ ] Rebuild glTF export to tessellate CadQuery solids (via OCC exporters or conversion to trimesh); add STEP/OBJ export path for interoperability.
-- [ ] Dimension annotation helpers: generate extension lines, arrows, and callouts from canonical geometry (plan/section aware).
+- [ ] **Adopt CadQuery (OCC-backed) as the primary solid modeller**
+  - Every component becomes a solid: joists, beams, blocking, straps, deck slabs, openings.
+  - Attach canonical transforms and intrinsic metadata to each solid.
+
+- [ ] **Schema → CadQuery adapters**
+  - Rectangles become swept sections along canonical axes.
+  - Polyline-derived extrusions handled via profiles or tessellation.
+  - Repeat/mirror helpers expanded into explicit component transforms before baking into solids.
+
+- [ ] **Replace vertical anchor math with solver-driven face/edge constraints**
+  - The solver decides vertical and horizontal alignment; CadQuery solids are generated only *after* relationships are resolved.
+
+- [ ] **Maintain Shapely footprints as projections derived from CadQuery solids**
+  - Plan/section renderers become OCC-backed:
+    - Use OCC to generate section wires.
+    - Convert wires to SVG primitives.
+    - Apply existing styling routines.
+
+- [ ] **glTF export overhaul**
+  - Tessellate solids using OCC or convert CadQuery → trimesh.
+  - Emit `model.glb` with full component metadata under `extras`.
+
+- [ ] **STEP/OBJ export path**
+  - Provide deterministic export for downstream engineering/QA workflows.
+
+#### IFC 4.3.2 (Reference View) export
+
+- [ ] **Build IFC contexts**
+  - 3D model context.
+  - Axis + Body subcontexts.
+  - UnitAssignment: **millimetres**, **degrees**.
+
+- [ ] **Correct class + predefined type mapping**
+  - Joists → `IfcBeam` (`PredefinedType=JOIST`)
+  - Beams → `IfcBeam` (`BEAM` or `EDGEBEAM`)
+  - Blocking/bridging → `IfcMember`
+  - Deck surface → `IfcSlab` (`FLOOR`)
+  - Openings → `IfcOpeningElement` + `IfcRelVoidsElement`
+  - Hangers/straps (if modelled) → `IfcFastener` or `IfcMember`.
+
+- [ ] **Axis + Body representations**
+  - Axis representation: local +X curve for linear elements.
+  - Body representation: swept solid (`IfcExtrudedAreaSolid`) unless geometry requires tessellation.
+
+- [ ] **Material assignments**
+  - Linear members: `IfcMaterialProfileSetUsage` (rect profile).
+  - Slabs: `IfcMaterialLayerSetUsage` (layer direction = +Z).
+  - Deck planks or monolithic slab selectable per spec.
+
+- [ ] **Openings**
+  - Pond voids are modelled as true `IfcOpeningElement` bodies.
+  - Host slab receives `IfcRelVoidsElement`.
+
+- [ ] **Repeated geometry via types / representation maps**
+  - For repeated joists/beams: create `IfcBeamType` or `IfcMemberType`.
+  - Use `IfcMappedItem` for each instance.
+  - Ensures identical geometry is not duplicated.
+
+- [ ] **Face/plane relationships → IFC connection geometry**
+  - `touch_planes` → `IfcRelConnectsElements` + `IfcConnectionSurfaceGeometry`.
+  - `touch_components` face contacts → `IfcConnectionSurfaceGeometry`.
+  - Edge contacts → `IfcConnectionCurveGeometry`.
+  - Point contacts → `IfcConnectionPointGeometry`.
+
+- [ ] **GUID determinism**
+  - IFC GUIDs seeded deterministically using canonicalised component IDs.
 
 #### Tooling, migration & regression safety
 
-- [ ] Introduce collision/overlap detection tests at the solid level plus fixtures that parallel the current 2D assertions.
-- [ ] Provide migration path and documentation for existing specs (convert Option C first, run dual-kernel validation, retire the anchor schema once all specs pass lint + solver).
-- [ ] Evaluate performance/CI impacts; cache solids per option to keep builds deterministic and efficient.
-- [ ] Add a dual-render validation harness (SVG diff + mesh checksum) so CadQuery projections and glTF output stay in lockstep with the legacy pipeline during rollout.
+- [ ] **Lint + CI integration**
+  Add IFC-aware checks:
+  - Axis/Body reps present.
+  - Opening semantics correct.
+  - Units = mm/deg.
+  - `IfcMaterialProfileSetUsage`/`LayerSetUsage` correctness.
+  - No invalid entity types or undefined predefined types.
 
-### Phase 5 – Rich modelling & external integrations
+- [ ] **Collision/overlap detection at the solid level**
+  - Integrate OCC collision checks.
+  - Fixtures mirroring current 2D overlap tests.
 
-- [ ] Optional Maker.js integration for fillets/mitres on rectangles (if needed).
-- [ ] Expand metadata mapping to align with IFC classes (prepping for IfcOpenShell export).
-- [ ] Introduce template library (e.g., `linear_grid`, `cantilevered_grid`) with schema-based validation via `pydantic`.
-- [ ] Add optional IFC export (IfcOpenShell) mapping components to `Ifc*` entities.
-- [ ] Incorporate ELK/Dagre for graph-like layouts (complex attachment diagrams).
-- [ ] Provide `--explain` CLI flag dumping intermediate geometry overlays for debugging.
-- [ ] Footprint offset helpers (buffer solids once the CadQuery kernel lands) so reveals/tolerances stay declarative without manual size tweaks.
+- [ ] **Dimension annotation helpers**
+  - Generate extension lines, arrows, callouts from canonical geometry.
+  - Ensure plan/section dimensioning is coherent with the solid model.
 
-### Phase 6 – Authoring UX & tooling
+- [ ] **Dual-render validation harness**
+  - SVG diff (OCC wires → SVG) compared to legacy planner.
+  - Mesh checksum for glTF to catch regressions.
 
-- [ ] Joist/post pattern macros: declarative helpers that expand named spans into repeated components automatically.
-- [ ] Dedicated spec validator CLI (`scripts/validate_spec.py`).
-- [ ] Auto-generated schema documentation (`docs/schema.md`).
-- [ ] Optional lightweight web UI (React/Next) that edits specs and previews diagrams by calling the planner API.
+- [ ] **Migration playbook**
+  - Convert *Option C* first using full relationship-first schema.
+  - Run both kernels (legacy + new) to confirm identical plan/section geometry.
+  - Batch-migrate remaining specs.
+  - Retire anchor schema once all specs pass lint + solver.
+
+- [ ] **Performance profile & caching**
+  - Cache solids per option.
+  - Enable incremental builds.
+  - Optimise OCC tessellation paths.
+
+**Deliverable at end of Phase 4:**
+
+A deterministic, IFC-aligned 3D modelling pipeline where *semantic YAML specs* produce *canonical solids*, *interoperable IFC files*, *STEP/OBJ*, *tessellated glTF*, and *2D SVG/PNG* — all driven by one constraint-resolved source of truth.
+
+### Phase 5 – Rich modelling, analysis, and extended integrations
+
+With CadQuery + IFC export in place, Phase 5 focuses on **richer modelling patterns** and **deeper integrations**, not on standing up the core pipeline.
+
+- [ ] Optional Maker.js or additional geometry helpers for fillets/mitres and non-rectangular details where OCC primitives are awkward.
+- [ ] Template library (e.g., `linear_grid`, `cantilevered_grid`, `joist_bay`, `stair_run`) with schema-based validation via `pydantic`.
+- [ ] Extended IFC capabilities:
+  - Optional Design Transfer View exports where editable parametrics are beneficial.
+  - IFC property templates and bSDD / Uniclass / other classification mappings for joists, beams, slabs.
+- [ ] Analysis hooks (future):
+  - Export structural “analysis views” (e.g., member centrelines with loads) for external tools.
+  - Optional QTO-focused IFC views (quantities, areas, volumes).
+- [ ] Incorporate ELK/Dagre (or similar) for graph-like layout in complex attachment/connection diagrams.
+- [ ] Provide a `--explain` CLI flag dumping intermediate constraint/geometry overlays (SVG/JSON) for debugging.
+- [ ] Footprint offset helpers (on solids, not just 2D) to keep reveals/tolerances declarative without manual size tweaks.
+
+### Phase 6 – Authoring UX & tooling
+
+Phase 6 focuses on **author ergonomics**, **validation UX**, and **lightweight front-ends** over the now-stable engine.
+
+- [ ] Joist/post pattern macros and higher-level “deck presets” that expand spans + spacings into full component sets.
+- [ ] Dedicated spec/IFC validator CLI (`scripts/validate_spec.py`) that reports schema, constraint, and IFC mapping issues.
+- [ ] Auto-generated schema documentation (`docs/schema.md`) including IFC-related fields and helper patterns.
+- [ ] Optional lightweight web UI (React/Next) that edits specs and previews diagrams by calling the planner/solver API.
+- [ ] Authoring assistants that convert prose design briefs (like `design-C.md`) into starter YAML using the relationship-first schema.
+- [ ] Quality-of-life features: template wizards, copy/paste between options, quick “diff view” of geometry between versions.
 
 ---
 
 ## 7. Open questions / decisions (tracked)
 
-- **glTF metadata schema:** define consistent `extras` for joists, posts, beams (maybe align with IFC namespace).
-- **Legend layout**: keep CSS-based legend vs. upgrade to richer table layout helper.
+- **glTF metadata schema:** define consistent `extras` for joists, posts, beams (and ensure it lines up sensibly with IFC psets where possible).
+- **Legend layout:** keep CSS-based legend vs. upgrade to richer table layout helper.
 - **Section coverage:** extend the schema to describe joist framing on multiple axes (e.g. return legs around corners) so canonical slices include all support members without manual duplication.
-- **Validation/back-end selection:** CadQuery vs. pythonOCC vs. FreeCAD vs. Blender vs. external engineering APIs – re-evaluate only if CadQuery proves insufficient for the solid kernel.
+- **Validation/back-end selection:** CadQuery is the default solid kernel; only re-evaluate (pythonOCC, FreeCAD, Blender, external APIs) if we hit clear limitations or licensing issues.
