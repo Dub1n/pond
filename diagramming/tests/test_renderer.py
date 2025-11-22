@@ -1,14 +1,11 @@
-import io
 import re
 import unittest
 from pathlib import Path
 
-import cairosvg
-from PIL import Image
-
 from diagramming import DiagramPlanner
 from diagramming.renderers import SvgRenderer
 from diagramming.schema import load_spec
+from diagramming.planner.bundle import GeometryBundle, PolygonFeature
 
 
 class RendererTests(unittest.TestCase):
@@ -28,31 +25,82 @@ class RendererTests(unittest.TestCase):
         self.assertNotIn('width="100%"', svg_text)
         self.assertIn('fill="#ffffff"', svg_text)
 
-    def test_hidden_beam_overlay_visible_without_fill(self) -> None:
+    def test_layers_render_in_z_order(self) -> None:
+        bundle = GeometryBundle(view="plan", scale=1.0, pad=0.0)
+        lower = PolygonFeature(
+            id="lower",
+            outer=[(0, 0), (10, 0), (10, 10), (0, 10), (0, 0)],
+            height=1.0,
+            elevation=0.0,
+        )
+        upper = PolygonFeature(
+            id="upper",
+            outer=[(0, 0), (10, 0), (10, 10), (0, 10), (0, 0)],
+            height=1.0,
+            elevation=2.0,
+        )
+        bundle.add_polygon(lower)
+        bundle.add_polygon(upper)
+        bundle.build_legend()
+
+        renderer = SvgRenderer()
+        svg_text = renderer.render(bundle)
+
+        self.assertIn('data-id="lower"', svg_text)
+        self.assertIn('data-id="upper"', svg_text)
+        self.assertLess(
+            svg_text.index('data-id="lower"'),
+            svg_text.index('data-id="upper"'),
+            "Lower layer should be painted before the upper layer.",
+        )
+
+    def test_dash_scale_applies_to_svg_and_outlines(self) -> None:
         spec_path = Path("diagrams/specs/deck-framing.yaml")
         spec = load_spec(spec_path)
         planner = DiagramPlanner(spec)
         planned = planner.plan("A", "plan")
 
         renderer = SvgRenderer()
-        svg_text = renderer.render(planned.bundle)
-        png_bytes = cairosvg.svg2png(bytestring=svg_text.encode("utf-8"))
-        image = Image.open(io.BytesIO(png_bytes)).convert("RGB")
+        scaled_svg = renderer.render(planned.bundle)
+        unscaled_svg = renderer.render(planned.bundle, dash_scale=1.0)
 
-        red_pixels = 0
-        green_pixels = 0
-        deck_pixels = 0
-        for r, g, b in image.getdata():
-            if r >= 200 and g <= 80 and b <= 80:
-                red_pixels += 1
-            if g - max(r, b) >= 10:
-                green_pixels += 1
-            if abs(r - 213) <= 15 and abs(g - 193) <= 15 and abs(b - 163) <= 15:
-                deck_pixels += 1
+        self.assertIn("stroke-dasharray: 1 0.75;", scaled_svg)
+        self.assertIn("stroke-dasharray: 8 6;", unscaled_svg)
 
-        self.assertGreater(green_pixels, 0, "Expected hidden beam outline dashed in green.")
-        self.assertEqual(red_pixels, 0, "Beam fill should be fully hidden beneath deck.")
-        self.assertGreater(deck_pixels, 0, "Deck fill should override hidden framing colours.")
+        def first_dash(svg: str) -> tuple[float, float]:
+            match = re.search(r'stroke-dasharray="([0-9.]+) ([0-9.]+)"', svg)
+            self.assertIsNotNone(match, "Expected a stroke-dasharray attribute in hidden outlines.")
+            return float(match.group(1)), float(match.group(2))
+
+        scaled_dash = first_dash(scaled_svg)
+        unscaled_dash = first_dash(unscaled_svg)
+        self.assertAlmostEqual(scaled_dash[0] * 8, unscaled_dash[0], places=2)
+        self.assertAlmostEqual(scaled_dash[1] * 8, unscaled_dash[1], places=2)
+
+    def test_all_polygons_emit_dashed_outline(self) -> None:
+        bundle = GeometryBundle(view="plan", scale=1.0, pad=0.0)
+        lower = PolygonFeature(
+            id="lower",
+            outer=[(0, 0), (10, 0), (10, 10), (0, 10), (0, 0)],
+            height=1.0,
+            elevation=0.0,
+        )
+        upper = PolygonFeature(
+            id="upper",
+            outer=[(8, 0), (18, 0), (18, 10), (8, 10), (8, 0)],
+            height=1.0,
+            elevation=2.0,
+        )
+        bundle.add_polygon(lower)
+        bundle.add_polygon(upper)
+        bundle.build_legend()
+
+        renderer = SvgRenderer()
+        svg_text = renderer.render(bundle)
+
+        self.assertIn('data-id="lower::outline"', svg_text)
+        self.assertIn('data-id="upper::outline"', svg_text)
+        self.assertIn('fill="none"', svg_text)
 
 
 if __name__ == "__main__":  # pragma: no cover

@@ -21,6 +21,10 @@ from diagramming.schema import DiagramSpec, load_spec
 from diagramming.planner.exporters import GltfExporter, GltfExportOptions
 
 
+SVG_DASH_SCALE = SvgRenderer.DEFAULT_DASH_SCALE
+PNG_DASH_SCALE = 1.0
+
+
 def find_spec_paths(explicit: Iterable[str]) -> List[Path]:
     if explicit:
         return [Path(spec) for spec in explicit]
@@ -148,14 +152,25 @@ def main(argv: Optional[List[str]] = None) -> int:
                 )
                 title = planned.view_config.title if planned.view_config else None
                 svg_data = renderer.render(
-                    planned.bundle, aria_label=aria_label, title=title
+                    planned.bundle,
+                    aria_label=aria_label,
+                    title=title,
+                    dash_scale=SVG_DASH_SCALE,
                 )
                 svg_path.write_text(svg_data, encoding="utf-8")
                 print(f"  Wrote {svg_path.relative_to(outdir)}")
 
                 if png_requested and cairosvg is not None:
+                    png_svg_data = svg_data
+                    if PNG_DASH_SCALE != SVG_DASH_SCALE:
+                        png_svg_data = renderer.render(
+                            planned.bundle,
+                            aria_label=aria_label,
+                            title=title,
+                            dash_scale=PNG_DASH_SCALE,
+                        )
                     cairosvg.svg2png(
-                        bytestring=svg_data.encode("utf-8"), write_to=str(png_path)
+                        bytestring=png_svg_data.encode("utf-8"), write_to=str(png_path)
                     )
                     print(f"  Wrote {png_path.relative_to(outdir)}")
 

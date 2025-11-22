@@ -1,0 +1,36 @@
+name: layering-debug
+units: mm
+scale: 1.0
+options:
+  D:
+    title: "Layering debug"
+    views:
+      plan:
+        title: "Layering debug plan"
+        aria_label: "Layering debug plan"
+        scale: 1.0
+        background: "#ffffff"
+    components:
+      - type: rectangle
+        id: water
+        size: [3000, 3000]
+        origin: [0, 0]
+        class: component-water
+        height: 100
+        material: water
+        metadata:
+          elevation: -100
+      - type: rectangle
+        id: deck_ring
+        size: [3000, 3000]
+        origin: [0, 0]
+        class: component-structure
+        height: 50
+        material: decking
+        metadata:
+          elevation: 50
+        cutouts:
+          - size: [2000, 2000]
+            anchor:
+              ref: self
+              align: center
