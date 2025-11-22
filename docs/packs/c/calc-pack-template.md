@@ -6,11 +6,11 @@ Use this template to produce the audit-ready calc pack the reviewers expect. Kee
 
 ## Front cover
 
-- Project / Site / Client:
+- Project / Site / Client: New Inn Farm Pond
 - Document title: **Structural calculation package – Pond deck (Option C)**
-- Project number:
-- Calc package ID / Revision / Date:
-- Prepared by / Checked by / Approved by:
+- Project number: 1
+- Calc package ID / Revision / Date: 2025-11-18
+- Prepared by / Checked by / Approved by: Gabriel Dubin
 - References: design-C.md; option-c-dimensions.md; timber-options.md; manufacturer datasheets.
 
 ---
@@ -56,15 +56,15 @@ Use this template to produce the audit-ready calc pack the reviewers expect. Kee
 
 Use this table to build Gk (kN/m²) from densities. Enter sources (supplier/EN 1991-1-1 Annex A). For beam checks you may keep beam self-weight as a line load instead of folding it into area Gk.
 
-| Component                             | Assumed density (kN/m³) | Calculation (show working)                                         | Result (kN/m²) | Source (datasheet/EC)          |
-| ------------------------------------- | ----------------------- | ------------------------------------------------------------------ | -------------- | ------------------------------ |
-| Decking 28 × 145                      | <enter>                 | (0.028 × board width factor × density) / board coverage per m²     | <enter>        | <enter supplier / EN 1991-1-1> |
-| Joists 47 × 150 @ 400 c/c             | <enter>                 | (0.047 × 0.150 / 0.40) × density                                   | <enter>        | <enter supplier / EN 1991-1-1> |
-| Blocking allowance (47 × 150)         | <enter>                 | % of joist weight or measured length × section × density           | <enter>        | <enter>                        |
-| Beam allowance (47 × 150)             | <enter>                 | Convert beam self-weight to kN/m² or keep as line load in analysis | <enter>        | <enter>                        |
-| Membrane / finishes                   | <enter>                 | Allowance per supplier                                             | <enter>        | <enter>                        |
-| Fixings / misc.                       | <enter>                 | Allowance if significant                                           | <enter>        | <enter>                        |
-| **Total Gk (use in w = (Gk+Qk)×0.4)** | —                       | Sum above                                                          | **<enter>**    | —                              |
+| Component                             | Assumed density (kN/m³) | Calculation (show working)                                                                   | Result (kN/m²) | Source (datasheet/EC)          |
+| ------------------------------------- | ----------------------- | -------------------------------------------------------------------------------------------- | -------------- | ------------------------------ |
+| Decking 28 × 145                      | 9.5 [2]                 | Boards per m = 1/(0.145+0.006)=6.62; volume =0.028×0.145×6.62=0.02689 m³/m² → ×9.5           | 0.255          | Hardwood range (Balau/Ipe) [2] |
+| Joists 47 × 150 @ 400 c/c             | 5.3 [1]                 | (0.047 × 0.150 / 0.40) × 5.3                                                                 | 0.093          | Softwood + UC4 allowance [1]   |
+| Blocking allowance (47 × 150)         | 5.3 [1]                 | Two 0.4 m blocks per joist: 0.047×0.150×0.40×2=0.00564 m³; ×5.3/1.07=0.0279 kN/m line; /0.40 | 0.070          | Softwood + UC4 allowance [1]   |
+| Beam allowance (47 × 150)             | 5.3 [1]                 | Kept as line load for beam design: 0.047×0.150×5.3 = 0.037 kN/m (excluded from area sum)     | —              | Softwood + UC4 allowance [1]   |
+| Membrane / finishes                   | 11.0 [3]                | 3 mm EPDM/DPC allowance: 0.003 × 11.0                                                        | 0.033          | EPDM/DPC density approx. [3]   |
+| Fixings / misc.                       | 78.5 [4]                | Allow 0.5 kg/m² stainless screws/strap = 0.005 kN/m²                                         | 0.005          | Stainless steel density [4]    |
+| **Total Gk (use in w = (Gk+Qk)×0.4)** | —                       | Sum above                                                                                    | **0.457**      | —                              |
 
 > If expressing beam self-weight as a line load, note it separately in the beam worksheet and exclude it from the area Gk used for joist line load.
 
@@ -117,7 +117,7 @@ WORKED EXAMPLE – OPTION C (fill blanks)
    Spacing: 400 mm c/c; tributary width = 0.4 m.
 
 2. INPUT DATA
-   Gk (self-weight + finishes) = ______ kN/m²
+   Gk (self-weight + finishes) = 0.457 kN/m²
    Qk (imposed) = 3.0 kN/m² [Balcony/terrace category per EN 1991-1-1 Table 6.2; rationale: external, adjacent to water, open walk-around]
    Material: C24; Service class: 3; Treatment: UC4 incised; kmod/kdef/γM per EN 1995-1-1 (UK NA).
 
@@ -125,12 +125,12 @@ WORKED EXAMPLE – OPTION C (fill blanks)
    Example: Check joist (47×150) with 250 mm cantilever for bending, shear, deflection (ULS/SLS).
 
 4. ACTIONS
-   Permanent (Gk): [insert calculated self-weight]
-   Variable (Qk): [chosen category] = [____] kN/m² (state NA reference)
+   Permanent (Gk): 0.457 kN/m² (from Table 3A)
+   Variable (Qk): balcony/terrace = 3.0 kN/m² (EN 1991-1-1 Table 6.2)
    Load combinations (EN 1990 A1): ULS = γG·Gk + γQ·Qk = 1.35·Gk + 1.50·Qk; SLS (char/freq/quasi-perm) = Gk + Qk; Gk + ψ1·Qk; Gk + ψ2·Qk.
 
 5. ANALYSIS
-   Line load w = (Gk + Qk) × 0.4 = ______ kN/m
+   Line load w = (Gk + Qk) × 0.4 = (0.457+3.0)×0.4 = 1.383 kN/m
    Backspan Lb = 0.82 m; cantilever a = 0.25 m; total joist length L = 1.07 m
    Reactions/internal forces at hanger line: V = ___; M = ___  [add free-body sketch reference]
 
@@ -172,3 +172,11 @@ CHECKED BY: ___________   SIGN: ______   DATE: __/__/__
 - Risk assessment (RAMS) and signed Method Statement.
 
 > Before issue, list each appendix item with filename/reference and confirm inclusion.
+
+---
+
+References  
+[1] https://eurocodeapplied.com/design/en1991/annex-A  
+[2] https://www.wood-database.com/yellow-balau/  
+[3] https://www.engineeringtoolbox.com/rubber-epdm-d_2042.html  
+[4] https://www.engineeringtoolbox.com/metal-alloys-densities-d_50.html

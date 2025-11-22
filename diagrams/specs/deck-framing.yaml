@@ -631,12 +631,10 @@ options:
         anchor:
           ref: beam_west
           align: north
-          anchor_point: north
-          offset:
-            south: backspan + cantilever + joist_width / 2 - pad_size / 2
+          anchor_point: center
         repeat:
-          count: 7
-          span: pond_span - 2 * cantilever - joist_width
+          count: 4
+          span: deck_span
           direction: south
         class: component-structure
         label: "Shallow pad foundation"

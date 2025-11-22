@@ -151,4 +151,14 @@ Next step (in progress):
 Automation status:
 
 - Headless capture attempted for multiple UK/EU suppliers (Round Wood, Decking Supplies, Timbercut4u, Tuin/Gadero, Hardwood Discount). Many product pages render prices behind JavaScript/consent widgets that do not expose values to simple crawlers; initial headless run captured the B&F Balau example above and found no other pages presenting an unambiguous, scrapable price plus board thickness.
-- If you want, I can switch to: (a) a Playwright script with consent flows and deeper waits, or (b) send 2–3 quick quote requests (email/phone) for 21×145 Ipe/Cumaru/Garapa to get firm £/m² rates. 
+- If you want, I can switch to: (a) a Playwright script with consent flows and deeper waits, or (b) send 2–3 quick quote requests (email/phone) for 21×145 Ipe/Cumaru/Garapa to get firm £/m² rates.
+
+---
+
+£72/m^2: https://bendreybros.co.uk/21-x-145mm-x-396m-hardwood-decking-grooved-smooth
+
+£73/m^2: https://www.timberulove.co.uk/products/solid-oak-hardwood-decking-board-smooth-finish
+
+£85/m^2: https://www.timberulove.co.uk/products/treated-oak-timber-hardwood-decking-boards
+
+£87/m^2: https://www.timber2udirect.co.uk/shop/balau-hardwood-smooth-decking-board-21-x-145mm

@@ -20,13 +20,13 @@ Plan components
 - `beam_west`: 47 × 150 mm perimeter beam, also full-depth to the corners. `vertical.flush.face` keeps its bottom on the water datum so both beams share the same bearing height.
 - `joists_west`:
   - Joist length = backspan − beam_width + cantilever = 1 000 − 47 + 250 = **1 203 mm**.
-  - Anchor: `pond_water` North-West aligned to joist North-East with `offset = [cantilever, cantilever]` so the first joist face is flush with the overhang edge (top of the 2.5 m aperture).
-  - Repeat: 7 members across the 2 500 mm overhang width using `span = pond_span − 2×cantilever − joist_width = 2 453 mm`, `direction: south` ⇒ spacing ≈ 409 mm c/c; last joist south face lands flush with the opposite overhang edge.
+  - Anchor: `pond_water` North-West aligned to joist North-East with `offset = [cantilever, cantilever]` so the first joist face is flush with the overhang edge (top of the 2.5 m aperture) **1 250 mm in from the deck perimeter**.
+  - Repeat: 7 members across the 2 500 mm overhang width using `span = pond_span − 2×cantilever − joist_width = 2 453 mm`, `direction: south` ⇒ spacing ≈ 409 mm c/c; last joist south face lands flush with the opposite overhang edge, keeping the run bounded by the cantilever edges.
 - `corner_diagonal`: 47×150 joist running from the deck corner to the end of the 250 mm overhang (hypotenuse ≈ 1 770 mm for a 1.25 m × 1.25 m right triangle).
 - `corner_ties`: two 47×150 joists per corner tying the diagonal back to the perimeter at 500 mm from each corner along X and Y, keeping the corner field under the 550 mm spacing limit.
-- `pads_west`: 300 mm × 300 mm shallow pads centred beneath each joist line.
-  - Anchor to `beam_west` North edge; offset `south: backspan + cantilever + joist_width/2 − pad_size/2` to land the first pad centre on the first joist centreline.
-  - Repeat: 7 pads with `span = pond_span − 2×cantilever − joist_width`, `direction: south` to mirror the joist spacing.
+- `pads_west`: 300 mm × 300 mm shallow pads supporting the **outer beam**.
+  - Place pads at the north-west and south-west corners plus two intermediates per edge aligned to joist lines **#2 (y ≈ 1 667 mm)** and **#6 (y ≈ 3 333 mm)** so pad centrelines coincide with joist centrelines.
+  - Repeat the same four positions on each side via `operations.rotate` so the perimeter has 12 pads total; corners share pads between orthogonal beams.
 - `soil_fill`: deck-wide fill set to the full water depth (900 mm). A `vertical.flush.face` ties its top to the water surface so the fill runs from 0 mm down to −900 mm, matching the pond excavation.
 - `operations.rotate`: clones `{joists_west, pads_west, beam_west, inner_beam_west, corner_diagonal, corner_ties}` around the pond centre 4× so each side reuses the same layout and every corner is framed.
 
@@ -51,6 +51,6 @@ Structural quick-checks
   - Section modulus for a 47×150 joist: `S = b × h² / 6 = 0.047 × 0.15² / 6 ≈ 1.76×10⁻⁴ m³`.
   - Bending stress: `σ = M / S ≈ 0.68×10³ / 1.76×10⁻⁴ ≈ 3.9 MPa < 7.8 MPa (C24 allowable)`.
 - Tip deflection at the 250 mm cantilever: `δ = w_c × a⁴ / (8 E I)` with `E ≈ 10 GPa`, `I = b × h³ / 12 ≈ 1.32×10⁻⁵ m⁴` → `δ ≈ 3 mm`.
-- Pad demand: each 300×300 pad sees roughly one joist line reaction (≈1.13 kN) in this depiction; still within shallow-pad bearing capacity on compacted sub-base.
+- Pad demand: with 4 pads per edge (corner + joists #2 and #6), the longest outer-beam span ≈1.67 m. Reactions ≈2.3 kN at intermediates; a corner pad supports two beams (~4.6 kN combined). All remain within 300×300 bearing on compacted sub-base. Pond-edge support is assumed adequate and may use an alternate detail in lieu of pads.
 - Corner diagonals (1.77 m effective length) sit at 45°; tributary decking is a mitered triangle held within 500 mm of a support along both legs, keeping bay widths < 550 mm.
 - Summary: spanning only the 2.5 m overhang width with 7 joists (~409 mm c/c) keeps members inside the cantilever band, trims component count, and maintains capacity/deflection margins.

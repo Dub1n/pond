@@ -6,8 +6,8 @@ Keep the option-C specifics; fill the placeholders with project, people, and seq
 
 ## Document control
 
-- Project / Location:
-- Method statement no. / Rev / Date:
+- Project / Location: New Inn Farm Pond
+- Method statement no. / Rev / Date: 2025-11-18
 - Prepared by / Reviewed by / Approved by:
 - Linked documents: calc-pack-template.md; inspection-test-plan.md; design-C.md; option-c-dimensions.md; timber-options.md; manufacturer datasheets.
 
@@ -25,10 +25,10 @@ Keep the option-C specifics; fill the placeholders with project, people, and seq
 
 ## Responsibilities and competencies
 
-- Site supervisor: __________________ (competence/role)
-- Carpentry crew: __________________ (number/skills)
-- Banksman/plant op (if used): __________________
-- H&S oversight: __________________
+- Site supervisor: Gabriel Dubin
+- Carpentry crew: Gabriel Dubin
+- Banksman/plant op (if used): Gabriel Dubin
+- H&S oversight: Gabriel Dubin
 - Authorised signatories for hold points (see ITP): __________________
 
 ---
@@ -82,6 +82,6 @@ Instructions: record risk ratings and specific controls per task using the HSE r
 
 - Rescue plan for water/edge incidents: __________________
 - Spill/contamination controls near pond: __________________
-- Weather limits (e.g., suspend works if ice/heavy rain affects pads/liner): __________________
+- Weather limits: suspend works if ice/heavy rain affects pads/liner
 
 Fill the blanks with project-specific instructions; keep them concise and tied to the actual site and crew.

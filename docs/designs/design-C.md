@@ -71,8 +71,8 @@
 
 **support spacing:**
 
-* beam supported on **pads/ground screws** at 1.5–1.6 m centres.
-* 300×300×100 mm concrete pads on gravel; DPC or membrane under beam.
+* beam supported on **pads/ground screws**: one at every corner plus **two intermediates per edge aligned to joist lines #2 and #6** (≈1.67 m and ≈3.33 m from the corner) so corners sit on bearing and pad centres coincide with joist centrelines.
+* 300×300×100 mm concrete pads on gravel; DPC or membrane under beam. If pads cannot be used at the pond edge, confirm the alternative support there delivers equivalent bearing and uplift resistance.
 
 ---
 
