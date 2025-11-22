@@ -6,9 +6,9 @@ from typing import Iterable, List, Optional, Sequence, Tuple
 
 from shapely.geometry import GeometryCollection, MultiPolygon, Polygon as ShapelyPolygon
 from shapely.geometry.base import BaseGeometry
-from shapely.ops import unary_union
 
-from ..planner.bundle import GeometryBundle, LegendEntry, PolygonFeature, PolylineFeature
+from ..planner.bundle import GeometryBundle, LegendEntry, PolygonFeature
+from ..materials import get_material_style
 from .svg_scene import SvgScene
 
 
@@ -32,6 +32,8 @@ class PolygonRenderData:
 
 
 class SvgRenderer:
+    DEFAULT_DASH_SCALE = 0.125
+
     def __init__(self, extra_css: Optional[str] = None) -> None:
         base_css_path = Path(__file__).with_name("styles") / "base.css"
         self.base_css = base_css_path.read_text(encoding="utf-8")
@@ -42,7 +44,9 @@ class SvgRenderer:
         bundle: GeometryBundle,
         aria_label: Optional[str] = None,
         title: Optional[str] = None,
+        dash_scale: float = DEFAULT_DASH_SCALE,
     ) -> str:
+        dash_scale = max(dash_scale, 0.01)
         scene = SvgScene(pad=bundle.pad, scale=bundle.scale, background=bundle.background)
         if aria_label:
             scene.root.set("aria-label", aria_label)
@@ -52,11 +56,13 @@ class SvgRenderer:
         scene.add_css(self.base_css)
         if self.extra_css:
             scene.add_css(self.extra_css)
+        if dash_scale != 1.0:
+            scene.add_css(self._dash_override_css(dash_scale))
 
         title_size, body_size, line_height = self._compute_font_metrics(bundle, scene.scale)
 
         polygons = self._ordered_polygons(bundle)
-        polylines = self._ordered_polylines(bundle)
+        # Polylines are intentionally skipped for this layering pass.
 
         labels: List[LabelInstruction] = []
         seen_labels: set[str] = set()
@@ -67,15 +73,10 @@ class SvgRenderer:
                 labels.append(instruction)
             if draw_data:
                 polygon_draws.append(draw_data)
-        for feature in polylines:
-            instruction = self._render_polyline(scene, feature, body_size, seen_labels)
-            if instruction:
-                labels.append(instruction)
 
         if bundle.view == "plan":
-            hidden_ids, coverage_map = self._plan_hidden_polygon_info(polygon_draws)
-            hidden_style = self._hidden_outline_style(bundle)
-            self._draw_plan_polygons(scene, polygon_draws, hidden_ids, coverage_map, hidden_style)
+            hidden_style = self._hidden_outline_style(bundle, dash_scale)
+            self._draw_plan_polygons(scene, polygon_draws, hidden_style)
         else:
             for draw_data in polygon_draws:
                 self._draw_standard_polygon(scene, draw_data)
@@ -132,38 +133,6 @@ class SvgRenderer:
                     render_data,
                 )
         return (None, render_data)
-
-    def _render_polyline(
-        self,
-        scene: SvgScene,
-        feature: PolylineFeature,
-        label_size: float,
-        seen_labels: set[str],
-    ) -> Optional["LabelInstruction"]:
-        class_name = feature.class_name or "component-outline"
-        scene.polyline(
-            feature.points,
-            class_=class_name,
-            stroke_width=str(feature.stroke_width),
-            data_id=feature.id,
-            fill="none",
-        )
-        label_text, base_key = self._label_text(feature.label_id, feature.label)
-        label_key = self._label_key(feature.id, base_key)
-        if label_text and label_key not in seen_labels:
-            label_pos = self._polyline_label_position(feature)
-            if label_pos is not None:
-                lx, ly = label_pos
-                seen_labels.add(label_key)
-                return LabelInstruction(
-                    x=lx,
-                    y=ly,
-                    text=label_text,
-                    font_size=label_size,
-                    anchor="middle",
-                    class_name="feature-label",
-                )
-        return None
 
     def _render_legend(
         self,
@@ -274,15 +243,6 @@ class SvgRenderer:
         return (cx, cy)
 
     @staticmethod
-    def _polyline_label_position(feature: PolylineFeature) -> Optional[Tuple[float, float]]:
-        if not feature.points:
-            return None
-        count = len(feature.points)
-        sx = sum(pt[0] for pt in feature.points)
-        sy = sum(pt[1] for pt in feature.points)
-        return (sx / count, sy / count)
-
-    @staticmethod
     def _baseline_adjust(y: float, font_size: float) -> float:
         return y + font_size * 0.35
 
@@ -298,112 +258,28 @@ class SvgRenderer:
         self,
         scene: SvgScene,
         draws: Sequence[PolygonRenderData],
-        hidden_ids: set[str],
-        coverage_map: dict[str, BaseGeometry],
-        hidden_style: dict[str, float],
+        outline_style: dict[str, float],
     ) -> None:
         for draw in draws:
-            visible_paths = self._plan_visible_paths(draw, coverage_map.get(draw.feature.id))
-            if not visible_paths:
-                continue
             base_kwargs = {
-                "class_": draw.class_name,
                 "fill_rule": "evenodd",
             }
-            if draw.feature.id.startswith("beam_west"):
-                base_kwargs["fill"] = "#ff0000"
-            for path in visible_paths:
-                scene.path(path, data_id=draw.feature.id, **base_kwargs)
+            material_attrs = self._material_attributes(draw.feature)
+            base_kwargs.update(material_attrs)
+            scene.path(draw.path_data, data_id=draw.feature.id, **base_kwargs)
 
         for draw in draws:
-            if draw.feature.id not in hidden_ids:
-                continue
             attrs = {
-                "class_": f"{draw.class_name} hidden-outline",
                 "fill": "none",
                 "fill_rule": "evenodd",
-                "data_id": f"{draw.feature.id}::hidden-outline",
-                "stroke": hidden_style["stroke"],
-                "stroke_width": f"{hidden_style['width']:.4f}",
-                "stroke_dasharray": f"{hidden_style['dash_on']:.4f} {hidden_style['dash_off']:.4f}",
+                "data_id": f"{draw.feature.id}::outline",
+                "stroke": outline_style["stroke"],
+                "stroke_width": f"{outline_style['width']:.4f}",
+                "stroke_dasharray": f"{outline_style['dash_on']:.4f} {outline_style['dash_off']:.4f}",
                 "stroke_linecap": "butt",
                 "stroke_linejoin": "round",
             }
-            if draw.feature.id.startswith("beam_west"):
-                attrs["stroke"] = "#00ff00"
             scene.path(draw.path_data, **attrs)
-
-    def _plan_visible_paths(
-        self,
-        draw: PolygonRenderData,
-        coverage: Optional[BaseGeometry],
-    ) -> List[str]:
-        if coverage is None or coverage.is_empty:
-            return [draw.path_data]
-        if draw.shape is None:
-            return [draw.path_data]
-        try:
-            remainder = draw.shape.difference(coverage)
-        except Exception:
-            return [draw.path_data]
-        if remainder.is_empty:
-            return []
-        try:
-            cleaned = remainder.buffer(0)
-        except Exception:
-            cleaned = remainder
-        if cleaned.is_empty:
-            return []
-        return self._geometry_to_paths(cleaned)
-
-    def _plan_hidden_polygon_info(
-        self, draws: Sequence[PolygonRenderData]
-    ) -> Tuple[set[str], dict[str, BaseGeometry]]:
-        overlaps: dict[str, List[BaseGeometry]] = {}
-        shapes: dict[str, BaseGeometry] = {}
-        for draw in draws:
-            if draw.shape is not None:
-                shapes[draw.feature.id] = draw.shape
-
-        for index, draw in enumerate(draws):
-            lower_shape = draw.shape
-            if lower_shape is None:
-                continue
-            for higher in draws[index + 1 :]:
-                if higher.top <= draw.top:
-                    continue
-                higher_shape = higher.shape
-                if higher_shape is None:
-                    continue
-                if not lower_shape.intersects(higher_shape):
-                    continue
-                intersection = lower_shape.intersection(higher_shape)
-                if intersection.is_empty:
-                    continue
-                overlaps.setdefault(draw.feature.id, []).append(intersection)
-
-        hidden: set[str] = set()
-        coverage_map: dict[str, BaseGeometry] = {}
-
-        for feature_id, geometries in overlaps.items():
-            base_shape = shapes.get(feature_id)
-            if base_shape is None:
-                continue
-            if len(geometries) == 1:
-                union_geom = geometries[0]
-            else:
-                union_geom = unary_union(geometries)
-            if union_geom.is_empty:
-                continue
-            coverage_map[feature_id] = union_geom
-            lower_area = base_shape.area or 0.0
-            if lower_area <= 0.0:
-                continue
-            coverage_ratio = union_geom.area / lower_area
-            if coverage_ratio >= 0.6:
-                hidden.add(feature_id)
-
-        return hidden, coverage_map
 
     def _geometry_to_paths(self, geometry: Optional[BaseGeometry]) -> List[str]:
         if geometry is None or geometry.is_empty:
@@ -424,12 +300,15 @@ class SvgRenderer:
             return paths
         return []
 
-    def _hidden_outline_style(self, bundle: GeometryBundle) -> dict[str, float]:
+    def _hidden_outline_style(self, bundle: GeometryBundle, dash_scale: float) -> dict[str, float]:
         scale = bundle.scale or 1.0
-        target_px_width = 3.0
-        width_units = target_px_width / scale
-        dash_on_units = (target_px_width * 3.0) / scale
-        dash_off_units = (target_px_width * 2.0) / scale
+        width_px = 0.4
+        base_dash_on_px = 0.6
+        base_dash_off_px = 0.4
+        scale_factor = dash_scale / self.DEFAULT_DASH_SCALE if self.DEFAULT_DASH_SCALE else 1.0
+        width_units = width_px / scale
+        dash_on_units = (base_dash_on_px * scale_factor) / scale
+        dash_off_units = (base_dash_off_px * scale_factor) / scale
         return {
             "stroke": "#46505a",
             "width": width_units,
@@ -464,20 +343,41 @@ class SvgRenderer:
         indexed.sort(key=lambda item: (self._plan_polygon_layer_key(item[1]), item[0]))
         return [feature for _, feature in indexed]
 
-    def _ordered_polylines(self, bundle: GeometryBundle) -> List[PolylineFeature]:
-        indexed = list(enumerate(bundle.polylines))
-        if bundle.view != "plan":
-            return [feature for _, feature in indexed]
-        indexed.sort(key=lambda item: (self._plan_polyline_layer_key(item[1]), item[0]))
-        return [feature for _, feature in indexed]
-
     @staticmethod
     def _plan_polygon_layer_key(feature: PolygonFeature) -> float:
         return float(feature.elevation + feature.height)
 
     @staticmethod
-    def _plan_polyline_layer_key(feature: PolylineFeature) -> float:
-        return float(feature.elevation + feature.thickness)
+    def _material_attributes(feature: PolygonFeature) -> dict[str, str]:
+        attrs: dict[str, str] = {}
+        style = get_material_style(feature.material)
+        if style is not None:
+            if style.svg_fill:
+                attrs["fill"] = style.svg_fill
+            if style.svg_stroke:
+                attrs["stroke"] = style.svg_stroke
+        return attrs
+
+    @staticmethod
+    def _format_dash_value(value: float) -> str:
+        value = max(value, 0.0)
+        formatted = f"{value:.4f}".rstrip("0").rstrip(".")
+        return formatted or "0"
+
+    def _dash_override_css(self, dash_scale: float) -> str:
+        detail_on = 8.0 * dash_scale
+        detail_off = 6.0 * dash_scale
+        dim_on = 4.0 * dash_scale
+        dim_off = 4.0 * dash_scale
+        detail = (
+            f".component-detail {{ stroke-dasharray: "
+            f"{self._format_dash_value(detail_on)} {self._format_dash_value(detail_off)}; }}"
+        )
+        dims = (
+            f".dim-extension {{ stroke-dasharray: "
+            f"{self._format_dash_value(dim_on)} {self._format_dash_value(dim_off)}; }}"
+        )
+        return f"{detail}\n{dims}"
 
 
 def _polygon_to_path(
