@@ -47,7 +47,9 @@ class SvgRenderer:
         dash_scale: float = DEFAULT_DASH_SCALE,
     ) -> str:
         dash_scale = max(dash_scale, 0.01)
-        scene = SvgScene(pad=bundle.pad, scale=bundle.scale, background=bundle.background)
+        scene = SvgScene(
+            pad=bundle.pad, scale=bundle.scale, background=bundle.background
+        )
         if aria_label:
             scene.root.set("aria-label", aria_label)
         if title:
@@ -59,7 +61,9 @@ class SvgRenderer:
         if dash_scale != 1.0:
             scene.add_css(self._dash_override_css(dash_scale))
 
-        title_size, body_size, line_height = self._compute_font_metrics(bundle, scene.scale)
+        title_size, body_size, line_height = self._compute_font_metrics(
+            bundle, scene.scale
+        )
 
         polygons = self._ordered_polygons(bundle)
         # Polylines are intentionally skipped for this layering pass.
@@ -68,7 +72,9 @@ class SvgRenderer:
         seen_labels: set[str] = set()
         polygon_draws: List[PolygonRenderData] = []
         for feature in polygons:
-            instruction, draw_data = self._prepare_polygon(scene, feature, body_size, seen_labels)
+            instruction, draw_data = self._prepare_polygon(
+                scene, feature, body_size, seen_labels
+            )
             if instruction:
                 labels.append(instruction)
             if draw_data:
@@ -85,7 +91,9 @@ class SvgRenderer:
             self._render_labels(scene, labels)
 
         if bundle.legend:
-            self._render_legend(scene, bundle.legend, title_size, body_size, line_height)
+            self._render_legend(
+                scene, bundle.legend, title_size, body_size, line_height
+            )
 
         return scene.to_string()
 
@@ -300,12 +308,16 @@ class SvgRenderer:
             return paths
         return []
 
-    def _hidden_outline_style(self, bundle: GeometryBundle, dash_scale: float) -> dict[str, float]:
+    def _hidden_outline_style(
+        self, bundle: GeometryBundle, dash_scale: float
+    ) -> dict[str, float]:
         scale = bundle.scale or 1.0
-        width_px = 0.4
+        width_px = 0.2
         base_dash_on_px = 0.6
-        base_dash_off_px = 0.4
-        scale_factor = dash_scale / self.DEFAULT_DASH_SCALE if self.DEFAULT_DASH_SCALE else 1.0
+        base_dash_off_px = 0.6
+        scale_factor = (
+            dash_scale / self.DEFAULT_DASH_SCALE if self.DEFAULT_DASH_SCALE else 1.0
+        )
         width_units = width_px / scale
         dash_on_units = (base_dash_on_px * scale_factor) / scale
         dash_off_units = (base_dash_off_px * scale_factor) / scale
@@ -403,7 +415,9 @@ def _ring_to_segments(points: Sequence[Tuple[float, float]]) -> List[str]:
     return segments
 
 
-def _ring_bounds(points: Sequence[Tuple[float, float]]) -> Tuple[float, float, float, float]:
+def _ring_bounds(
+    points: Sequence[Tuple[float, float]],
+) -> Tuple[float, float, float, float]:
     xs = [pt[0] for pt in points]
     ys = [pt[1] for pt in points]
     return (min(xs), min(ys), max(xs), max(ys))
