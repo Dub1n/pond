@@ -288,6 +288,10 @@ All work in this phase must preserve the overarching goal: *semantic description
 - [ ] **Land the full relationship-first schema**
   - Build on the existing relationship-first loader: connect helper parsing to the solver and exporter paths.
   - Ship behind the `DIAGRAM_RELATIONSHIPS` feature flag; legacy anchor specs should remain loadable until migration completes.
+- [ ] **Standardise 3-axis sizes in schema**
+  - Collapse component `size`/`height` into a single `[x, y, z]` vector (missing axes default to 0).
+  - Positional tokens default to edge/face centres when a dimension is zero.
+  - Wire this through the relationship loader as the first solver implementation step.
 
 - [ ] **Implement the constraint solver + diagnostics layer**
   - Resolve face/edge/plane relationships deterministically.
@@ -301,22 +305,22 @@ All work in this phase must preserve the overarching goal: *semantic description
   - Deterministic ordering of constraints, relationships, and transforms.
   - All geometry must be reproducible byte-for-byte given the same YAML.
 
-- [ ] **Schema → CadQuery neutral bridge definition**
+- [ ] **Schema → CadQuery neutral bridge definition (3D-first)**
   - Finalise the canonical “neutral geometry block” emitted by the solver:
-    - Profile (rectangle/polyline), size, extrusion, local axes, material tag.
-    - Canonicalised placement (origin + orientation + extrusion direction).
-    - Component metadata (psets, labels, material, type).
-  - This becomes the unified input for CadQuery, glTF, STEP, and IFC.
+    - 3D solid primitive (box/wedge/sweep/tessellated) with canonicalised placement (origin + orientation + scale) and material tag.
+    - Optional stored profile/axis curve only when required for slices/IFC Axis reps.
+    - Component metadata (psets, labels, material, type) with deterministic IDs/GUID seeds.
+  - CadQuery is the default hub: solver → CadQuery solids → glTF/STEP/IFC/exported slices; direct solver → exporter is only a temporary bypass if needed.
 
 #### CadQuery integration & exports
 
 - [ ] **Adopt CadQuery (OCC-backed) as the primary solid modeller**
   - Every component becomes a solid: joists, beams, blocking, straps, deck slabs, openings.
-  - Attach canonical transforms and intrinsic metadata to each solid.
+  - Attach canonical transforms and intrinsic metadata to each solid; downstream exporters/renderers consume CadQuery output.
 
 - [ ] **Schema → CadQuery adapters**
-  - Rectangles become swept sections along canonical axes.
-  - Polyline-derived extrusions handled via profiles or tessellation.
+  - Components map directly to 3D solids (sweeps/boxes/tessellations) without intermediate 2D footprints.
+  - Profiles are generated only when slices/IFC Axis reps need them.
   - Repeat/mirror helpers expanded into explicit component transforms before baking into solids.
 
 - [ ] **Replace vertical anchor math with solver-driven face/edge constraints**
@@ -327,6 +331,7 @@ All work in this phase must preserve the overarching goal: *semantic description
     - Use OCC to generate section wires.
     - Convert wires to SVG primitives.
     - Apply existing styling routines.
+  - Footprints are projections of solids, not primary geometry inputs.
 
 - [ ] **glTF export overhaul**
   - Tessellate solids using OCC or convert CadQuery → trimesh.
