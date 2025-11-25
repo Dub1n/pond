@@ -88,7 +88,7 @@ YAML spec ──> Schema loader ──> DiagramPlanner ──> GeometryBundle �
 3. Write SVG to `diagrams/output/<spec>/<option>/<view>.svg`.
 4. Unless `--no-png` is passed (or `cairosvg` is missing), emit matching PNG using the rendered SVG string.
 5. Unless `--no-gltf` is passed, extrude plan geometry via `trimesh` and write `model.glb` (or `.gltf`) alongside the option.
-6. When `DIAGRAM_RELATIONSHIPS=1` is set and a spec declares `schema: pond-relationship*`, load via `diagramming.relationships`, solve to neutral CadQuery-backed box primitives with deterministic GUID seeds, project plan/section footprints via `RelationshipPlanner`, and reuse the same SVG/PNG/glTF pipeline. Assemblies and non-box solids remain future work.
+6. When `DIAGRAM_RELATIONSHIPS=1` is set and a spec declares `schema: pond-relationship*`, load via `diagramming.relationships`, solve to neutral CadQuery-backed box primitives with deterministic GUID seeds, project plan/section footprints via `RelationshipPlanner`, and reuse the same SVG/PNG/glTF/IFC pipeline. Assemblies and non-box solids remain future work.
 
 ### Command-Line Flags
 

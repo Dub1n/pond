@@ -28,7 +28,7 @@ try:  # optional dependency (pyrender + pyglet)
 except ImportError:  # pragma: no cover - optional dependency path
     render_orthographic_png = None  # type: ignore[misc]
 from diagramming.schema import DiagramSpec, load_spec
-from diagramming.planner.exporters import GltfExporter, GltfExportOptions
+from diagramming.planner.exporters import GltfExporter, GltfExportOptions, IfcExporter, IfcExportOptions
 
 
 SVG_DASH_SCALE = SvgRenderer.DEFAULT_DASH_SCALE
@@ -98,6 +98,11 @@ def parse_args(argv: Optional[List[str]] = None) -> argparse.Namespace:
         default=1024,
         help="Output size (pixels) for the orthographic PNG (default: 1024).",
     )
+    parser.add_argument(
+        "--no-ifc",
+        action="store_true",
+        help="Skip IFC export for relationship-first specs.",
+    )
     return parser.parse_args(argv)
 
 
@@ -130,6 +135,7 @@ def main(argv: Optional[List[str]] = None) -> int:
     gltf_requested = not args.no_gltf
     gltf_options = GltfExportOptions(file_format=args.gltf_format)
     gltf_exporter = GltfExporter(gltf_options) if gltf_requested else None
+    ifc_exporter = IfcExporter(IfcExportOptions()) if not args.no_ifc else None
 
     for spec_path in spec_paths:
         raw = yaml.safe_load(spec_path.read_text(encoding="utf-8"))
@@ -210,6 +216,15 @@ def main(argv: Optional[List[str]] = None) -> int:
                     print(f"  Skipped glTF export: {exc}")
                 else:
                     print(f"  Wrote {(gltf_path.relative_to(outdir))}")
+            if ifc_exporter:
+                ifc_path = outdir / spec_name / (relationship_spec.info.option or "relationship") / "model.ifc"
+                ifc_path.parent.mkdir(parents=True, exist_ok=True)
+                try:
+                    ifc_exporter.export(solve_result.primitives, ifc_path)
+                except ValueError as exc:
+                    print(f"  Skipped IFC export: {exc}")
+                else:
+                    print(f"  Wrote {(ifc_path.relative_to(outdir))}")
             continue
         spec = load_spec(spec_path, include_options=args.options)
         planner = DiagramPlanner(spec)

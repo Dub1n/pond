@@ -6,6 +6,7 @@ from tempfile import TemporaryDirectory
 from textwrap import dedent
 
 from diagramming.relationships import ConstraintSolver, load_relationship_spec
+from diagramming.planner.exporters import IfcExporter
 
 
 class RelationshipSolverTests(unittest.TestCase):
@@ -247,6 +248,43 @@ class RelationshipSolverTests(unittest.TestCase):
         graph_targets = result.diagnostics.constraint_graph["runner"]
         self.assertTrue(any("datums.start" in target for target in graph_targets))
         self.assertTrue(any("datums.end" in target for target in graph_targets))
+
+    def test_ifc_export_from_relationship_primitives(self) -> None:
+        spec_text = dedent(
+            """
+            schema: pond-relationship-test
+            info:
+              option: ifc
+            datums:
+              origin:
+                type: point
+                coordinates:
+                  +x: 0
+                  +y: 0
+                  +z: 0
+            components:
+              - id: slab
+                class: IfcSlab
+                size: [2000, 1000, 50]
+                material: decking
+                ifc:
+                  predefined_type: FLOOR
+            """
+        )
+        with TemporaryDirectory() as tmp:
+            path = Path(tmp) / "ifc.yaml"
+            path.write_text(spec_text, encoding="utf-8")
+            spec = load_relationship_spec(path)
+            solver = ConstraintSolver(spec)
+            result = solver.solve()
+            exporter = IfcExporter()
+            out_path = Path(tmp) / "model.ifc"
+            exporter.export(result.primitives, out_path)
+            self.assertTrue(out_path.exists())
+            import ifcopenshell  # local import to avoid test import dependency when unused
+
+            model = ifcopenshell.open(out_path)
+            self.assertTrue(model.by_type("IfcSlab"))
 
 
 if __name__ == "__main__":  # pragma: no cover

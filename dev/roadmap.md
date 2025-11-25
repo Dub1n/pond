@@ -333,8 +333,8 @@ All work in this phase must preserve the overarching goal: *semantic description
     - Apply existing styling routines.
   - Footprints are projections of solids, not primary geometry inputs.
 
-- [ ] **glTF export overhaul**
-  - Tessellate solids using OCC or convert CadQuery → trimesh.
+- [x] **glTF export overhaul**
+  - Tessellate solids using OCC or convert CadQuery → trimesh. **Progress:** relationship-first builds tessellate CadQuery solids directly for glTF; metadata flows through mesh extras.
   - Emit `model.glb` with full component metadata under `extras`.
 
 - [ ] **STEP/OBJ export path**
@@ -346,6 +346,7 @@ All work in this phase must preserve the overarching goal: *semantic description
   - 3D model context.
   - Axis + Body subcontexts.
   - UnitAssignment: **millimetres**, **degrees**.
+  - **Progress:** relationship-first exporter now writes a minimal IFC4 model context with Body subcontext in millimetres.
 
 - [ ] **Correct class + predefined type mapping**
   - Joists → `IfcBeam` (`PredefinedType=JOIST`)
@@ -357,7 +358,7 @@ All work in this phase must preserve the overarching goal: *semantic description
 
 - [ ] **Axis + Body representations**
   - Axis representation: local +X curve for linear elements.
-  - Body representation: swept solid (`IfcExtrudedAreaSolid`) unless geometry requires tessellation.
+  - Body representation: swept solid (`IfcExtrudedAreaSolid`) unless geometry requires tessellation. **Progress:** tessellated Body representations emitted from CadQuery solids; swept profiles still TODO.
 
 - [ ] **Material assignments**
   - Linear members: `IfcMaterialProfileSetUsage` (rect profile).

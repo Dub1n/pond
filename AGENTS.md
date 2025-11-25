@@ -3,7 +3,7 @@
 ## Project Structure & Module Organization
 
 - `diagramming/` – core engine; planner logic in `planner/`, schema loaders in `schema/`, renderers in `renderers/`, material palette in `materials.py`.
-- `diagramming/relationships/` – relationship-first schema loader/lint + solver (opt-in via `schema: pond-relationship*`, feature flag `DIAGRAM_RELATIONSHIPS=1`) emitting neutral CadQuery-backed primitives plus plan/section projections.
+- `diagramming/relationships/` – relationship-first schema loader/lint + solver (opt-in via `schema: pond-relationship*`, feature flag `DIAGRAM_RELATIONSHIPS=1`) emitting neutral CadQuery-backed primitives plus plan/section projections and exporter-ready metadata.
 - `diagrams/specs/` – author-facing YAML specs; long-lived revisions live under `archive/`.
 - `diagrams/output/` – generated artefacts (`plan.svg/png`, `section.svg/png`, `model.glb`). Git-ignored; regenerate on demand.
 - `scripts/` – CLI entry points (`build_diagrams.py`).
@@ -12,10 +12,10 @@
 
 ## Build, Test, and Development Commands
 
-- `python3 -m pip install -r requirements.txt` – installs Shapely, CadQuery (OCC), trimesh, pygltflib, mapbox-earcut, cairosvg.
+- `python3 -m pip install -r requirements.txt` – installs Shapely, CadQuery (OCC), trimesh, pygltflib, mapbox-earcut, ifcopenshell, cairosvg.
 - `source .venv/bin/activate` (after `python3 -m venv .venv`) – activate virtualenv before running commands.
 - `python scripts/build_diagrams.py --spec archive/diagrams/specs/deck-framing.yaml --option A --outdir diagrams/output --force` – regenerate plan/section PNG/SVG plus `model.glb` for Option A.
-- Flags: `--no-png`, `--no-gltf`, `--gltf-format gltf`, `--spec` (multi-select), `--option`.
+- Flags: `--no-png`, `--no-gltf`, `--no-ifc`, `--gltf-format gltf`, `--spec` (multi-select), `--option`.
 - `python -m unittest discover` – run Phase 1 test suite.
 - `python scripts/lint_specs.py [--relationship-only|--legacy-only]` – lint specs, including relationship-first examples (rendering blocked until solver lands).
 - Legacy specs may include optional `ifc` blocks (`predefined_type`, `psets`); the loader carries them through feature/mesh metadata for IFC-ready exports later.

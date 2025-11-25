@@ -6,7 +6,6 @@ from dataclasses import dataclass, field
 from typing import Any, Dict, Iterable, List, Mapping, Optional, Sequence, Tuple
 
 import cadquery as cq
-from cadquery import exporters as cq_exporters
 import numpy as np
 from shapely.geometry import MultiPoint, Polygon as ShapelyPolygon
 import trimesh
@@ -625,14 +624,14 @@ class ConstraintSolver:
         solid = wp.val()
 
         try:
-            vertices, _faces = cq_exporters.tessellate(solid)
+            vertices, _faces = solid.tessellate(0.5)
         except Exception:
             return solid, None
 
         if not vertices:
             return solid, None
 
-        hull = MultiPoint([(x, y) for x, y, _ in vertices]).convex_hull
+        hull = MultiPoint([(vec.x, vec.y) for vec in vertices]).convex_hull
         if hull.is_empty or not isinstance(hull, ShapelyPolygon):
             return solid, None
         return solid, hull
@@ -678,12 +677,12 @@ class ConstraintSolver:
     def _mesh_from_primitive(self, primitive: NeutralPrimitive) -> Optional[trimesh.Trimesh]:
         if primitive.solid is not None:
             try:
-                vertices, faces = cq_exporters.tessellate(primitive.solid)
+                vectors, faces = primitive.solid.tessellate(0.5)
             except Exception:
-                vertices, faces = (), ()
-            if vertices and faces:
+                vectors, faces = (), ()
+            if vectors and faces:
                 mesh = trimesh.Trimesh(
-                    vertices=np.array(vertices) * MM_TO_METERS,
+                    vertices=np.array([[v.x, v.y, v.z] for v in vectors]) * MM_TO_METERS,
                     faces=np.array(faces),
                     process=False,
                 )

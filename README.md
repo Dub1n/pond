@@ -7,19 +7,19 @@ This repository now builds the pond deck diagrams procedurally from YAML specs.
 ### Quick start
 
 ```bash
-python3 -m pip install -r requirements.txt  # installs Shapely, CadQuery (OCC), trimesh, pygltflib, mapbox-earcut
+python3 -m pip install -r requirements.txt  # installs Shapely, CadQuery (OCC), trimesh, pygltflib, mapbox-earcut, ifcopenshell
 python3 scripts/build_diagrams.py
 ```
 
 SVGs (and PNGs when `cairosvg` is available) will be written to `diagrams/output/<spec>/<option>/`.
-Use `--no-png` if you only need SVG output. A glTF model (`model.glb` by default) is emitted alongside each option; disable it with `--no-gltf` or switch to `.gltf` with `--gltf-format gltf`.
+Use `--no-png` if you only need SVG output. A glTF model (`model.glb` by default) is emitted alongside each option; disable it with `--no-gltf` or switch to `.gltf` with `--gltf-format gltf`. Relationship-first builds also emit an IFC model (`model.ifc`); skip it with `--no-ifc`.
 Pass `--orthographic` to also emit a headless 3D orthographic snapshot (`orthographic.png`); the flag requires the optional `pyrender`/`pyglet` dependencies shipped in `requirements.txt`.
 
 ### Relationship-first prep schema
 
 - Specs marked `schema: pond-relationship*` are lintable now via `python3 scripts/lint_specs.py` and renderable when `DIAGRAM_RELATIONSHIPS=1` is set. Without the flag, the CLI skips relationship-first specs.
 - The prep schema uses signed axis tokens, datums/bundles, helpers (`align`, `contact`, `flush_bundle`, `run_between`, `relate_from`), and a `checks` block; see `docs/relationship-schema-reference.md` plus the worked example in `docs/examples/option-c-relationship.yaml`.
-- Relationship solving outputs neutral CadQuery-backed box primitives with deterministic GUID seeds, plan/section projections, and glTF via the existing exporters; wedges/sweeps remain future extensions.
+- Relationship solving outputs neutral CadQuery-backed box primitives with deterministic GUID seeds, plan/section projections, and glTF/IFC exports; wedges/sweeps remain future extensions.
 - Legacy specs can optionally include `ifc` blocks (`predefined_type`, `psets`); the loader normalises IFC class names/pset names and preserves them in feature/mesh metadata for IFC-ready exports.
 
 ### Blender export
@@ -60,7 +60,7 @@ Set the top-level `scale` (pixels per unit) to produce comfortably sized SVG/PNG
 - Shapely-backed planner metadata allows extrusion via `trimesh`, producing glTF/GLB models with component metadata embedded for downstream tooling. The same canonical scene feeds both plan/section slices and exporters so they stay in sync.
 - Material palette keeps SVG fills and glTF base colours in sync via simple `material` keys in specs.
 - Plan renderer clips covered structural fills against higher layers and replays hidden geometry only as dashed overlays, so deck surfaces mask joists/beams while keeping hidden edges legible for QA.
-- Future validation/back-end options (pythonOCC/STEP/IFC/FreeCAD) are tracked in `roadmap.md`; legacy planner remains the canonical geometry source for non-relationship specs while CadQuery-backed solids drive the relationship path.
+- Future validation/back-end options (pythonOCC/STEP/FreeCAD) are tracked in `roadmap.md`; legacy planner remains the canonical geometry source for non-relationship specs while CadQuery-backed solids drive the relationship path (glTF + IFC exports).
 
 ### Roadmap: “just works” architecture
 
