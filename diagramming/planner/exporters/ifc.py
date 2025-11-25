@@ -97,7 +97,7 @@ class IfcExporter:
         )
         if primitive.guid:
             try:
-                product.GlobalId = ifcopenshell.guid.compress(uuid.UUID(primitive.guid))
+                product.GlobalId = ifcopenshell.guid.compress(str(uuid.UUID(primitive.guid)))
             except Exception:
                 product.GlobalId = product.GlobalId
         product.Tag = primitive.guid

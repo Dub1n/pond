@@ -5,8 +5,14 @@ from pathlib import Path
 from tempfile import TemporaryDirectory
 from textwrap import dedent
 
+import uuid
+
+import ifcopenshell
+import ifcopenshell.guid
+
 from diagramming.relationships import ConstraintSolver, load_relationship_spec
 from diagramming.planner.exporters import IfcExporter
+from diagramming.relationships.solver import GUID_NAMESPACE
 
 
 class RelationshipSolverTests(unittest.TestCase):
@@ -285,6 +291,83 @@ class RelationshipSolverTests(unittest.TestCase):
 
             model = ifcopenshell.open(out_path)
             self.assertTrue(model.by_type("IfcSlab"))
+
+    def test_neutral_primitive_carries_cadquery_footprint(self) -> None:
+        spec_text = dedent(
+            """
+            schema: pond-relationship-test
+            info:
+              option: footprint
+            datums:
+              origin:
+                type: point
+                coordinates:
+                  +x: 0
+                  +y: 0
+                  +z: 0
+            components:
+              - id: block
+                class: IfcMember
+                size: [500, 200, 100]
+                material: timber
+            """
+        )
+        with TemporaryDirectory() as tmp:
+            path = Path(tmp) / "footprint.yaml"
+            path.write_text(spec_text, encoding="utf-8")
+            spec = load_relationship_spec(path)
+        solver = ConstraintSolver(spec)
+        result = solver.solve()
+        self.assertTrue(result.primitives)
+        primitive = result.primitives[0]
+        self.assertIsNotNone(primitive.solid)
+        self.assertIsNotNone(primitive.footprint)
+        if primitive.footprint:
+            self.assertGreater(primitive.footprint.area, 0.0)
+            self.assertAlmostEqual(primitive.footprint.area, 500.0 * 200.0, delta=1e-3)
+
+    def test_ifc_export_preserves_stable_guid_and_body_context(self) -> None:
+        option = "guid"
+        component_id = "slab"
+        spec_text = dedent(
+            f"""
+            schema: pond-relationship-test
+            info:
+              option: {option}
+            datums:
+              origin:
+                type: point
+                coordinates:
+                  +x: 0
+                  +y: 0
+                  +z: 0
+            components:
+              - id: {component_id}
+                class: IfcSlab
+                size: [1000, 500, 50]
+                material: decking
+            """
+        )
+        with TemporaryDirectory() as tmp:
+            path = Path(tmp) / "guid.yaml"
+            path.write_text(spec_text, encoding="utf-8")
+            spec = load_relationship_spec(path)
+            solver = ConstraintSolver(spec)
+            result = solver.solve()
+            exporter = IfcExporter()
+            out_path = Path(tmp) / "model.ifc"
+            exporter.export(result.primitives, out_path)
+            model = ifcopenshell.open(out_path)
+        slabs = model.by_type("IfcSlab")
+        self.assertEqual(len(slabs), 1)
+        slab = slabs[0]
+        expected_guid = ifcopenshell.guid.compress(str(uuid.UUID(result.primitives[0].guid)))
+        self.assertEqual(slab.GlobalId, expected_guid)
+        self.assertEqual(slab.Tag, result.primitives[0].guid)
+        body_contexts = [
+            ctx for ctx in model.by_type("IfcGeometricRepresentationSubContext") if ctx.ContextIdentifier == "Body"
+        ]
+        self.assertTrue(body_contexts)
 
 
 if __name__ == "__main__":  # pragma: no cover
