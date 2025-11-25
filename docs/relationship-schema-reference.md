@@ -18,7 +18,7 @@ This document captures the prep surface for the relationship-first schema descri
 
 ### Feature flag
 
-- The relationship-first path is gated by `POND_RELATIONSHIPS=1` for future solver/CadQuery hookups. For now it only influences diagnostics; rendering still refuses relationship-first specs.
+- The relationship-first path is gated by `DIAGRAM_RELATIONSHIPS=1` for future solver/CadQuery hookups. For now it only influences diagnostics; rendering still refuses relationship-first specs.
 
 ### Reference example
 

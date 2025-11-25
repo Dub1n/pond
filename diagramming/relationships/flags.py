@@ -4,7 +4,7 @@ import os
 from typing import Any
 
 
-_ENV_FLAG = "POND_RELATIONSHIPS"
+_ENV_FLAG = "DIAGRAM_RELATIONSHIPS"
 _SCHEMA_PREFIX = "pond-relationship"
 
 

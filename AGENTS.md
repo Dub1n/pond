@@ -3,7 +3,7 @@
 ## Project Structure & Module Organization
 
 - `diagramming/` – core engine; planner logic in `planner/`, schema loaders in `schema/`, renderers in `renderers/`, material palette in `materials.py`.
-- `diagramming/relationships/` – relationship-first schema loader/lint + solver stub (opt-in via `schema: pond-relationship*`, feature flag `POND_RELATIONSHIPS=1`).
+- `diagramming/relationships/` – relationship-first schema loader/lint + solver stub (opt-in via `schema: pond-relationship*`, feature flag `DIAGRAM_RELATIONSHIPS=1`).
 - `diagrams/specs/` – author-facing YAML specs; long-lived revisions live under `archive/`.
 - `diagrams/output/` – generated artefacts (`plan.svg/png`, `section.svg/png`, `model.glb`). Git-ignored; regenerate on demand.
 - `scripts/` – CLI entry points (`build_diagrams.py`).

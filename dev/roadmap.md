@@ -268,7 +268,7 @@ All work in this phase must preserve the overarching goal: *semantic description
 
 **Current prep state**
 
-- [x] Relationship-first schema loader + linter scaffolded under `diagramming/relationships` with signed-axis tokens, datums/bundles, helper clauses, IFC metadata, and a CLI guard. Specs opt in via `schema: pond-relationship*`; rendering is still legacy-only pending solver/solids. Feature flag: `POND_RELATIONSHIPS=1`.
+- [x] Relationship-first schema loader + linter scaffolded under `diagramming/relationships` with signed-axis tokens, datums/bundles, helper clauses, IFC metadata, and a CLI guard. Specs opt in via `schema: pond-relationship*`; rendering is still legacy-only pending solver/solids. Feature flag: `DIAGRAM_RELATIONSHIPS=1`.
 - [x] Relationship-first example spec and fixtures in `docs/examples/option-c-relationship.yaml` and `diagramming/tests/fixtures/relationship_minimal.yaml`; tests cover token canonicalisation and linting.
 - [x] CLI lint entrypoint (`scripts/lint_specs.py`) handles both legacy and relationship-first specs.
 
@@ -287,7 +287,7 @@ All work in this phase must preserve the overarching goal: *semantic description
 
 - [ ] **Land the full relationship-first schema**
   - Build on the existing relationship-first loader: connect helper parsing to the solver and exporter paths.
-  - Ship behind the `POND_RELATIONSHIPS` feature flag; legacy anchor specs should remain loadable until migration completes.
+  - Ship behind the `DIAGRAM_RELATIONSHIPS` feature flag; legacy anchor specs should remain loadable until migration completes.
 
 - [ ] **Implement the constraint solver + diagnostics layer**
   - Resolve face/edge/plane relationships deterministically.

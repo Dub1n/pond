@@ -122,11 +122,7 @@ def main(argv: Optional[List[str]] = None) -> int:
     for spec_path in spec_paths:
         raw = yaml.safe_load(spec_path.read_text(encoding="utf-8"))
         if isinstance(raw, dict) and is_relationship_schema(raw.get("schema")):
-            flag_notice = (
-                " Set POND_RELATIONSHIPS=1 once the solver is ready."
-                if not relationship_mode_enabled()
-                else ""
-            )
+            flag_notice = " Set DIAGRAM_RELATIONSHIPS=1 once the solver is ready." if not relationship_mode_enabled() else ""
             print(
                 f"Spec {spec_path} is marked as relationship-first; "
                 "build_diagrams currently supports legacy specs only. "
