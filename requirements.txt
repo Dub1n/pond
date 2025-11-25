@@ -3,6 +3,7 @@ Shapely>=2.0
 trimesh>=4.0
 pygltflib>=1.16
 mapbox-earcut>=1.0
+cadquery>=2.4
 cairosvg>=2.7  # optional; required only when using --png
 pyrender>=0.1.45
 pyglet>=2.0.10

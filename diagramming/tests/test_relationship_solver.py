@@ -124,6 +124,130 @@ class RelationshipSolverTests(unittest.TestCase):
         for comp in result.components:
             self.assertAlmostEqual(comp.transform.rotation[2], 0.0)
 
+    def test_under_constrained_axes_reported(self) -> None:
+        spec_text = dedent(
+            """
+            schema: pond-relationship-test
+            info:
+              option: under
+            datums:
+              origin:
+                type: point
+                coordinates:
+                  +x: 0
+                  +y: 0
+                  +z: 0
+            components:
+              - id: floating
+                class: IfcBeam
+                size: [100, 50, 25]
+            """
+        )
+        with TemporaryDirectory() as tmp:
+            path = Path(tmp) / "under.yaml"
+            path.write_text(spec_text, encoding="utf-8")
+            spec = load_relationship_spec(path)
+        solver = ConstraintSolver(spec)
+        result = solver.solve()
+        self.assertFalse(result.diagnostics.ok)
+        self.assertIn("floating", result.diagnostics.degrees_of_freedom)
+        errors = [err.message for err in result.diagnostics.errors]
+        self.assertTrue(any("under-constrained" in msg for msg in errors))
+
+    def test_over_constrained_axis_reports_error(self) -> None:
+        spec_text = dedent(
+            """
+            schema: pond-relationship-test
+            info:
+              option: over
+            datums:
+              left:
+                type: point
+                coordinates:
+                  +x: 0
+              right:
+                type: point
+                coordinates:
+                  +x: 1000
+            components:
+              - id: beam
+                class: IfcBeam
+                size: [200, 100, 50]
+                relate:
+                  - align:
+                      subject:
+                        component: beam
+                        pos: +x
+                      object:
+                        datum: datums.left
+                        pos: +x
+                      tolerance: 0.1
+                  - align:
+                      subject:
+                        component: beam
+                        pos: +x
+                      object:
+                        datum: datums.right
+                        pos: +x
+                      tolerance: 0.1
+            """
+        )
+        with TemporaryDirectory() as tmp:
+            path = Path(tmp) / "over.yaml"
+            path.write_text(spec_text, encoding="utf-8")
+            spec = load_relationship_spec(path)
+        solver = ConstraintSolver(spec)
+        result = solver.solve()
+        self.assertFalse(result.diagnostics.ok)
+        errors = [err.message for err in result.diagnostics.errors]
+        self.assertTrue(any("over-constrained" in msg for msg in errors))
+
+    def test_run_between_missing_axis_reports_error_and_graph(self) -> None:
+        spec_text = dedent(
+            """
+            schema: pond-relationship-test
+            info:
+              option: graph
+            datums:
+              start:
+                type: point
+                coordinates:
+                  +x: 0
+              end:
+                type: point
+                coordinates:
+                  +x: 500
+            components:
+              - id: runner
+                class: IfcBeam
+                size: [100, 50, 10]
+                relate:
+                  - run_between:
+                      start_pos: +z
+                      end_pos: +z
+                      from:
+                        datum: datums.start
+                        pos: +z
+                      to:
+                        datum: datums.end
+                        pos: +z
+                      count: 2
+            """
+        )
+        with TemporaryDirectory() as tmp:
+            path = Path(tmp) / "graph.yaml"
+            path.write_text(spec_text, encoding="utf-8")
+            spec = load_relationship_spec(path)
+        solver = ConstraintSolver(spec)
+        result = solver.solve()
+        self.assertFalse(result.diagnostics.ok)
+        errors = [err.message for err in result.diagnostics.errors]
+        self.assertTrue(any("run_between references unknown target" in msg for msg in errors))
+        self.assertIn("runner", result.diagnostics.constraint_graph)
+        graph_targets = result.diagnostics.constraint_graph["runner"]
+        self.assertTrue(any("datums.start" in target for target in graph_targets))
+        self.assertTrue(any("datums.end" in target for target in graph_targets))
+
 
 if __name__ == "__main__":  # pragma: no cover
     unittest.main()

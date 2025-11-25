@@ -63,7 +63,9 @@ class RelationshipPlanner:
     # ------------------------------------------------------------------ #
     def _footprint_features(self, primitives: Sequence[NeutralPrimitive]) -> Iterable[PolygonFeature]:
         for primitive in primitives:
-            shape = self._footprint_polygon(primitive)
+            shape = primitive.footprint or self._footprint_polygon(primitive)
+            if shape is None or shape.is_empty:
+                continue
             outer = tuple(shape.exterior.coords)
             feature = PolygonFeature(
                 id=primitive.id,

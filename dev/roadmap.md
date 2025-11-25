@@ -293,8 +293,8 @@ All work in this phase must preserve the overarching goal: *semantic description
   - Positional tokens default to edge/face centres when a dimension is zero.
   - Wire this through the relationship loader as the first solver implementation step.
 
-- [ ] **Implement the constraint solver + diagnostics layer**
-  - Resolve face/edge/plane relationships deterministically. **Progress:** box-only solver emits neutral primitives with DOF/check diagnostics and deterministic GUID seeds; assemblies and non-box solids remain.
+- [x] **Implement the constraint solver + diagnostics layer**
+  - Resolve face/edge/plane relationships deterministically. **Progress:** box-only solver emits CadQuery-backed neutral primitives with DOF/check diagnostics, constraint graph export, and deterministic GUID seeds; assemblies and non-box solids remain.
   - Produce canonical transforms for each component (local placement, rotation, flip, inset).
   - Detect and surface **under-constrained**, **over-constrained**, and **inconsistent** relationships.
   - Export the constraint graph + DOF report for debugging.
@@ -305,17 +305,17 @@ All work in this phase must preserve the overarching goal: *semantic description
   - Deterministic ordering of constraints, relationships, and transforms.
   - All geometry must be reproducible byte-for-byte given the same YAML.
 
-- [ ] **Schema → CadQuery neutral bridge definition (3D-first)**
+- [x] **Schema → CadQuery neutral bridge definition (3D-first)**
   - Finalise the canonical “neutral geometry block” emitted by the solver:
-    - 3D solid primitive (box/wedge/sweep/tessellated) with canonicalised placement (origin + orientation + scale) and material tag.
+    - 3D solid primitive (box for now, leaving room for wedge/sweep/tessellated to be added later) with canonicalised placement (origin + orientation + scale) and material tag.
     - Optional stored profile/axis curve only when required for slices/IFC Axis reps.
     - Component metadata (psets, labels, material, type) with deterministic IDs/GUID seeds.
-  - CadQuery is the default hub: solver → CadQuery solids → glTF/STEP/IFC/exported slices; direct solver → exporter is only a temporary bypass if needed.
+  - CadQuery is the default hub: solver → CadQuery solids → glTF/STEP/IFC/exported slices; direct solver → exporter is only a temporary bypass if needed. **Progress:** solver now returns CadQuery solids plus OCC-derived footprints; wedges/sweeps remain TODO.
 
 #### CadQuery integration & exports
 
 - [ ] **Adopt CadQuery (OCC-backed) as the primary solid modeller**
-  - Every component becomes a solid: joists, beams, blocking, straps, deck slabs, openings.
+  - Every component becomes a solid: joists, beams, blocking, straps, deck slabs, openings. **Progress:** box primitives are CadQuery solids; non-box profiles and assemblies remain.
   - Attach canonical transforms and intrinsic metadata to each solid; downstream exporters/renderers consume CadQuery output.
 
 - [ ] **Schema → CadQuery adapters**

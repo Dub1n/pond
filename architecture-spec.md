@@ -2,7 +2,7 @@
 
 ## Overview
 
-Phase 1 delivers a deterministic 2D pipeline that converts declarative YAML specs into SVG (and optional PNG) diagrams. The goal is to minimise hand-tuned geometry while keeping the stack lightweight and easy to extend in later phases. A relationship-first loader/solver now exists in `diagramming/relationships` (feature-flagged via `DIAGRAM_RELATIONSHIPS=1`) to stage the next-generation schema; behind the flag it resolves neutral box primitives, projects plan/sections, and feeds the existing renderers, while the legacy planner remains the default until CadQuery solids land.
+Phase 1 delivers a deterministic 2D pipeline that converts declarative YAML specs into SVG (and optional PNG) diagrams. The goal is to minimise hand-tuned geometry while keeping the stack lightweight and easy to extend in later phases. A relationship-first loader/solver now exists in `diagramming/relationships` (feature-flagged via `DIAGRAM_RELATIONSHIPS=1`) to stage the next-generation schema; behind the flag it resolves neutral CadQuery-backed box primitives, projects plan/sections, and feeds the existing renderers, while the legacy planner remains the default for non-relationship specs.
 
 ```diagram
 YAML spec ──> Schema loader ──> DiagramPlanner ──> GeometryBundle ──> SVG/PNG/GLB files
@@ -63,7 +63,7 @@ YAML spec ──> Schema loader ──> DiagramPlanner ──> GeometryBundle �
 - `PolygonFeature` tracks Shapely polygons (with optional holes) and stores `height`/`elevation` so downstream exporters can extrude directly.
 - Vertical placement data (`component.vertical`) is resolved against recorded elevations so pads, beams, and even zero-height datums can align in Z without hard-coded offsets.
 - Legends are auto-built from unique `(label, label_id)` pairs.
-- Potential future integrations (CadQuery, pythonOCC, FreeCAD, Blender) would sit alongside the planner; see `roadmap.md` for evaluation details before embedding heavier kernels.
+- Potential future integrations (STEP/IFC exporters, wedges/sweeps) will extend the CadQuery solids already produced by the relationship path; see `roadmap.md` for evaluation details before embedding heavier kernels elsewhere.
 
 ## Rendering Layer
 
@@ -88,7 +88,7 @@ YAML spec ──> Schema loader ──> DiagramPlanner ──> GeometryBundle �
 3. Write SVG to `diagrams/output/<spec>/<option>/<view>.svg`.
 4. Unless `--no-png` is passed (or `cairosvg` is missing), emit matching PNG using the rendered SVG string.
 5. Unless `--no-gltf` is passed, extrude plan geometry via `trimesh` and write `model.glb` (or `.gltf`) alongside the option.
-6. When `DIAGRAM_RELATIONSHIPS=1` is set and a spec declares `schema: pond-relationship*`, load via `diagramming.relationships`, solve to neutral box primitives with deterministic GUID seeds, project plan/section footprints via `RelationshipPlanner`, and reuse the same SVG/PNG/glTF pipeline. Assemblies and non-box solids remain future work.
+6. When `DIAGRAM_RELATIONSHIPS=1` is set and a spec declares `schema: pond-relationship*`, load via `diagramming.relationships`, solve to neutral CadQuery-backed box primitives with deterministic GUID seeds, project plan/section footprints via `RelationshipPlanner`, and reuse the same SVG/PNG/glTF pipeline. Assemblies and non-box solids remain future work.
 
 ### Command-Line Flags
 

@@ -3,9 +3,12 @@ from __future__ import annotations
 import math
 import uuid
 from dataclasses import dataclass, field
-from typing import Dict, Iterable, List, Mapping, Optional, Sequence, Tuple
+from typing import Any, Dict, Iterable, List, Mapping, Optional, Sequence, Tuple
 
+import cadquery as cq
+from cadquery import exporters as cq_exporters
 import numpy as np
+from shapely.geometry import MultiPoint, Polygon as ShapelyPolygon
 import trimesh
 
 from .schema import (
@@ -22,6 +25,7 @@ GUID_NAMESPACE = uuid.UUID("6c7b3d9e-4f21-4b06-9fbf-2a6e2d6a8b2c")
 
 AxisSign = int
 AxisName = str
+MM_TO_METERS = 0.001
 
 
 def _axes_from_pos(pos_token: str) -> List[Tuple[AxisName, AxisSign]]:
@@ -111,6 +115,8 @@ class NeutralPrimitive:
     metadata: Dict[str, object]
     transform: ComponentTransform
     guid: str
+    solid: Optional[Any] = None
+    footprint: Optional[ShapelyPolygon] = None
     ifc: Optional[Dict[str, object]] = None
 
 
@@ -182,6 +188,8 @@ class ReferenceResolver:
             bundle = self.datum_bundles[ref]
             origin = bundle["origin"]
             span = bundle["span"]
+            if axis not in origin:
+                return None
             base = origin.get(axis, 0.0)
             if sign > 0:
                 return base + span.get(f"+{axis}", span.get(axis, 0.0))
@@ -189,11 +197,11 @@ class ReferenceResolver:
 
         if ref in self.datum_planes:
             coords = self.datum_planes[ref]
-            return coords.get(axis, 0.0)
+            return coords.get(axis, None)
 
         if ref in self.datum_points:
             coords = self.datum_points[ref]
-            return coords.get(axis, 0.0)
+            return coords.get(axis, None)
 
         return None
 
@@ -291,8 +299,13 @@ class ConstraintSolver:
             coords: Dict[str, float] = {"x": 0.0, "y": 0.0, "z": 0.0}
             for axis, sign in axes:
                 value = resolver.axis_coordinate(target_ref, axis, sign)
-                if value is not None:
-                    coords[axis] = value
+                if value is None:
+                    diagnostics.add_error(
+                        f"component '{component.id}' run_between references unknown target '{target_ref}' on {axis}",
+                        subject=component.id,
+                    )
+                    continue
+                coords[axis] = value
             return coords
 
         start_point = point_for(clause.from_ref.ref, start_axes)
@@ -467,6 +480,13 @@ class ConstraintSolver:
         sign = 1 if repeat.axis[0] == "+" else -1
 
         span_length = self._span_length(repeat.span_use, resolver)
+        if repeat.span_use:
+            diagnostics.record_graph_edge(component.id, repeat.span_use)
+        if repeat.span_use and span_length is None:
+            diagnostics.add_error(
+                f"component '{component.id}' repeat span reference '{repeat.span_use}' could not be resolved",
+                subject=component.id,
+            )
         available_length = None
         if span_length is not None:
             available_length = max(span_length - repeat.inset_start - repeat.inset_end, 0.0)
@@ -574,6 +594,7 @@ class ConstraintSolver:
                 metadata.setdefault("ifc", ifc_dict)
         if component.description:
             metadata.setdefault("description", component.description)
+        solid, footprint = self._build_cadquery_block(component, transform)
         return NeutralPrimitive(
             id=instance_id,
             class_name=component.class_name,
@@ -582,8 +603,39 @@ class ConstraintSolver:
             metadata=metadata,
             transform=transform,
             guid=guid,
+            solid=solid,
+            footprint=footprint,
             ifc=_ifc_to_dict(component.ifc),
         )
+
+    def _build_cadquery_block(
+        self,
+        component: RelationshipComponent,
+        transform: ComponentTransform,
+    ) -> Tuple[Optional[Any], Optional[ShapelyPolygon]]:
+        if component.height <= 0.0 or component.size_xy[0] <= 0.0 or component.size_xy[1] <= 0.0:
+            return None, None
+
+        wp = cq.Workplane("XY").box(component.size_xy[0], component.size_xy[1], component.height, centered=True)
+        rotation_z = transform.rotation[2]
+        if rotation_z:
+            wp = wp.rotate((0, 0, 0), (0, 0, 1), rotation_z)
+        pos = transform.position
+        wp = wp.translate((pos[0], pos[1], pos[2]))
+        solid = wp.val()
+
+        try:
+            vertices, _faces = cq_exporters.tessellate(solid)
+        except Exception:
+            return solid, None
+
+        if not vertices:
+            return solid, None
+
+        hull = MultiPoint([(x, y) for x, y, _ in vertices]).convex_hull
+        if hull.is_empty or not isinstance(hull, ShapelyPolygon):
+            return solid, None
+        return solid, hull
 
     def _evaluate_checks(self, resolver: ReferenceResolver, diagnostics: SolveDiagnostics) -> None:
         for clause in self.spec.checks:
@@ -615,19 +667,38 @@ class ConstraintSolver:
     def _build_scene(self, primitives: Sequence[NeutralPrimitive]) -> trimesh.Scene:
         scene = trimesh.Scene()
         for primitive in primitives:
-            if primitive.size[2] <= 0.0:
+            mesh = self._mesh_from_primitive(primitive)
+            if mesh is None:
                 continue
-            mesh = trimesh.creation.box(extents=np.array(primitive.size) * 0.001)
-            rotation_z = primitive.transform.rotation[2]
-            if rotation_z:
-                rot = trimesh.transformations.rotation_matrix(math.radians(rotation_z), [0, 0, 1])
-                mesh.apply_transform(rot)
-            pos = primitive.transform.position
-            mesh.apply_translation((pos[0] * 0.001, pos[1] * 0.001, pos[2] * 0.001))
             mesh.metadata = primitive.metadata.copy()
             mesh.metadata.setdefault("guid", primitive.guid)
             scene.add_geometry(mesh, node_name=primitive.id)
         return scene
+
+    def _mesh_from_primitive(self, primitive: NeutralPrimitive) -> Optional[trimesh.Trimesh]:
+        if primitive.solid is not None:
+            try:
+                vertices, faces = cq_exporters.tessellate(primitive.solid)
+            except Exception:
+                vertices, faces = (), ()
+            if vertices and faces:
+                mesh = trimesh.Trimesh(
+                    vertices=np.array(vertices) * MM_TO_METERS,
+                    faces=np.array(faces),
+                    process=False,
+                )
+                return mesh
+
+        if primitive.size[2] <= 0.0:
+            return None
+        mesh = trimesh.creation.box(extents=np.array(primitive.size) * MM_TO_METERS)
+        rotation_z = primitive.transform.rotation[2]
+        if rotation_z:
+            rot = trimesh.transformations.rotation_matrix(math.radians(rotation_z), [0, 0, 1])
+            mesh.apply_transform(rot)
+        pos = primitive.transform.position
+        mesh.apply_translation((pos[0] * MM_TO_METERS, pos[1] * MM_TO_METERS, pos[2] * MM_TO_METERS))
+        return mesh
 
     # ------------------------------------------------------------------ #
     def _build_points(self, spec: RelationshipDiagramSpec) -> Dict[str, Dict[str, float]]:
