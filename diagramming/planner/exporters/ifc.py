@@ -5,6 +5,7 @@ import uuid
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Iterable, Optional, Sequence
+import warnings
 
 import ifcopenshell.api
 import ifcopenshell.guid
@@ -34,7 +35,9 @@ class IfcExporter:
         if not primitives:
             raise ValueError("No primitives to export")
 
-        model = ifcopenshell.api.run("project.create_file")
+        with warnings.catch_warnings():
+            warnings.filterwarnings("ignore", category=DeprecationWarning, module="ifcopenshell.api.project.create_file")
+            model = ifcopenshell.api.run("project.create_file")
         project = ifcopenshell.api.run("root.create_entity", model, ifc_class="IfcProject")
         ifcopenshell.api.run("unit.assign_unit", model)
         model_context = ifcopenshell.api.run("context.add_context", model, context_type="Model")
