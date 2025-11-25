@@ -332,6 +332,7 @@ All work in this phase must preserve the overarching goal: *semantic description
     - Convert wires to SVG primitives.
     - Apply existing styling routines.
   - Footprints are projections of solids, not primary geometry inputs.
+  - Write regression tests for any new functionality and update relevant docs; commit changes.
 
 - [x] **glTF export overhaul**
   - Tessellate solids using OCC or convert CadQuery → trimesh. **Progress:** relationship-first builds tessellate CadQuery solids directly for glTF; metadata flows through mesh extras.
@@ -339,6 +340,7 @@ All work in this phase must preserve the overarching goal: *semantic description
 
 - [ ] **STEP/OBJ export path**
   - Provide deterministic export for downstream engineering/QA workflows.
+  - Write regression tests for any new functionality and update relevant docs; commit changes.
 
 #### IFC 4.3.2 (Reference View) export
 
@@ -382,6 +384,7 @@ All work in this phase must preserve the overarching goal: *semantic description
 
 - [ ] **GUID determinism**
   - IFC GUIDs seeded deterministically using canonicalised component IDs.
+  - Write regression tests for any new functionality and update relevant docs; commit changes.
 
 #### Tooling, migration & regression safety
 
