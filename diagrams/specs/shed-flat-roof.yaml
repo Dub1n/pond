@@ -1,0 +1,269 @@
+name: shed-flat-roof
+units: mm
+scale: 0.18
+options:
+  A:
+    title: "Option A — Rectangular flat-roof shed"
+    views:
+      plan:
+        title: "Shed plan — flat roof, centered door"
+        aria_label: "Plan view of a simple rectangular shed with door opening on the north side and roof overhangs."
+        scale: 0.18
+        background: "#ffffff"
+      section:
+        title: "Shed section — mid-depth slice"
+        aria_label: "Section view through the shed showing floor, walls, and roof build-up."
+        scale: 0.18
+        background: "#ffffff"
+        plane:
+          axis: y
+          coordinate: 1200
+    dimensions:
+      shed_width: 3000
+      shed_depth: 2400
+      section_cut_y: shed_depth / 2
+      roof_overhang: 150
+      door_width: 900
+      door_height: 2100
+      door_inset_from_west: (shed_width - door_width) / 2
+      floor_joist_width: 45
+      floor_joist_depth: 145
+      floor_joist_spacing: 400
+      rim_width: 45
+      rim_depth: 145
+      floor_sheet_thickness: 18
+      pad_size: 300
+      pad_height: 100
+      pad_spacing_x: 1500
+      pad_spacing_y: 1200
+      wall_stud_width: 45
+      wall_stud_depth: 95
+      wall_stud_spacing: 600
+      wall_height: 2200
+      header_depth: 145
+      header_width: 45
+      roof_joist_width: 45
+      roof_joist_depth: 145
+      roof_joist_spacing: 400
+      roof_deck_thickness: 18
+      roof_fall: 20
+      ffl: floor_joist_depth + floor_sheet_thickness
+      wall_top: ffl + wall_height
+      roof_top: wall_top + roof_joist_depth + roof_deck_thickness
+      roof_low_edge_drop: roof_fall
+    components:
+      - type: rectangle
+        id: grade
+        size: [shed_width + 2 * roof_overhang, shed_depth + 2 * roof_overhang]
+        origin: [-roof_overhang, -roof_overhang]
+        class: component-soil
+        label: "Grade"
+        height: 0
+        material: soil
+        metadata:
+          elevation: 0
+      - type: rectangle
+        id: pads_row
+        size: [pad_size, pad_size]
+        origin: [0, 0]
+        class: component-structure
+        label: "Concrete pad"
+        height: pad_height
+        material: timber
+        vertical:
+          flush:
+            ref: grade
+            face: top
+          attach_face: bottom
+        repeat:
+          count: 3
+          direction: east
+          span: shed_width - pad_size
+        operations:
+          - type: repeat
+            count: 3
+            direction: south
+            span: shed_depth - pad_size
+      - type: rectangle
+        id: floor_rim
+        size: [shed_width, shed_depth]
+        origin: [0, 0]
+        class: component-structure
+        label: "Floor rim"
+        height: rim_depth
+        material: timber
+        vertical:
+          flush:
+            ref: pads_row
+            face: top
+          attach_face: bottom
+      - type: rectangle
+        id: floor_joist_run
+        size: [floor_joist_width, shed_depth]
+        placement:
+          flush:
+            ref: floor_rim
+            edge: west
+        class: component-structure
+        label: "Floor joist"
+        height: floor_joist_depth
+        material: joist
+        vertical:
+          flush:
+            ref: floor_rim
+            face: bottom
+          attach_face: bottom
+        repeat:
+          interval: floor_joist_spacing
+          direction: east
+          span: shed_width - floor_joist_width
+      - type: rectangle
+        id: floor_deck
+        size: [shed_width, shed_depth]
+        origin: [0, 0]
+        class: component-structure
+        label: "Floor deck"
+        height: floor_sheet_thickness
+        material: decking
+        vertical:
+          flush:
+            ref: floor_rim
+            face: top
+          attach_face: bottom
+      - type: rectangle
+        id: wall_north_left
+        size: [door_inset_from_west, wall_stud_depth]
+        origin: [0, 0]
+        class: component-structure
+        label: "North wall (left of door)"
+        height: wall_height
+        material: timber
+        vertical:
+          flush:
+            ref: floor_deck
+            face: top
+          attach_face: bottom
+      - type: rectangle
+        id: wall_north_right
+        size: [shed_width - door_inset_from_west - door_width, wall_stud_depth]
+        origin: [door_inset_from_west + door_width, 0]
+        class: component-structure
+        label: "North wall (right of door)"
+        height: wall_height
+        material: timber
+        vertical:
+          flush:
+            ref: floor_deck
+            face: top
+          attach_face: bottom
+      - type: rectangle
+        id: wall_south
+        size: [shed_width, wall_stud_depth]
+        placement:
+          flush:
+            ref: floor_rim
+            edge: south
+          attach_edge: north
+        class: component-structure
+        label: "South wall"
+        height: wall_height
+        material: timber
+        vertical:
+          flush:
+            ref: floor_deck
+            face: top
+          attach_face: bottom
+      - type: rectangle
+        id: wall_west
+        size: [wall_stud_depth, shed_depth - 2 * wall_stud_depth]
+        placement:
+          flush:
+            ref: floor_rim
+            edge: west
+          inset:
+            north: wall_stud_depth
+            south: wall_stud_depth
+        class: component-structure
+        label: "West wall"
+        height: wall_height
+        material: timber
+        vertical:
+          flush:
+            ref: floor_deck
+            face: top
+          attach_face: bottom
+      - type: rectangle
+        id: wall_east
+        size: [wall_stud_depth, shed_depth - 2 * wall_stud_depth]
+        placement:
+          flush:
+            ref: floor_rim
+            edge: east
+          attach_edge: west
+          inset:
+            north: wall_stud_depth
+            south: wall_stud_depth
+        class: component-structure
+        label: "East wall"
+        height: wall_height
+        material: timber
+        vertical:
+          flush:
+            ref: floor_deck
+            face: top
+          attach_face: bottom
+      - type: rectangle
+        id: roof_base
+        size: [shed_width + 2 * roof_overhang, shed_depth + 2 * roof_overhang]
+        origin: [-roof_overhang, -roof_overhang]
+        class: component-structure
+        label: "Roof deck"
+        height: roof_deck_thickness
+        material: decking
+        vertical:
+          flush:
+            ref: floor_deck
+            face: top
+          attach_face: bottom
+          offset: wall_height + roof_joist_depth
+      - type: rectangle
+        id: roof_joist_run
+        size: [roof_joist_width, shed_depth + 2 * roof_overhang]
+        placement:
+          flush:
+            ref: roof_base
+            edge: west
+        class: component-structure
+        label: "Roof joist"
+        height: roof_joist_depth
+        material: joist
+        vertical:
+          flush:
+            ref: floor_deck
+            face: top
+          attach_face: bottom
+          offset: wall_height
+        repeat:
+          interval: roof_joist_spacing
+          direction: east
+          span: shed_width + 2 * roof_overhang - roof_joist_width
+      - type: rectangle
+        id: door_header
+        size: [door_width, header_width]
+        placement:
+          flush:
+            ref: floor_rim
+            edge: north
+          inset:
+            east: door_inset_from_west
+        class: component-structure
+        label: "Door header"
+        height: header_depth
+        material: timber
+        vertical:
+          flush:
+            ref: floor_deck
+            face: top
+          attach_face: bottom
+          offset: wall_height - header_depth
+    operations: []
