@@ -4,11 +4,10 @@ from dataclasses import dataclass
 from typing import Dict, Iterable, List, Sequence
 
 from shapely.affinity import rotate as shapely_rotate, translate as shapely_translate
-from shapely.geometry import LineString, Polygon as ShapelyPolygon, box as shapely_box
+from shapely.geometry import MultiPoint, Polygon as ShapelyPolygon, box as shapely_box
 
 from ..planner.bundle import GeometryBundle, PolygonFeature
-from ..planner.planner import _iter_line_segments, _section_polygon
-from .solver import NeutralPrimitive, SolveResult
+from .solver import NeutralPrimitive, SolveResult, footprint_from_solid, mesh_from_primitive
 from .schema import RelationshipDiagramSpec, ViewConfig
 
 
@@ -33,7 +32,7 @@ class RelationshipPlanner:
         self.option = RelationshipOption(key=spec.info.option or "relationship", title=spec.info.title)
 
     def plan(self) -> List[RelationshipPlannedView]:
-        features = list(self._footprint_features(self.solved.primitives))
+        plan_features = list(self._footprint_features(self.solved.primitives))
         views = self.spec.views or {"plan": ViewConfig(name="plan")}
         planned: List[RelationshipPlannedView] = []
         for view_name, view_config in views.items():
@@ -44,9 +43,10 @@ class RelationshipPlanner:
                 background=view_config.background,
             )
             if view_config.plane is not None:
-                self._populate_section(bundle, features, view_config)
+                for feature in self._section_features(self.solved.primitives, view_config):
+                    bundle.add_polygon(feature)
             else:
-                for feature in features:
+                for feature in plan_features:
                     bundle.add_polygon(feature)
             bundle.scene = self.solved.scene
             bundle.build_legend()
@@ -63,7 +63,12 @@ class RelationshipPlanner:
     # ------------------------------------------------------------------ #
     def _footprint_features(self, primitives: Sequence[NeutralPrimitive]) -> Iterable[PolygonFeature]:
         for primitive in primitives:
-            shape = primitive.footprint or self._footprint_polygon(primitive)
+            shape = (
+                primitive.footprint
+                or footprint_from_solid(primitive.solid)  # type: ignore[arg-type]
+                or self._footprint_from_mesh(primitive)
+                or self._footprint_polygon(primitive)
+            )
             if shape is None or shape.is_empty:
                 continue
             outer = tuple(shape.exterior.coords)
@@ -81,6 +86,15 @@ class RelationshipPlanner:
             )
             yield feature
 
+    def _footprint_from_mesh(self, primitive: NeutralPrimitive) -> ShapelyPolygon | None:
+        mesh = mesh_from_primitive(primitive, to_meters=False)
+        if mesh is None or not hasattr(mesh, "vertices") or len(mesh.vertices) == 0:
+            return None
+        hull = MultiPoint([(float(v[0]), float(v[1])) for v in mesh.vertices]).convex_hull
+        if hull.is_empty or not isinstance(hull, ShapelyPolygon):
+            return None
+        return hull
+
     def _footprint_polygon(self, primitive: NeutralPrimitive) -> ShapelyPolygon:
         half_x = primitive.size[0] / 2
         half_y = primitive.size[1] / 2
@@ -91,80 +105,70 @@ class RelationshipPlanner:
         pos = primitive.transform.position
         return shapely_translate(footprint, xoff=pos[0], yoff=pos[1])
 
-    def _populate_section(
+    def _section_features(
         self,
-        bundle: GeometryBundle,
-        features: Sequence[PolygonFeature],
+        primitives: Sequence[NeutralPrimitive],
         view_config: ViewConfig,
-    ) -> None:
+    ) -> List[PolygonFeature]:
         plane = view_config.plane
-        if plane is None:
-            return
-        if plane.axis not in {"x", "y"}:
-            return
+        if plane is None or plane.axis not in {"x", "y"}:
+            return []
 
-        coord = plane.coordinate
-        if plane.axis == "x":
-            slice_line = LineString([(coord, -1e5), (coord, 1e5)])
-            axis_index = 1
-        else:
-            slice_line = LineString([(-1e5, coord), (1e5, coord)])
-            axis_index = 0
-
-        segments: List[tuple[PolygonFeature, float, float]] = []
-        min_coord = float("inf")
-
-        for feature in features:
-            if feature.shape is None or feature.height <= 0.0:
-                continue
-            intersection = feature.shape.intersection(slice_line)
-            if intersection.is_empty:
-                continue
-            for segment in _iter_line_segments(intersection):
-                coords = list(segment.coords)
-                if not coords:
-                    continue
-                start = coords[0][axis_index]
-                end = coords[-1][axis_index]
-                length = abs(end - start)
-                if length < 1e-3:
-                    continue
-                start_coord = min(start, end)
-                segments.append((feature, start_coord, length))
-                min_coord = min(min_coord, start_coord)
-
-        if not segments:
-            return
+        origin = (plane.coordinate, 0.0, 0.0) if plane.axis == "x" else (0.0, plane.coordinate, 0.0)
+        normal = (1.0, 0.0, 0.0) if plane.axis == "x" else (0.0, 1.0, 0.0)
 
         per_feature_segment: Dict[str, int] = {}
-        for feature, start_coord, length in segments:
-            outer = _section_polygon(length, feature.elevation, feature.height, start_coord, plane.axis)
-            shape = ShapelyPolygon(outer[:-1]) if len(outer) > 3 else None
-            segment_index = per_feature_segment.get(feature.id, 0)
-            per_feature_segment[feature.id] = segment_index + 1
-            section_feature = PolygonFeature(
-                id=f"{feature.id}@section#{segment_index}",
-                outer=outer,
-                holes=(),
-                label=feature.label,
-                label_id=feature.label_id,
-                class_name=feature.class_name,
-                height=feature.height,
-                elevation=feature.elevation,
-                material=feature.material,
-                metadata=feature.metadata.copy(),
-                shape=shape,
-                views=("section",),
-            )
-            bundle.add_polygon(section_feature)
+        section_features: List[PolygonFeature] = []
 
-        if min_coord != float("inf") and min_coord != 0.0:
-            shift = -min_coord
-            for feature in bundle.polygons:
-                shifted = [(x + shift, y) for x, y in feature.outer]
-                feature.outer = tuple(shifted)
-                if isinstance(feature.shape, ShapelyPolygon):
-                    feature.shape = ShapelyPolygon(shifted[:-1])
+        for primitive in primitives:
+            for polygon in self._slice_primitive(primitive, origin, normal, plane.axis):
+                segment_index = per_feature_segment.get(primitive.id, 0)
+                per_feature_segment[primitive.id] = segment_index + 1
+                section_features.append(
+                    PolygonFeature(
+                        id=f"{primitive.id}@section#{segment_index}",
+                        outer=tuple(polygon.exterior.coords),
+                        holes=tuple(tuple(ring.coords) for ring in polygon.interiors),
+                        label=primitive.metadata.get("label") if primitive.metadata else None,
+                        label_id=primitive.metadata.get("label_id") if primitive.metadata else None,
+                        class_name=primitive.class_name,
+                        height=primitive.size[2],
+                        elevation=primitive.transform.position[2] - (primitive.size[2] / 2),
+                        material=primitive.material,
+                        metadata=primitive.metadata.copy(),
+                        shape=polygon,
+                        views=("section",),
+                    )
+                )
+
+        return section_features
+
+    def _slice_primitive(
+        self,
+        primitive: NeutralPrimitive,
+        origin: tuple[float, float, float],
+        normal: tuple[float, float, float],
+        axis: str,
+    ) -> List[ShapelyPolygon]:
+        mesh = mesh_from_primitive(primitive, to_meters=False)
+        if mesh is None:
+            return []
+        polygons: List[ShapelyPolygon] = []
+        section = mesh.section(plane_origin=origin, plane_normal=normal)
+        if section is None:
+            return polygons
+
+        for polyline in section.discrete:
+            coords_3d = list(polyline)
+            if len(coords_3d) < 3:
+                continue
+            coords_2d = [(pt[1], pt[2]) if axis == "x" else (pt[0], pt[2]) for pt in coords_3d]
+            if coords_2d[0] != coords_2d[-1]:
+                coords_2d.append(coords_2d[0])
+            shape = ShapelyPolygon(coords_2d).buffer(0)
+            if not shape.is_empty:
+                polygons.append(shape)
+        return [poly for poly in polygons if isinstance(poly, ShapelyPolygon) and not poly.is_empty]
 
 
 __all__ = ["RelationshipPlanner", "RelationshipPlannedView", "RelationshipOption"]

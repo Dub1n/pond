@@ -109,6 +109,8 @@ class ComponentState:
 class NeutralPrimitive:
     id: str
     class_name: Optional[str]
+    profile: str
+    profile_params: Dict[str, object]
     size: Tuple[float, float, float]
     material: Optional[str]
     metadata: Dict[str, object]
@@ -208,7 +210,8 @@ class ReferenceResolver:
 class ConstraintSolver:
     """
     Resolves relationship-first specs into deterministic transforms and neutral
-    primitives. Supports box primitives only.
+    primitives. Supports box, wedge, and swept profiles backed by CadQuery
+    solids for downstream exporters.
     """
 
     def __init__(self, spec: RelationshipDiagramSpec) -> None:
@@ -586,7 +589,10 @@ class ConstraintSolver:
         metadata = dict(component.metadata)
         metadata.setdefault("id", instance_id)
         metadata.setdefault("class", component.class_name)
+        metadata.setdefault("profile", component.profile)
         metadata.setdefault("guid", guid)
+        if component.profile_params:
+            metadata.setdefault("profile_params", dict(component.profile_params))
         if component.ifc:
             ifc_dict = component.ifc.to_dict()
             if ifc_dict:
@@ -597,6 +603,8 @@ class ConstraintSolver:
         return NeutralPrimitive(
             id=instance_id,
             class_name=component.class_name,
+            profile=component.profile,
+            profile_params=dict(component.profile_params),
             size=_component_size(component),
             material=component.material,
             metadata=metadata,
@@ -615,26 +623,65 @@ class ConstraintSolver:
         if component.height <= 0.0 or component.size_xy[0] <= 0.0 or component.size_xy[1] <= 0.0:
             return None, None
 
-        wp = cq.Workplane("XY").box(component.size_xy[0], component.size_xy[1], component.height, centered=True)
+        wp = self._workplane_for_component(component)
+        if wp is None:
+            return None, None
         rotation_z = transform.rotation[2]
         if rotation_z:
             wp = wp.rotate((0, 0, 0), (0, 0, 1), rotation_z)
         pos = transform.position
         wp = wp.translate((pos[0], pos[1], pos[2]))
         solid = wp.val()
+        return solid, footprint_from_solid(solid)
 
-        try:
-            vertices, _faces = solid.tessellate(0.5)
-        except Exception:
-            return solid, None
+    def _workplane_for_component(self, component: RelationshipComponent) -> Optional[cq.Workplane]:
+        profile = component.profile.lower().strip()
+        if profile == "wedge":
+            return self._build_wedge_workplane(component)
+        if profile == "sweep":
+            return self._build_sweep_workplane(component)
+        # Default to a rectangular prism.
+        return cq.Workplane("XY").box(component.size_xy[0], component.size_xy[1], component.height, centered=True)
 
-        if not vertices:
-            return solid, None
+    def _build_wedge_workplane(self, component: RelationshipComponent) -> Optional[cq.Workplane]:
+        slope = float(component.profile_params.get("slope", component.profile_params.get("rise", 0.0)) or 0.0)
+        hx = component.size_xy[0] / 2
+        hy = component.size_xy[1] / 2
+        hz = component.height / 2
+        if hx <= 0 or hy <= 0 or hz <= 0:
+            return None
+        top_positive = max(hz - slope, -hz)
+        points = [
+            (-hy, -hz),
+            (hy, -hz),
+            (hy, top_positive),
+            (-hy, hz),
+        ]
+        return cq.Workplane("YZ").polyline(points).close().extrude(component.size_xy[0], both=True)
 
-        hull = MultiPoint([(vec.x, vec.y) for vec in vertices]).convex_hull
-        if hull.is_empty or not isinstance(hull, ShapelyPolygon):
-            return solid, None
-        return solid, hull
+    def _build_sweep_workplane(self, component: RelationshipComponent) -> Optional[cq.Workplane]:
+        height = component.height
+        if height <= 0:
+            return None
+        points_raw = component.profile_params.get("points") or component.profile_params.get("profile") or ()
+        points: List[Tuple[float, float]] = []
+        if isinstance(points_raw, Sequence) and not isinstance(points_raw, (str, bytes)):
+            for item in points_raw:
+                if isinstance(item, Sequence) and len(item) >= 2:
+                    try:
+                        points.append((float(item[0]), float(item[1])))
+                    except (TypeError, ValueError):
+                        continue
+        if len(points) < 3:
+            half_x = component.size_xy[0] / 2
+            half_y = component.size_xy[1] / 2
+            points = [
+                (-half_x, -half_y),
+                (half_x, -half_y),
+                (half_x, half_y),
+                (-half_x, half_y),
+            ]
+        return cq.Workplane("XY").polyline(points).close().extrude(height, both=True)
 
     def _evaluate_checks(self, resolver: ReferenceResolver, diagnostics: SolveDiagnostics) -> None:
         for clause in self.spec.checks:
@@ -664,40 +711,7 @@ class ConstraintSolver:
             diagnostics.check_results.append(f"{result_text}: {clause.kind} {clause.subject.ref}→{clause.obj.ref}")
 
     def _build_scene(self, primitives: Sequence[NeutralPrimitive]) -> trimesh.Scene:
-        scene = trimesh.Scene()
-        for primitive in primitives:
-            mesh = self._mesh_from_primitive(primitive)
-            if mesh is None:
-                continue
-            mesh.metadata = primitive.metadata.copy()
-            mesh.metadata.setdefault("guid", primitive.guid)
-            scene.add_geometry(mesh, node_name=primitive.id)
-        return scene
-
-    def _mesh_from_primitive(self, primitive: NeutralPrimitive) -> Optional[trimesh.Trimesh]:
-        if primitive.solid is not None:
-            try:
-                vectors, faces = primitive.solid.tessellate(0.5)
-            except Exception:
-                vectors, faces = (), ()
-            if vectors and faces:
-                mesh = trimesh.Trimesh(
-                    vertices=np.array([[v.x, v.y, v.z] for v in vectors]) * MM_TO_METERS,
-                    faces=np.array(faces),
-                    process=False,
-                )
-                return mesh
-
-        if primitive.size[2] <= 0.0:
-            return None
-        mesh = trimesh.creation.box(extents=np.array(primitive.size) * MM_TO_METERS)
-        rotation_z = primitive.transform.rotation[2]
-        if rotation_z:
-            rot = trimesh.transformations.rotation_matrix(math.radians(rotation_z), [0, 0, 1])
-            mesh.apply_transform(rot)
-        pos = primitive.transform.position
-        mesh.apply_translation((pos[0] * MM_TO_METERS, pos[1] * MM_TO_METERS, pos[2] * MM_TO_METERS))
-        return mesh
+        return build_scene_from_primitives(primitives)
 
     # ------------------------------------------------------------------ #
     def _build_points(self, spec: RelationshipDiagramSpec) -> Dict[str, Dict[str, float]]:
@@ -788,6 +802,59 @@ class ConstraintSolver:
         return str(uuid.uuid5(GUID_NAMESPACE, seed))
 
 
+def footprint_from_solid(solid: Any) -> Optional[ShapelyPolygon]:
+    try:
+        vertices, _faces = solid.tessellate(0.5)
+    except Exception:
+        return None
+    if not vertices:
+        return None
+    hull = MultiPoint([(vec.x, vec.y) for vec in vertices]).convex_hull
+    if hull.is_empty or not isinstance(hull, ShapelyPolygon):
+        return None
+    return hull
+
+
+def mesh_from_primitive(primitive: NeutralPrimitive, *, to_meters: bool = True) -> Optional[trimesh.Trimesh]:
+    if primitive.solid is not None:
+        try:
+            vectors, faces = primitive.solid.tessellate(0.5)
+        except Exception:
+            vectors, faces = (), ()
+        if vectors and faces:
+            vertices = np.array([[v.x, v.y, v.z] for v in vectors])
+            if to_meters:
+                vertices = vertices * MM_TO_METERS
+            mesh = trimesh.Trimesh(vertices=vertices, faces=np.array(faces), process=False)
+            return mesh
+
+    if primitive.size[2] <= 0.0:
+        return None
+
+    mesh = trimesh.creation.box(extents=np.array(primitive.size))
+    rotation_z = primitive.transform.rotation[2]
+    if rotation_z:
+        rot = trimesh.transformations.rotation_matrix(math.radians(rotation_z), [0, 0, 1])
+        mesh.apply_transform(rot)
+    pos = primitive.transform.position
+    mesh.apply_translation((pos[0], pos[1], pos[2]))
+    if to_meters:
+        mesh.apply_scale(MM_TO_METERS)
+    return mesh
+
+
+def build_scene_from_primitives(primitives: Sequence[NeutralPrimitive], *, to_meters: bool = True) -> trimesh.Scene:
+    scene = trimesh.Scene()
+    for primitive in primitives:
+        mesh = mesh_from_primitive(primitive, to_meters=to_meters)
+        if mesh is None:
+            continue
+        mesh.metadata = primitive.metadata.copy()
+        mesh.metadata.setdefault("guid", primitive.guid)
+        scene.add_geometry(mesh, node_name=primitive.id)
+    return scene
+
+
 __all__ = [
     "ComponentTransform",
     "ConstraintSolver",
@@ -795,4 +862,7 @@ __all__ = [
     "SolveDiagnostics",
     "SolveResult",
     "SolvedComponent",
+    "build_scene_from_primitives",
+    "footprint_from_solid",
+    "mesh_from_primitive",
 ]

@@ -28,7 +28,16 @@ try:  # optional dependency (pyrender + pyglet)
 except ImportError:  # pragma: no cover - optional dependency path
     render_orthographic_png = None  # type: ignore[misc]
 from diagramming.schema import DiagramSpec, load_spec
-from diagramming.planner.exporters import GltfExporter, GltfExportOptions, IfcExporter, IfcExportOptions
+from diagramming.planner.exporters import (
+    GltfExporter,
+    GltfExportOptions,
+    IfcExporter,
+    IfcExportOptions,
+    ObjExporter,
+    ObjExportOptions,
+    StepExporter,
+    StepExportOptions,
+)
 
 
 SVG_DASH_SCALE = SvgRenderer.DEFAULT_DASH_SCALE
@@ -81,6 +90,16 @@ def parse_args(argv: Optional[List[str]] = None) -> argparse.Namespace:
         choices=("glb", "gltf"),
         default="glb",
         help="glTF output format (default: glb).",
+    )
+    parser.add_argument(
+        "--step",
+        action="store_true",
+        help="Emit a STEP model for relationship-first specs.",
+    )
+    parser.add_argument(
+        "--obj",
+        action="store_true",
+        help="Emit an OBJ model for relationship-first specs.",
     )
     parser.add_argument(
         "--force",
@@ -136,6 +155,8 @@ def main(argv: Optional[List[str]] = None) -> int:
     gltf_options = GltfExportOptions(file_format=args.gltf_format)
     gltf_exporter = GltfExporter(gltf_options) if gltf_requested else None
     ifc_exporter = IfcExporter(IfcExportOptions()) if not args.no_ifc else None
+    step_exporter = StepExporter(StepExportOptions()) if args.step else None
+    obj_exporter = ObjExporter(ObjExportOptions()) if args.obj else None
 
     for spec_path in spec_paths:
         raw = yaml.safe_load(spec_path.read_text(encoding="utf-8"))
@@ -151,8 +172,8 @@ def main(argv: Optional[List[str]] = None) -> int:
             except SchemaError as exc:
                 print(f"{spec_path.name} failed to load: {exc}", file=sys.stderr)
                 return 1
+            option_key = relationship_spec.info.option or "relationship"
             if args.options:
-                option_key = relationship_spec.info.option or "relationship"
                 if option_key not in args.options:
                     continue
             solver = ConstraintSolver(relationship_spec)
@@ -208,7 +229,7 @@ def main(argv: Optional[List[str]] = None) -> int:
 
             if gltf_exporter and plan_bundle:
                 gltf_filename = f"model.{args.gltf_format}"
-                gltf_path = outdir / spec_name / (relationship_spec.info.option or "relationship") / gltf_filename
+                gltf_path = outdir / spec_name / option_key / gltf_filename
                 gltf_path.parent.mkdir(parents=True, exist_ok=True)
                 try:
                     gltf_exporter.export(plan_bundle, gltf_path)
@@ -217,7 +238,7 @@ def main(argv: Optional[List[str]] = None) -> int:
                 else:
                     print(f"  Wrote {(gltf_path.relative_to(outdir))}")
             if ifc_exporter:
-                ifc_path = outdir / spec_name / (relationship_spec.info.option or "relationship") / "model.ifc"
+                ifc_path = outdir / spec_name / option_key / "model.ifc"
                 ifc_path.parent.mkdir(parents=True, exist_ok=True)
                 try:
                     ifc_exporter.export(solve_result.primitives, ifc_path)
@@ -225,6 +246,24 @@ def main(argv: Optional[List[str]] = None) -> int:
                     print(f"  Skipped IFC export: {exc}")
                 else:
                     print(f"  Wrote {(ifc_path.relative_to(outdir))}")
+            if step_exporter:
+                step_path = outdir / spec_name / option_key / "model.step"
+                step_path.parent.mkdir(parents=True, exist_ok=True)
+                try:
+                    step_exporter.export(solve_result.primitives, step_path)
+                except ValueError as exc:
+                    print(f"  Skipped STEP export: {exc}")
+                else:
+                    print(f"  Wrote {(step_path.relative_to(outdir))}")
+            if obj_exporter:
+                obj_path = outdir / spec_name / option_key / "model.obj"
+                obj_path.parent.mkdir(parents=True, exist_ok=True)
+                try:
+                    obj_exporter.export(solve_result.primitives, obj_path)
+                except ValueError as exc:
+                    print(f"  Skipped OBJ export: {exc}")
+                else:
+                    print(f"  Wrote {(obj_path.relative_to(outdir))}")
             continue
         spec = load_spec(spec_path, include_options=args.options)
         planner = DiagramPlanner(spec)

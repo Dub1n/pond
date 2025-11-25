@@ -13,13 +13,14 @@ python3 scripts/build_diagrams.py
 
 SVGs (and PNGs when `cairosvg` is available) will be written to `diagrams/output/<spec>/<option>/`.
 Use `--no-png` if you only need SVG output. A glTF model (`model.glb` by default) is emitted alongside each option; disable it with `--no-gltf` or switch to `.gltf` with `--gltf-format gltf`. Relationship-first builds also emit an IFC model (`model.ifc`); skip it with `--no-ifc`.
+Pass `--step` and/or `--obj` to emit `model.step` / `model.obj` for relationship-first specs when the CadQuery solver is enabled.
 Pass `--orthographic` to also emit a headless 3D orthographic snapshot (`orthographic.png`); the flag requires the optional `pyrender`/`pyglet` dependencies shipped in `requirements.txt`.
 
 ### Relationship-first prep schema
 
 - Specs marked `schema: pond-relationship*` are lintable now via `python3 scripts/lint_specs.py` and renderable when `DIAGRAM_RELATIONSHIPS=1` is set. Without the flag, the CLI skips relationship-first specs.
 - The prep schema uses signed axis tokens, datums/bundles, helpers (`align`, `contact`, `flush_bundle`, `run_between`, `relate_from`), and a `checks` block; see `docs/relationship-schema-reference.md` plus the worked example in `docs/examples/option-c-relationship.yaml`.
-- Relationship solving outputs neutral CadQuery-backed box primitives with deterministic GUID seeds, plan/section projections, and glTF/IFC exports; wedges/sweeps remain future extensions.
+- Relationship solving outputs neutral CadQuery-backed solids (box/wedge/sweep) with deterministic GUID seeds, OCC footprints/sections, and glTF/IFC/STEP/OBJ exports.
 - Legacy specs can optionally include `ifc` blocks (`predefined_type`, `psets`); the loader normalises IFC class names/pset names and preserves them in feature/mesh metadata for IFC-ready exports.
 
 ### Blender export

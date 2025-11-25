@@ -9,9 +9,10 @@ This document captures the prep surface for the relationship-first schema descri
 - Datums support points, planes, and face bundles; helpers consume references such as `datums.planes.deck_top` and `datums.bundles.frame.x`.
 - Relationship helpers parsed today: `align` / `contact`, `flush_bundle`, `run_between`, `relate_from`, `touch_planes`, `touch_components`, plus `repeat` spans and `voids`. Checks reuse the same alignment vocabulary and default to `gap: 0`, `tolerance: 0.5`, `on_fail: error`.
 - IFC metadata is accepted (`ifc.predefined_type`, `ifc.psets`) and uppercased for consistency; IFC-classed components lint if they omit an `ifc` block.
-- Components use a single 3-axis `size: [x, y, z]` (missing axes default to 0); box solids are the initial scope with room for additional primitives later.
-- Constraint solver resolves faces/planes/bundles into deterministic transforms and neutral box primitives with stable GUID seeds; checks report pass/fail, and diagnostics carry DOF/graph information.
-- Relationship planner projects those neutral boxes to Shapely footprints/sections and reuses the existing SVG/PNG/glTF pipeline when the feature flag is set.
+- Components use a single 3-axis `size: [x, y, z]` (missing axes default to 0); box, wedge, and swept profiles are supported with optional `profile_params` to drive slopes or custom sections.
+- Constraint solver resolves faces/planes/bundles into deterministic transforms and neutral CadQuery primitives (box, wedge, sweep) with stable GUID seeds; checks report pass/fail, and diagnostics carry DOF/graph information.
+- Relationship planner slices CadQuery solids directly for plan and section geometry before handing off to the existing SVG/PNG/glTF/IFC/STEP/OBJ pipeline when the feature flag is set.
+- CLI exports glTF by default and can also emit `model.step` / `model.obj` for relationship-first specs via `--step` and `--obj`.
 
 ### Linting
 
@@ -29,4 +30,4 @@ This document captures the prep surface for the relationship-first schema descri
 
 ### Limitations (prep state)
 
-- Assemblies are parsed but not yet expanded by the solver. Non-box solids and CadQuery-native profiles will arrive later in Phase 4.
+- Assemblies are parsed but not yet expanded by the solver.

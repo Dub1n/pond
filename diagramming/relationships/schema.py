@@ -289,6 +289,29 @@ def _resolve_metadata(value: Any, dimensions: DimensionResolver) -> Dict[str, An
     return resolved
 
 
+def _resolve_profile_params(value: Any, dimensions: DimensionResolver) -> Dict[str, Any]:
+    if value is None:
+        return {}
+    if not isinstance(value, Mapping):
+        raise SchemaError("profile_params must be a mapping when provided")
+
+    def resolve(item: Any) -> Any:
+        if isinstance(item, (int, float)):
+            return float(item)
+        if isinstance(item, str):
+            try:
+                return dimensions.evaluate(item)
+            except SchemaError:
+                return item
+        if isinstance(item, Mapping):
+            return {str(k): resolve(v) for k, v in item.items()}
+        if isinstance(item, Sequence) and not isinstance(item, (str, bytes)):
+            return [resolve(elem) for elem in item]
+        return item
+
+    return {str(key): resolve(raw) for key, raw in value.items()}
+
+
 # --------------------------------------------------------------------------- #
 # Data classes
 
@@ -412,6 +435,7 @@ class RelationshipComponent:
     profile: str
     size_xy: Tuple[float, float]
     height: float
+    profile_params: Dict[str, Any] = field(default_factory=dict)
     material: Optional[str] = None
     metadata: Dict[str, Any] = field(default_factory=dict)
     relationships: Tuple[AlignmentClause | FlushBundleClause | RunBetweenClause | RelateFromClause, ...] = ()
@@ -635,6 +659,7 @@ def _parse_component(data: Mapping[str, Any], dimensions: DimensionResolver) -> 
     comp_id = str(data["id"])
     class_name = normalize_ifc_class(data["class"])
     profile = str(data.get("profile", "rectangle"))
+    profile_params = _resolve_profile_params(data.get("profile_params"), dimensions)
 
     size_raw = data["size"]
     if not isinstance(size_raw, Sequence):
@@ -657,6 +682,7 @@ def _parse_component(data: Mapping[str, Any], dimensions: DimensionResolver) -> 
         id=comp_id,
         class_name=class_name,
         profile=profile,
+        profile_params=profile_params,
         size_xy=size_xy,
         height=height,
         material=material,

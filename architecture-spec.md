@@ -63,7 +63,7 @@ YAML spec ──> Schema loader ──> DiagramPlanner ──> GeometryBundle �
 - `PolygonFeature` tracks Shapely polygons (with optional holes) and stores `height`/`elevation` so downstream exporters can extrude directly.
 - Vertical placement data (`component.vertical`) is resolved against recorded elevations so pads, beams, and even zero-height datums can align in Z without hard-coded offsets.
 - Legends are auto-built from unique `(label, label_id)` pairs.
-- Potential future integrations (STEP/IFC exporters, wedges/sweeps) will extend the CadQuery solids already produced by the relationship path; see `roadmap.md` for evaluation details before embedding heavier kernels elsewhere.
+- STEP/IFC/OBJ exporters and wedge/sweep profiles now extend the CadQuery solids produced by the relationship path; see `roadmap.md` for the current implementation checkpoints before embedding heavier kernels elsewhere.
 
 ## Rendering Layer
 

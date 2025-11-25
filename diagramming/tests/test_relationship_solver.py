@@ -11,7 +11,7 @@ import ifcopenshell
 import ifcopenshell.guid
 
 from diagramming.relationships import ConstraintSolver, load_relationship_spec
-from diagramming.planner.exporters import IfcExporter
+from diagramming.planner.exporters import IfcExporter, ObjExporter, StepExporter
 from diagramming.relationships.solver import GUID_NAMESPACE
 
 
@@ -368,6 +368,156 @@ class RelationshipSolverTests(unittest.TestCase):
             ctx for ctx in model.by_type("IfcGeometricRepresentationSubContext") if ctx.ContextIdentifier == "Body"
         ]
         self.assertTrue(body_contexts)
+
+    def test_solver_supports_wedge_and_sweep_profiles(self) -> None:
+        spec_text = dedent(
+            """
+            schema: pond-relationship-test
+            info:
+              option: profiles
+            datums:
+              origin:
+                type: point
+                coordinates:
+                  +x: 0
+                  +y: 0
+                  +z: 0
+              bundles:
+                pad:
+                  origin:
+                    ref: datums.origin
+                  span:
+                    +x: 800
+                    +y: 400
+            components:
+              - id: wedge
+                class: IfcMember
+                profile: wedge
+                profile_params:
+                  slope: 40
+                size: [800, 400, 200]
+                material: timber
+                relate:
+                  - flush_bundle:
+                      bundle: datums.bundles.pad
+                      faces: [+x, -x, +y, -y]
+                  - align:
+                      subject:
+                        component: wedge
+                        pos: -z
+                      object:
+                        datum: datums.origin
+                        pos: +z
+              - id: sweep
+                class: IfcMember
+                profile: sweep
+                profile_params:
+                  points:
+                    - [-100, -50]
+                    - [100, -50]
+                    - [100, 50]
+                    - [0, 120]
+                    - [-100, 50]
+                size: [600, 200, 120]
+                material: timber
+                relate:
+                  - align:
+                      subject:
+                        component: sweep
+                        pos: +x
+                      object:
+                        bundle: datums.bundles.pad
+                        pos: +x
+                  - align:
+                      subject:
+                        component: sweep
+                        pos: +y
+                      object:
+                        bundle: datums.bundles.pad
+                        pos: +y
+                  - align:
+                      subject:
+                        component: sweep
+                        pos: -z
+                      object:
+                        datum: datums.origin
+                        pos: +z
+            """
+        )
+        with TemporaryDirectory() as tmp:
+            path = Path(tmp) / "profiles.yaml"
+            path.write_text(spec_text, encoding="utf-8")
+            spec = load_relationship_spec(path)
+        solver = ConstraintSolver(spec)
+        result = solver.solve()
+        self.assertTrue(result.diagnostics.ok)
+        wedge = next(prim for prim in result.primitives if prim.id == "wedge")
+        sweep = next(prim for prim in result.primitives if prim.id == "sweep")
+        self.assertEqual(wedge.profile, "wedge")
+        self.assertEqual(sweep.profile, "sweep")
+        self.assertIsNotNone(wedge.solid)
+        self.assertIsNotNone(sweep.solid)
+        self.assertIsNotNone(wedge.footprint)
+        self.assertIsNotNone(sweep.footprint)
+        self.assertIn("profile", wedge.metadata)
+        self.assertIn("profile_params", sweep.metadata)
+
+    def test_step_and_obj_exports_from_primitives(self) -> None:
+        spec_text = dedent(
+            """
+            schema: pond-relationship-test
+            info:
+              option: exports
+            datums:
+              origin:
+                type: point
+                coordinates:
+                  +x: 0
+                  +y: 0
+                  +z: 0
+            components:
+              - id: block
+                class: IfcMember
+                size: [500, 200, 100]
+                material: timber
+                relate:
+                  - align:
+                      subject:
+                        component: block
+                        pos: +x
+                      object:
+                        datum: datums.origin
+                        pos: +x
+                  - align:
+                      subject:
+                        component: block
+                        pos: +y
+                      object:
+                        datum: datums.origin
+                        pos: +y
+                  - align:
+                      subject:
+                        component: block
+                        pos: -z
+                      object:
+                        datum: datums.origin
+                        pos: +z
+            """
+        )
+        with TemporaryDirectory() as tmp:
+            path = Path(tmp) / "exports.yaml"
+            path.write_text(spec_text, encoding="utf-8")
+            spec = load_relationship_spec(path)
+            solver = ConstraintSolver(spec)
+            result = solver.solve()
+            step_path = Path(tmp) / "model.step"
+            obj_path = Path(tmp) / "model.obj"
+            StepExporter().export(result.primitives, step_path)
+            ObjExporter().export(result.primitives, obj_path)
+            self.assertTrue(step_path.exists())
+            self.assertTrue(obj_path.exists())
+            self.assertGreater(step_path.stat().st_size, 0)
+            self.assertGreater(obj_path.stat().st_size, 0)
 
 
 if __name__ == "__main__":  # pragma: no cover

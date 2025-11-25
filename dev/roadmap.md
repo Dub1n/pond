@@ -310,37 +310,37 @@ All work in this phase must preserve the overarching goal: *semantic description
     - 3D solid primitive (box for now, leaving room for wedge/sweep/tessellated to be added later) with canonicalised placement (origin + orientation + scale) and material tag.
     - Optional stored profile/axis curve only when required for slices/IFC Axis reps.
     - Component metadata (psets, labels, material, type) with deterministic IDs/GUID seeds.
-  - CadQuery is the default hub: solver → CadQuery solids → glTF/STEP/IFC/exported slices; direct solver → exporter is only a temporary bypass if needed. **Progress:** solver now returns CadQuery solids plus OCC-derived footprints; wedges/sweeps remain TODO.
+  - CadQuery is the default hub: solver → CadQuery solids → glTF/STEP/IFC/exported slices; direct solver → exporter is only a temporary bypass if needed. **Progress:** solver now returns CadQuery solids (box/wedge/sweep) plus OCC-derived footprints.
 
 #### CadQuery integration & exports
 
-- [ ] **Adopt CadQuery (OCC-backed) as the primary solid modeller**
-  - Every component becomes a solid: joists, beams, blocking, straps, deck slabs, openings. **Progress:** box primitives are CadQuery solids; non-box profiles and assemblies remain.
+- [x] **Adopt CadQuery (OCC-backed) as the primary solid modeller**
+  - Every component becomes a solid: joists, beams, blocking, straps, deck slabs, openings. **Progress:** box primitives remain supported and the solver now builds wedge and swept-profile solids with deterministic GUIDs and metadata for every instance.
   - Attach canonical transforms and intrinsic metadata to each solid; downstream exporters/renderers consume CadQuery output.
 
-- [ ] **Schema → CadQuery adapters**
-  - Components map directly to 3D solids (sweeps/boxes/tessellations) without intermediate 2D footprints.
+- [x] **Schema → CadQuery adapters**
+  - Components map directly to 3D solids (sweeps/boxes/tessellations) without intermediate 2D footprints. **Progress:** schema now captures `profile_params`, feeding wedge slopes and arbitrary sweep profiles into CadQuery workplanes before transforms are applied.
   - Profiles are generated only when slices/IFC Axis reps need them.
   - Repeat/mirror helpers expanded into explicit component transforms before baking into solids.
 
-- [ ] **Replace vertical anchor math with solver-driven face/edge constraints**
+- [x] **Replace vertical anchor math with solver-driven face/edge constraints**
   - The solver decides vertical and horizontal alignment; CadQuery solids are generated only *after* relationships are resolved.
 
-- [ ] **Maintain Shapely footprints as projections derived from CadQuery solids**
+- [x] **Maintain Shapely footprints as projections derived from CadQuery solids**
   - Plan/section renderers become OCC-backed:
     - Use OCC to generate section wires.
     - Convert wires to SVG primitives.
     - Apply existing styling routines.
   - Footprints are projections of solids, not primary geometry inputs.
-  - Write regression tests for any new functionality and update relevant docs; commit changes.
+  - Regression coverage slices CadQuery solids directly for plan/section bundles.
 
 - [x] **glTF export overhaul**
   - Tessellate solids using OCC or convert CadQuery → trimesh. **Progress:** relationship-first builds tessellate CadQuery solids directly for glTF; metadata flows through mesh extras.
   - Emit `model.glb` with full component metadata under `extras`.
 
-- [ ] **STEP/OBJ export path**
+- [x] **STEP/OBJ export path**
   - Provide deterministic export for downstream engineering/QA workflows.
-  - Write regression tests for any new functionality and update relevant docs; commit changes.
+  - Regression tests guard STEP/OBJ output generation alongside glTF/IFC.
 
 #### IFC 4.3.2 (Reference View) export
 

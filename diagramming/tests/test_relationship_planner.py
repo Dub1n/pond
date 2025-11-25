@@ -79,6 +79,78 @@ class RelationshipPlannerTests(unittest.TestCase):
         self.assertGreater(section_polygons[0].height, 0.0)
         self.assertEqual(section_polygons[0].views, ("section",))
 
+    def test_sections_are_sliced_from_solids(self) -> None:
+        spec_text = dedent(
+            """
+            schema: pond-relationship-test
+            info:
+              option: section
+            datums:
+              origin:
+                type: point
+                coordinates:
+                  +x: 0
+                  +y: 0
+                  +z: 0
+              bundles:
+                frame:
+                  origin:
+                    ref: datums.origin
+                  span:
+                    +x: 600
+                    +y: 300
+            components:
+              - id: wedge
+                class: IfcMember
+                profile: wedge
+                profile_params:
+                  slope: 50
+                size: [600, 300, 150]
+                material: timber
+                relate:
+                  - flush_bundle:
+                      bundle: datums.bundles.frame
+                      faces: [+x, -x, +y, -y]
+                  - align:
+                      subject:
+                        component: wedge
+                        pos: -z
+                      object:
+                        datum: datums.origin
+                        pos: +z
+            views:
+              plan:
+                title: Plan
+                renders: [svg]
+              section:
+                title: Section
+                plane:
+                  axis: x
+                  coordinate: 0
+            """
+        )
+        with TemporaryDirectory() as tmp:
+            path = Path(tmp) / "sections.yaml"
+            path.write_text(spec_text, encoding="utf-8")
+            spec = load_relationship_spec(path)
+
+        solver = ConstraintSolver(spec)
+        solved = solver.solve()
+        self.assertTrue(solved.diagnostics.ok)
+
+        planner = RelationshipPlanner(spec, solved)
+        planned_views = planner.plan()
+        section = next(view for view in planned_views if view.view == "section")
+        wedge_sections = [feature for feature in section.bundle.polygons if feature.id.startswith("wedge@section")]
+        self.assertTrue(wedge_sections)
+        coords = wedge_sections[0].outer
+        ys = [pt[0] for pt in coords]
+        zs = [pt[1] for pt in coords]
+        self.assertAlmostEqual(max(ys) - min(ys), 300.0, delta=1e-3)
+        self.assertAlmostEqual(max(zs) - min(zs), 150.0, delta=1e-3)
+        unique_z = {round(val, 3) for val in zs}
+        self.assertGreaterEqual(len(unique_z), 3)
+
 
 if __name__ == "__main__":  # pragma: no cover
     unittest.main()
