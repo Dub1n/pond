@@ -20,6 +20,7 @@ Pass `--orthographic` to also emit a headless 3D orthographic snapshot (`orthogr
 - Specs marked `schema: pond-relationship*` are lintable now via `python3 scripts/lint_specs.py`; the CLI refuses to render them until the relationship-first solver/CadQuery path lands.
 - The prep schema uses signed axis tokens and datums/bundles; see `docs/relationship-schema-reference.md` plus the worked example in `docs/examples/option-c-relationship.yaml`.
 - The upcoming solver is gated behind `DIAGRAM_RELATIONSHIPS=1` (flag available now for future plumbing).
+- Legacy specs can optionally include `ifc` blocks (`predefined_type`, `psets`); the loader preserves them in feature/mesh metadata for IFC-ready exports.
 
 ### Blender export
 

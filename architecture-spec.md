@@ -25,6 +25,7 @@ YAML spec ──> Schema loader ──> DiagramPlanner ──> GeometryBundle �
 - Normalise anchoring aliases (`attach`, `attach_edge`, `attach_face`) plus the `placement.flush.edge` helper in XY and the new `vertical.flush.face` shorthand in Z so face-to-face snaps stay declarative and immune to width tweaks.
 - Extend repeat parsing to accept `direction` + `interval`/`span` combinations, letting authors derive spacing or counts from spans without hard-coding XY vectors.
 - Accept optional `metadata`, `traits`, and future `height` fields without affecting Phase 1 output, while evaluating numeric metadata expressions against option-level dimensions (e.g., `elevation: -pad_height`).
+- Accept optional `ifc` blocks (`predefined_type`, `psets`) on components and preserve them in feature/mesh metadata to prep IFC exports.
 - Support component-driven boolean cutouts via `boolean.subtract`, letting rectangles reference other component IDs (and their repeats/rotations) as subtraction masks.
 
 ### Key types

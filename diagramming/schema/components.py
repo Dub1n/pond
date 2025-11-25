@@ -541,6 +541,46 @@ class BooleanConfig:
 
 
 @dataclass(slots=True)
+class IfcPset:
+    name: str
+    props: Dict[str, Any]
+
+
+@dataclass(slots=True)
+class IfcMetadata:
+    predefined_type: Optional[str] = None
+    psets: Tuple[IfcPset, ...] = ()
+
+    @staticmethod
+    def from_dict(data: Mapping[str, object]) -> "IfcMetadata":
+        predefined_raw = data.get("predefined_type")
+        predefined_type = str(predefined_raw).upper() if predefined_raw is not None else None
+        psets_raw = data.get("psets", ())
+        psets: List[IfcPset] = []
+        if psets_raw:
+            if not isinstance(psets_raw, Sequence):
+                raise ValueError("ifc.psets must be a list when provided")
+            for item in psets_raw:
+                if not isinstance(item, Mapping):
+                    raise ValueError("ifc.psets entries must be mappings")
+                if "name" not in item or "props" not in item:
+                    raise ValueError("ifc.psets entries require 'name' and 'props'")
+                props = item.get("props")
+                if not isinstance(props, Mapping):
+                    raise ValueError("ifc.psets.props must be a mapping")
+                psets.append(IfcPset(name=str(item["name"]), props=dict(props)))
+        return IfcMetadata(predefined_type=predefined_type, psets=tuple(psets))
+
+    def to_dict(self) -> Dict[str, Any]:
+        data: Dict[str, Any] = {}
+        if self.predefined_type is not None:
+            data["predefined_type"] = self.predefined_type
+        if self.psets:
+            data["psets"] = [{"name": pset.name, "props": pset.props} for pset in self.psets]
+        return data
+
+
+@dataclass(slots=True)
 class ComponentBase:
     id: str
     label: Optional[str] = None
@@ -554,6 +594,7 @@ class ComponentBase:
     rotation: float = 0.0
     rotation_anchor: Optional[Anchor] = None
     vertical: Optional[VerticalPlacement] = None
+    ifc: Optional["IfcMetadata"] = None
 
 
 @dataclass(slots=True)
@@ -631,6 +672,12 @@ class RectangleComponent(ComponentBase):
             if "vertical" in data and isinstance(data["vertical"], Mapping)
             else None
         )
+        ifc = None
+        if "ifc" in data:
+            ifc_raw = data["ifc"]
+            if not isinstance(ifc_raw, Mapping):
+                raise ValueError("ifc block must be a mapping")
+            ifc = IfcMetadata.from_dict(ifc_raw)
         return RectangleComponent(
             id=str(data["id"]),
             label=data.get("label"),
@@ -653,6 +700,7 @@ class RectangleComponent(ComponentBase):
             rotation=rotation,
             rotation_anchor=rotation_anchor,
             vertical=vertical,
+            ifc=ifc,
         )
 
 
@@ -724,6 +772,12 @@ class PolylineComponent(ComponentBase):
             if "vertical" in data and isinstance(data["vertical"], Mapping)
             else None
         )
+        ifc = None
+        if "ifc" in data:
+            ifc_raw = data["ifc"]
+            if not isinstance(ifc_raw, Mapping):
+                raise ValueError("ifc block must be a mapping")
+            ifc = IfcMetadata.from_dict(ifc_raw)
         return PolylineComponent(
             id=str(data["id"]),
             label=data.get("label"),
@@ -741,6 +795,7 @@ class PolylineComponent(ComponentBase):
             rotation=rotation,
             rotation_anchor=rotation_anchor,
             vertical=vertical,
+            ifc=ifc,
         )
 
 

@@ -740,7 +740,7 @@ class DiagramPlanner:
                     height=component_height,
                     elevation=resolved_elevation,
                     material=material_key,
-                    metadata=component.metadata.copy(),
+                    metadata=_merge_ifc_metadata(component),
                     shape=polygon,
                 )
             )
@@ -802,7 +802,7 @@ class DiagramPlanner:
                 elevation=resolved_elevation,
                 thickness=_metadata_float(component.metadata, "thickness"),
                 material=material_key,
-                metadata=component.metadata.copy(),
+                metadata=_merge_ifc_metadata(component),
                 shape=shape,
             )
         ]
@@ -977,6 +977,13 @@ def _metadata_str(metadata: Dict[str, object], key: str) -> Optional[str]:
     if value is None:
         return None
     return str(value)
+
+
+def _merge_ifc_metadata(component: ComponentBase) -> Dict[str, object]:
+    metadata = component.metadata.copy()
+    if getattr(component, "ifc", None):
+        metadata.setdefault("ifc", component.ifc.to_dict())  # type: ignore[union-attr]
+    return metadata
 
 
 def _iter_line_segments(geometry: object) -> Iterable[LineString]:

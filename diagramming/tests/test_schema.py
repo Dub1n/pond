@@ -74,6 +74,43 @@ class SpecLoadTests(unittest.TestCase):
         self.assertEqual(plan_view.scale, 0.5)
         self.assertEqual(plan_view.background, "#efefef")
 
+    def test_ifc_block_parses_and_uppercases(self) -> None:
+        spec_text = dedent(
+            """
+            name: ifc-sample
+            units: mm
+            options:
+              A:
+                title: IFC option
+                components:
+                  - type: rectangle
+                    id: beam
+                    size: [100, 200]
+                    height: 300
+                    ifc:
+                      predefined_type: beam
+                      psets:
+                        - name: Pset_BeamCommon
+                          props:
+                            LoadBearing: true
+                views:
+                  plan:
+                    title: Plan
+            """
+        )
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "ifc.yaml"
+            path.write_text(spec_text, encoding="utf-8")
+            spec = load_spec(path)
+
+        component = spec.get_option("A").components[0]
+        self.assertIsNotNone(component.ifc)
+        assert component.ifc  # type narrowing
+        self.assertEqual(component.ifc.predefined_type, "BEAM")
+        self.assertEqual(len(component.ifc.psets), 1)
+        self.assertEqual(component.ifc.psets[0].name, "Pset_BeamCommon")
+        self.assertTrue(component.ifc.psets[0].props.get("LoadBearing"))
+
     def test_anchor_validation_raises(self) -> None:
         spec_text = dedent(
             """

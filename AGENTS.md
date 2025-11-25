@@ -18,6 +18,7 @@
 - Flags: `--no-png`, `--no-gltf`, `--gltf-format gltf`, `--spec` (multi-select), `--option`.
 - `python -m unittest discover` – run Phase 1 test suite.
 - `python scripts/lint_specs.py [--relationship-only|--legacy-only]` – lint specs, including relationship-first examples (rendering blocked until solver lands).
+- Legacy specs may include optional `ifc` blocks (`predefined_type`, `psets`); the loader carries them through feature/mesh metadata for IFC-ready exports later.
 - NEVER use the view image tool to view `.svg`s, only use the view image tool for `.png`s.
 - Helpful local checks: `scripts/check_water_area.py <spec> --option <key>` prints expected vs rendered water coverage; `diagramming/tests/test_layering_debug.py` exercises a minimal ring-over-water fixture for layering regressions.
 - Baseline render freshness: always pair render-count checks with `scripts/baseline_render_check.py --fresh-check`. It rasterises timestamp-sized squares and exits non-zero if the render/pixel counts look stale. Run it alongside any script/test that inspects rendered output; include a short note in logs like “baseline render check passed; rerun `.venv/bin/python scripts/baseline_render_check.py --fresh-check` for details.”

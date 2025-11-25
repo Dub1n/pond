@@ -319,6 +319,39 @@ class PlannerGeometryTests(unittest.TestCase):
         self.assertEqual(beam.height, mirrored.height)
         self.assertEqual(beam.views, mirrored.views)
 
+    def test_ifc_metadata_passes_through_planner(self) -> None:
+        spec_text = dedent(
+            """
+            name: ifc-plan
+            units: mm
+            options:
+              A:
+                title: IFC Plan
+                components:
+                  - type: rectangle
+                    id: slab
+                    size: [1000, 500]
+                    height: 50
+                    ifc:
+                      predefined_type: slab
+                      psets:
+                        - name: Pset_SlabCommon
+                          props:
+                            Reference: "Test"
+            """
+        )
+        with TemporaryDirectory() as tmp:
+            path = Path(tmp) / "ifc-plan.yaml"
+            path.write_text(spec_text, encoding="utf-8")
+            planner = DiagramPlanner(load_spec(path))
+            planned = planner.plan("A", "plan")
+
+        slab = next(feature for feature in planned.bundle.polygons if feature.id == "slab")
+        self.assertIn("ifc", slab.metadata)
+        ifc_meta = slab.metadata["ifc"]
+        self.assertEqual(ifc_meta.get("predefined_type"), "SLAB")
+        self.assertEqual(ifc_meta.get("psets")[0]["name"], "Pset_SlabCommon")
+
     def test_boolean_cutouts_from_components(self) -> None:
         spec_text = dedent(
             """
