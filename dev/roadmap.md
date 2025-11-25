@@ -28,7 +28,7 @@ This document captures the target state for the “just works” renderer, along
 │   │   ├── __init__.py
 │   │   ├── base.py             # Shared dataclasses / pydantic models
 │   │   ├── primitives.py       # Rectangle/polyline primitives
-│   │   ├── traits.py           # Optional behaviours (repeat, anchor, relate)
+│   │   ├── traits.py           # Optional behaviours (repeat, anchor, align/contact)
 │   │   └── decks.py            # Domain-specific enums/rules
 │   │
 │   ├── planner/                # Turns schema → geometry
@@ -111,7 +111,7 @@ Key points:
 - **Canonical model:** All components are defined once; plans/sections/attachment views are slices or projections of the same canonical scene.
 - **Geometry-first:** Shapely manages 2D footprints; CadQuery models 3D solids. All exporters read from the canonical transforms.
 - **Pluggable exporters:** New formats just implement `export(bundle, solids, path, options)` without touching solver logic.
-- **Behaviour traits:** The planner/solver supports additive behaviours (`repeat`, `cantilever`, `align`, `relate`) so domain logic is reusable.
+- **Behaviour traits:** The planner/solver supports additive behaviours (`repeat`, `cantilever`, `align/contact`, `relate_from`) so domain logic is reusable.
 
 ---
 
@@ -273,8 +273,14 @@ All work in this phase must preserve the overarching goal: *semantic description
   - Adopt correct IFC entities (e.g., joists → `IfcBeam` with `PredefinedType=JOIST`, not `IfcJoist`).
   - Standardise `ifc.psets` schema for `Pset_BeamCommon`, `Pset_MemberCommon`, `Pset_SlabCommon`, etc.
 
+- [ ] **Checks + axis grammar**
+  - Add `checks` block using `align`/`contact`; defaults: `gap=0.0`, `tolerance=0.5mm`, `on_fail=error`; optional `contact` (mutually exclusive with `gap`).
+  - Axis tokens are signed, canonicalised (`+x+z` ordering), world-frame by default; per subject/object `frame` override: `world` (default), `local`, `component:<id>`.
+  - Share the same subject/object shape across alignment helpers and checks using `pos` tokens (1/2/3 axes) with optional frames; allow components, datums, or bundles as targets where applicable.
+  - Land `run_between` helper: start/end anchors via `start_pos`/`end_pos`, direction from `from→to`, optional `orient: along_run`, `count`/`pitch`/`inset`/`include_seed` for instance spacing.
+
 - [ ] **Land the full relationship-first schema** (from `phase4-prep-report.md`)
-  - Introduce datums, face bundles, helper clauses (`flush_bundle`, `touch_planes`, `touch_components`, `relate_from`), and assemblies.
+  - Introduce datums, face bundles, alignment helpers (`align`/`contact`, `flush_bundle`, `run_between`, `relate_from`), and assemblies.
   - Ship behind a feature flag; legacy anchor specs should remain loadable until migration completes.
 
 - [ ] **Implement the constraint solver + diagnostics layer**
@@ -374,6 +380,7 @@ All work in this phase must preserve the overarching goal: *semantic description
   - Units = mm/deg.
   - `IfcMaterialProfileSetUsage`/`LayerSetUsage` correctness.
   - No invalid entity types or undefined predefined types.
+  - Axis token grammar and frame references valid; align checks executed post-solve and reported in diagnostics.
 
 - [ ] **Collision/overlap detection at the solid level**
   - Integrate OCC collision checks.

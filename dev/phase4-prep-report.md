@@ -1,6 +1,6 @@
 # Phase 4 prep – relationship-first schema & solid kernel (IFC 4.3.2 aligned)
 
-> _Last updated: 2025-11-17_
+> Last updated: 2025-11-25
 
 ## Context & objective
 
@@ -25,7 +25,7 @@ These settings are chosen for maximum interoperability while keeping authoring d
 
 ## Target outcomes
 
-1. Relationship-first authoring: components declare intrinsic geometry and explicit `relate` clauses that attach faces/edges to datum bundles or other components. No free-floating origin vectors.
+1. Relationship-first authoring: components declare intrinsic geometry and explicit `align`/`contact` clauses that attach faces/edges/points to datum bundles or other components. No free-floating origin vectors.
 2. Deterministic solving: a constraint solver resolves the graph, emits transparent diagnostics for under/over-constraint, and produces canonical transforms for CadQuery/IFC.
 3. IFC-aligned semantics baked into authoring: class names default to IFC entities; predefined types and property sets are explicit, not inferred.
 4. Single source of truth: neutral geometry feeds renderers (SVG/PNG), glTF, STEP, and IFC with consistent IDs and material tags.
@@ -37,7 +37,7 @@ These settings are chosen for maximum interoperability while keeping authoring d
 
 ### Components & classes
 
-- `component` requires: `id`, `class`, `profile` (rectangle unless otherwise stated), cross-section `size` and `height` (extrusion depth), `material`, and optional `metadata`.
+- `component` requires: `id`, `class`, `profile` (rectangle unless otherwise stated), `size` (`[x, y, z]` in local axes), `material`, and optional `metadata`.
 - `class` must be an IFC entity where applicable. Examples:
   - Joists and beams: `IfcBeam` with `ifc.predefined_type: JOIST` (for joists) or `BEAM` (for beams).
   - Deck surface: `IfcSlab` with `ifc.predefined_type: FLOOR`.
@@ -60,13 +60,26 @@ These settings are chosen for maximum interoperability while keeping authoring d
 - Bundle names (`deck_faces.x|y|z`) are linted for reuse so repeats/mirrors remain predictable.
 - IFC mapping: datums do not export to IFC; they drive object placement and face alignment which become `IfcLocalPlacement` + Axis/Body alignment in the exported representation.
 
-### Constraint clauses (helpers expand to canonical form)
+### Alignment clauses (helpers expand to canonical form)
 
-- `flush_bundle` — snap multiple subject faces to a named face bundle, with per-face insets (usable for rebates/clearances).
-- `touch_planes` — declare face-to-plane contacts.
-- `touch_components` — pairwise face contacts with optional offsets.
-- `relate_from` — copy another component’s relationships with targeted overrides (mirrors/variants).
+- `align` — general alignment using `pos` tokens; supports `gap`/`contact`, optional `frame`.
+- `contact` — zero-gap alias of `align`.
+- `flush_bundle` — macro to align multiple faces to a bundle with per-face insets.
+- `relate_from` — copy another component’s alignment set with targeted overrides (mirrors/variants).
+- `run_between` — place a component (or an array) between two targets; `start_pos` is required, `end_pos` defaults to `start_pos`, direction from `from→to`, optional `orient: along_run` rotates local +X to the run vector, `count`/`pitch`/`inset` control instance spacing.
 All helpers expand to explicit constraints in the solver’s debug output.
+
+### Position tokens, frames, and alignment vocabulary
+
+- Alignment targets use `pos` tokens with 1/2/3 signed axes (`+x`, `+x+z`, `+x+y+z`), canonicalised on load. One axis = face center, two axes = edge center, three axes = corner.
+- Default frame is world; optional `frame` per subject/object: `world` (default), `local`, or `component:<id>` (inherit another component’s axes). Direction comes from `from→to`; authors do not need negative lengths.
+- `orient` on `run_between` controls whether the component rotates to align its local +X to the run (`along_run`) or preserves axes while translating (`preserve_axes`, default).
+
+### Checks & alignment assertions
+
+- New `checks` block uses the same `align`/`contact` vocabulary. Defaults: `gap: 0.0`, `tolerance: 0.5` (mm), `on_fail: error`.
+- Subject/object use `pos` tokens (1/2/3 axes) with optional `frame` (`world` default; `local`; `component:<id>` to inherit another component’s axes). Axis tokens are canonicalised on load.
+- Optional `contact` expresses required overlap/length; mutually exclusive with `gap`. Expressions are allowed (e.g., `contact: component_width/2`).
 
 ### Repeats & inline assemblies
 
@@ -80,14 +93,14 @@ All helpers expand to explicit constraints in the solver’s debug output.
 
 The table below constrains how common pond-deck parts export to IFC so that receiving tools classify and display them consistently.
 
-| Authoring intent | IFC entity (occurrence) | PredefinedType | Shape reps | Material use | Psets (examples) |
-|---|---|---|---|---|---|
-| Joist | `IfcBeam` | `JOIST` | `Axis` (line), `Body` (ExtrudedAreaSolid) | `IfcMaterialProfileSetUsage` (rect profile) | `Pset_BeamCommon.LoadBearing`, `Reference` |
-| Inner/outer beam | `IfcBeam` | `BEAM` (or `EDGEBEAM` where applicable) | Axis + Body | `IfcMaterialProfileSetUsage` | `Pset_BeamCommon` |
-| Blocking/bridging | `IfcMember` | as needed | Axis + Body | `IfcMaterialProfileSetUsage` | `Pset_MemberCommon.LoadBearing` |
-| Straps/hangers (if modelled) | `IfcFastener` or `IfcMember` | — | Body only (tessellated if needed) | simple `IfcMaterial` | relevant Psets |
-| Decking (planks or surface) | `IfcSlab` | `FLOOR` | Body (extrusion), optional FootPrint | `IfcMaterialLayerSetUsage` (if layered) | `Pset_SlabCommon` |
-| Pond void (opening) | `IfcOpeningElement` | `OPENING` | Reference + Body | — | — (linked via `IfcRelVoidsElement`) |
+| Authoring intent             | IFC entity (occurrence)      | PredefinedType                          | Shape reps                                | Material use                                | Psets (examples)                           |
+| ---------------------------- | ---------------------------- | --------------------------------------- | ----------------------------------------- | ------------------------------------------- | ------------------------------------------ |
+| Joist                        | `IfcBeam`                    | `JOIST`                                 | `Axis` (line), `Body` (ExtrudedAreaSolid) | `IfcMaterialProfileSetUsage` (rect profile) | `Pset_BeamCommon.LoadBearing`, `Reference` |
+| Inner/outer beam             | `IfcBeam`                    | `BEAM` (or `EDGEBEAM` where applicable) | Axis + Body                               | `IfcMaterialProfileSetUsage`                | `Pset_BeamCommon`                          |
+| Blocking/bridging            | `IfcMember`                  | as needed                               | Axis + Body                               | `IfcMaterialProfileSetUsage`                | `Pset_MemberCommon.LoadBearing`            |
+| Straps/hangers (if modelled) | `IfcFastener` or `IfcMember` | —                                       | Body only (tessellated if needed)         | simple `IfcMaterial`                        | relevant Psets                             |
+| Decking (planks or surface)  | `IfcSlab`                    | `FLOOR`                                 | Body (extrusion), optional FootPrint      | `IfcMaterialLayerSetUsage` (if layered)     | `Pset_SlabCommon`                          |
+| Pond void (opening)          | `IfcOpeningElement`          | `OPENING`                               | Reference + Body                          | —                                           | — (linked via `IfcRelVoidsElement`)        |
 
 Voids: Any pond cut-out is authored as an `IfcOpeningElement` and related to the host element via `IfcRelVoidsElement`. The opening’s Body is not a second subtraction in RV; it documents the void while the host Body carries the real hole.
 
@@ -99,6 +112,7 @@ Profiles & layers: Linear members use `IfcMaterialProfileSet(Usage)`. Deck slabs
 
 ## Geometry & orientation conventions
 
+- Axis tokens in authoring are world-space by default; tokens are canonicalised (`+x+z`, not `+z+x`) and may opt into `local` or `component:<id>` frames per subject/object when needed.
 - Local placement: each product’s `IfcLocalPlacement.RelativePlacement` is an `IfcAxis2Placement3D`; Axis = +Z is up; RefDirection = +X; Y is derived.
 - Axis rep: when present, the joist/beam axis runs along local +X.
 - Extrusion: `IfcExtrudedAreaSolid.ExtrudedDirection` points along +Z unless a non-vertical sweep is intended; profile rectangles sit in the XY plane of the swept area position.
@@ -115,8 +129,9 @@ Profiles & layers: Linear members use `IfcMaterialProfileSet(Usage)`. Deck slabs
 - Tests:
   - Schema: helper expansions are canonical.
   - Solver: DOF counts, mirror/repeat parity, collision checks.
-  - Exporter: unit assignment is mm, contexts include Axis/Body, JOIST mapping is correct, openings are rel-voided, material usages match entity type.
-  - Round-trip: import -> check entity counts & types -> re-emit -> compare manifests.
+- Exporter: unit assignment is mm, contexts include Axis/Body, JOIST mapping is correct, openings are rel-voided, material usages match entity type.
+- Round-trip: import -> check entity counts & types -> re-emit -> compare manifests.
+- Checks: axis token linting (order, sign, frame validity); align checks evaluate post-solve with defaults applied and report pass/fail counts in solver diagnostics.
 
 ---
 
@@ -165,8 +180,7 @@ Joist (occurrence authored once, repeated via `repeat`)
 - id: joist_run_west
   class: IfcBeam
   profile: rectangle
-  size: [ backspan + cantilever + beam_width, joist_width ]
-  height: joist_depth
+  size: [ backspan + cantilever + beam_width, joist_width, joist_depth ]
   material: timber
   ifc:
     predefined_type: JOIST
@@ -174,27 +188,15 @@ Joist (occurrence authored once, repeated via `repeat`)
       - name: Pset_BeamCommon
         props:
           LoadBearing: true
-  relate:
-    - touch_components:
-        pairs:
-          - subject_face: -x
-            object_component: outer_beam_west
-            object_face: +x
-          - subject_face: +x
-            object_component: inner_beam_west
-            object_face: +x
-            offsets:
-              subject:
-                +x: cantilever
-    - touch_planes:
-        object: datums.planes.joist_top
-        faces: [+z]
-  repeat:
-    axis: +y
-    span:
-      use: datums.bundles.deck_faces.y
-      inset: { start: walkway_gap, end: walkway_gap }
+  run_between:
+    start_pos: +x+z
+    end_pos: -x+z
+    from: { component: outer_beam_west, pos: +x+z }
+    to:   { component: inner_beam_west, pos: -x+z }
+    orient: along_run
+    count: joist_count
     pitch: joist_spacing
+    inset: { start: walkway_gap, end: walkway_gap }
     include_seed: true
 ```
 
@@ -204,8 +206,7 @@ Deck slab (single surface or layered)
 - id: deck_surface
   class: IfcSlab
   profile: rectangle
-  size: [ deck_x, deck_y ]
-  height: deck_thickness
+  size: [ deck_x, deck_y, deck_thickness ]
   material: decking
   ifc:
     predefined_type: FLOOR
@@ -213,10 +214,9 @@ Deck slab (single surface or layered)
       - name: Pset_SlabCommon
         props:
           LoadBearing: false
-  relate:
-    - flush_bundle:
-        faces: [+z]
-        object: datums.bundles.deck_faces.z
+  align:
+    subject: { component: deck_surface, pos: +z }
+    object:  { component: datums.bundles.deck_faces.z, pos: +z }
 ```
 
 Pond opening
@@ -225,14 +225,10 @@ Pond opening
 - id: pond_opening
   class: IfcOpeningElement
   profile: rectangle
-  size: [ pond_x, pond_y ]
-  height: deck_thickness
-  relate:
-    - touch_components:
-        pairs:
-          - subject_face: all
-            object_component: deck_surface
-            object_face: cut
+  size: [ pond_x, pond_y, deck_thickness ]
+  align:
+    subject: { component: pond_opening, pos: +z }
+    object:  { component: deck_surface, pos: +z }
   metadata:
     host: deck_surface          # exporter turns this into IfcRelVoidsElement
 ```
