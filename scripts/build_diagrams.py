@@ -13,7 +13,14 @@ if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
 from diagramming import DiagramPlanner
-from diagramming.relationships import is_relationship_schema, relationship_mode_enabled
+from diagramming.relationships import (
+    ConstraintSolver,
+    RelationshipPlanner,
+    SchemaError,
+    is_relationship_schema,
+    load_relationship_spec,
+    relationship_mode_enabled,
+)
 from diagramming.renderers import SvgRenderer
 
 try:  # optional dependency (pyrender + pyglet)
@@ -119,24 +126,93 @@ def main(argv: Optional[List[str]] = None) -> int:
         else:
             cairosvg = _cairosvg
 
+    renderer = SvgRenderer()
+    gltf_requested = not args.no_gltf
+    gltf_options = GltfExportOptions(file_format=args.gltf_format)
+    gltf_exporter = GltfExporter(gltf_options) if gltf_requested else None
+
     for spec_path in spec_paths:
         raw = yaml.safe_load(spec_path.read_text(encoding="utf-8"))
         if isinstance(raw, dict) and is_relationship_schema(raw.get("schema")):
-            flag_notice = " Set DIAGRAM_RELATIONSHIPS=1 once the solver is ready." if not relationship_mode_enabled() else ""
-            print(
-                f"Spec {spec_path} is marked as relationship-first; "
-                "build_diagrams currently supports legacy specs only. "
-                "Run scripts/lint_specs.py for validation while the solver is landing."
-                f"{flag_notice}",
-                file=sys.stderr,
-            )
-            return 1
+            if not relationship_mode_enabled():
+                print(
+                    f"Spec {spec_path} is marked as relationship-first. Set DIAGRAM_RELATIONSHIPS=1 to build.",
+                    file=sys.stderr,
+                )
+                return 1
+            try:
+                relationship_spec = load_relationship_spec(spec_path)
+            except SchemaError as exc:
+                print(f"{spec_path.name} failed to load: {exc}", file=sys.stderr)
+                return 1
+            if args.options:
+                option_key = relationship_spec.info.option or "relationship"
+                if option_key not in args.options:
+                    continue
+            solver = ConstraintSolver(relationship_spec)
+            solve_result = solver.solve()
+            for diag in solve_result.diagnostics.warnings:
+                print(f"{spec_path.name}: warning: {diag.message}", file=sys.stderr)
+            if not solve_result.diagnostics.ok:
+                for diag in solve_result.diagnostics.errors:
+                    print(f"{spec_path.name}: error: {diag.message}", file=sys.stderr)
+                return 1
+            planner = RelationshipPlanner(relationship_spec, solve_result)
+            planned_views = planner.plan()
+            spec_name = spec_path.stem
+            print(f"Building relationship-first spec {spec_name} from {spec_path}")
+            plan_bundle = None
+            for planned in planned_views:
+                output_dir = outdir / spec_name / planned.option.key.lower()
+                output_dir.mkdir(parents=True, exist_ok=True)
+                svg_path = output_dir / f"{planned.view}.svg"
+                png_path = output_dir / f"{planned.view}.png"
+
+                if svg_path.exists() and not args.force:
+                    print(f"  Skipping existing {svg_path} (use --force to overwrite)")
+                    continue
+
+                aria_label = planned.view_config.aria_label
+                title = planned.view_config.title
+                svg_data = renderer.render(
+                    planned.bundle,
+                    aria_label=aria_label,
+                    title=title,
+                    dash_scale=SVG_DASH_SCALE,
+                )
+                svg_path.write_text(svg_data, encoding="utf-8")
+                print(f"  Wrote {svg_path.relative_to(outdir)}")
+
+                if png_requested and cairosvg is not None:
+                    png_svg_data = svg_data
+                    if PNG_DASH_SCALE != SVG_DASH_SCALE:
+                        png_svg_data = renderer.render(
+                            planned.bundle,
+                            aria_label=aria_label,
+                            title=title,
+                            dash_scale=PNG_DASH_SCALE,
+                        )
+                    cairosvg.svg2png(
+                        bytestring=png_svg_data.encode("utf-8"), write_to=str(png_path)
+                    )
+                    print(f"  Wrote {png_path.relative_to(outdir)}")
+
+                if planned.view == "plan":
+                    plan_bundle = planned.bundle
+
+            if gltf_exporter and plan_bundle:
+                gltf_filename = f"model.{args.gltf_format}"
+                gltf_path = outdir / spec_name / (relationship_spec.info.option or "relationship") / gltf_filename
+                gltf_path.parent.mkdir(parents=True, exist_ok=True)
+                try:
+                    gltf_exporter.export(plan_bundle, gltf_path)
+                except ValueError as exc:
+                    print(f"  Skipped glTF export: {exc}")
+                else:
+                    print(f"  Wrote {(gltf_path.relative_to(outdir))}")
+            continue
         spec = load_spec(spec_path, include_options=args.options)
         planner = DiagramPlanner(spec)
-        renderer = SvgRenderer()
-        gltf_requested = not args.no_gltf
-        gltf_options = GltfExportOptions(file_format=args.gltf_format)
-        gltf_exporter = GltfExporter(gltf_options) if gltf_requested else None
 
         print(f"Building spec {spec.name} from {spec_path}")
         for option_key in spec.option_keys():

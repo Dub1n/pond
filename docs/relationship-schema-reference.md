@@ -1,25 +1,27 @@
 ## Relationship-first schema (prep)
 
-This document captures the prep surface for the relationship-first schema described in `dev/phase4-prep-report.md`. The loader and lint are live so contributors can draft specs ahead of the solver/CadQuery integration.
+This document captures the prep surface for the relationship-first schema described in `dev/phase4-prep-report.md`. The loader, lints, and a box-only solver/renderer bridge are live behind `DIAGRAM_RELATIONSHIPS=1`.
 
 ### What is available now
 
 - Specs marked with `schema: pond-relationship*` parse via `diagramming.relationships.schema`.
 - Axis tokens use signed axes (`+x`, `-y`, `+z`); multi-axis positions are canonicalised (`+x-y+z`).
 - Datums support points, planes, and face bundles; helpers consume references such as `datums.planes.deck_top` and `datums.bundles.frame.x`.
-- Relationship helpers parsed today: `align` / `contact`, `flush_bundle`, `run_between`, `relate_from`, `touch_planes`, `touch_components`, plus `repeat` spans and `voids`.
-- IFC metadata is accepted (`ifc.predefined_type`, `ifc.psets`) and uppercased for consistency.
-- Components will move to a single 3-axis `size: [x, y, z]` (missing axes default to 0); box solids are the initial scope with room for additional primitives later.
+- Relationship helpers parsed today: `align` / `contact`, `flush_bundle`, `run_between`, `relate_from`, `touch_planes`, `touch_components`, plus `repeat` spans and `voids`. Checks reuse the same alignment vocabulary and default to `gap: 0`, `tolerance: 0.5`, `on_fail: error`.
+- IFC metadata is accepted (`ifc.predefined_type`, `ifc.psets`) and uppercased for consistency; IFC-classed components lint if they omit an `ifc` block.
+- Components use a single 3-axis `size: [x, y, z]` (missing axes default to 0); box solids are the initial scope with room for additional primitives later.
+- Constraint solver resolves faces/planes/bundles into deterministic transforms and neutral box primitives with stable GUID seeds; checks report pass/fail, and diagnostics carry DOF/graph information.
+- Relationship planner projects those neutral boxes to Shapely footprints/sections and reuses the existing SVG/PNG/glTF pipeline when the feature flag is set.
 
 ### Linting
 
 - Run `python3 scripts/lint_specs.py` (or `.venv/bin/python scripts/lint_specs.py`) to lint both legacy and relationship-first specs. Use `--relationship-only` when iterating on the new schema.
-- The linter checks reference integrity (component IDs, datums, bundles, planes) and warns when IFC classes are missing an `ifc` block.
-- The CLI short-circuits if a Phase 4 spec is passed to `scripts/build_diagrams.py`; renderers remain legacy-only until the solver lands.
+- The linter checks reference integrity (component IDs, datums, bundles, planes), axis token ordering, `run_between.orient` values, IFC coverage, and checks block references.
+- `scripts/build_diagrams.py` now builds relationship-first specs when `DIAGRAM_RELATIONSHIPS=1` is set; solver failures block rendering.
 
 ### Feature flag
 
-- The relationship-first path is gated by `DIAGRAM_RELATIONSHIPS=1` for future solver/CadQuery hookups. For now it only influences diagnostics; rendering still refuses relationship-first specs.
+- The relationship-first path is gated by `DIAGRAM_RELATIONSHIPS=1`; with the flag set, solver outputs feed the renderer/gltf exporter. Without it, the CLI will refuse relationship-first specs.
 
 ### Reference example
 
@@ -27,5 +29,4 @@ This document captures the prep surface for the relationship-first schema descri
 
 ### Limitations (prep state)
 
-- Constraint solving and solids are stubbed; `diagramming.relationships.solver.ConstraintSolver` returns placeholders with warnings.
-- Renderers still rely on the legacy planner; plan/section projections from CadQuery will arrive with the solver work.
+- Assemblies are parsed but not yet expanded by the solver. Non-box solids and CadQuery-native profiles will arrive later in Phase 4.

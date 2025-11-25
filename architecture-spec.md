@@ -2,7 +2,7 @@
 
 ## Overview
 
-Phase 1 delivers a deterministic 2D pipeline that converts declarative YAML specs into SVG (and optional PNG) diagrams. The goal is to minimise hand-tuned geometry while keeping the stack lightweight and easy to extend in later phases. A relationship-first loader/linter now exists in `diagramming/relationships` (feature-flagged via `DIAGRAM_RELATIONSHIPS=1`) to stage the next-generation schema; rendering still flows through the legacy planner until the constraint solver and CadQuery solids land.
+Phase 1 delivers a deterministic 2D pipeline that converts declarative YAML specs into SVG (and optional PNG) diagrams. The goal is to minimise hand-tuned geometry while keeping the stack lightweight and easy to extend in later phases. A relationship-first loader/solver now exists in `diagramming/relationships` (feature-flagged via `DIAGRAM_RELATIONSHIPS=1`) to stage the next-generation schema; behind the flag it resolves neutral box primitives, projects plan/sections, and feeds the existing renderers, while the legacy planner remains the default until CadQuery solids land.
 
 ```diagram
 YAML spec ──> Schema loader ──> DiagramPlanner ──> GeometryBundle ──> SVG/PNG/GLB files
@@ -88,6 +88,7 @@ YAML spec ──> Schema loader ──> DiagramPlanner ──> GeometryBundle �
 3. Write SVG to `diagrams/output/<spec>/<option>/<view>.svg`.
 4. Unless `--no-png` is passed (or `cairosvg` is missing), emit matching PNG using the rendered SVG string.
 5. Unless `--no-gltf` is passed, extrude plan geometry via `trimesh` and write `model.glb` (or `.gltf`) alongside the option.
+6. When `DIAGRAM_RELATIONSHIPS=1` is set and a spec declares `schema: pond-relationship*`, load via `diagramming.relationships`, solve to neutral box primitives with deterministic GUID seeds, project plan/section footprints via `RelationshipPlanner`, and reuse the same SVG/PNG/glTF pipeline. Assemblies and non-box solids remain future work.
 
 ### Command-Line Flags
 

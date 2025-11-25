@@ -23,6 +23,16 @@ def lint_relationship_spec(spec: RelationshipDiagramSpec) -> List[str]:
     datum_planes = set(spec.planes.keys())
     datum_bundles = set(spec.bundles.keys())
 
+    for check in spec.checks:
+        _lint_check(
+            check,
+            datum_points=datum_points,
+            datum_planes=datum_planes,
+            datum_bundles=datum_bundles,
+            component_ids=component_ids,
+            errors=errors,
+        )
+
     for component in spec.components:
         _lint_component(
             component,
@@ -54,6 +64,8 @@ def _lint_component(
         elif isinstance(clause, RunBetweenClause):
             _lint_ref(clause.from_ref.ref, component, component_ids, datum_points, datum_planes, datum_bundles, errors)
             _lint_ref(clause.to_ref.ref, component, component_ids, datum_points, datum_planes, datum_bundles, errors)
+            if clause.orient not in {"preserve_axes", "along_run"}:
+                errors.append(f"component '{component.id}' run_between uses unsupported orient '{clause.orient}'")
 
     for void in component.voids:
         if void not in component_ids:
@@ -100,6 +112,26 @@ def _lint_ref(
             if category in {"points", "point"} and name in datum_points:
                 return
     errors.append(f"component '{component.id}' references unknown target '{ref}'")
+
+
+def _lint_check(
+    clause: AlignmentClause,
+    *,
+    datum_points: Set[str],
+    datum_planes: Set[str],
+    datum_bundles: Set[str],
+    component_ids: Set[str],
+    errors: List[str],
+) -> None:
+    dummy_component = RelationshipComponent(
+        id="__checks__",
+        class_name="",
+        profile="rectangle",
+        size_xy=(0.0, 0.0),
+        height=0.0,
+    )
+    _lint_ref(clause.subject.ref, dummy_component, component_ids, datum_points, datum_planes, datum_bundles, errors)
+    _lint_ref(clause.obj.ref, dummy_component, component_ids, datum_points, datum_planes, datum_bundles, errors)
 
 
 __all__ = ["lint_relationship_spec"]

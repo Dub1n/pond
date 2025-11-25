@@ -274,33 +274,33 @@ All work in this phase must preserve the overarching goal: *semantic description
 
 #### Schema & solver groundwork
 
-- [ ] **Finish outstanding Phase 3 IFC metadata alignment**
+- [x] **Finish outstanding Phase 3 IFC metadata alignment**
   - Ensure every component already advertises IFC-ready metadata (`class`, `ifc.predefined_type`, `ifc.psets`) before solids land.
   - Adopt correct IFC entities (e.g., joists → `IfcBeam` with `PredefinedType=JOIST`, not `IfcJoist`).
   - Standardise `ifc.psets` schema for `Pset_BeamCommon`, `Pset_MemberCommon`, `Pset_SlabCommon`, etc.
 
-- [ ] **Checks + axis grammar**
+- [x] **Checks + axis grammar**
   - Add `checks` block using `align`/`contact`; defaults: `gap=0.0`, `tolerance=0.5mm`, `on_fail=error`; optional `contact` (mutually exclusive with `gap`).
   - Axis tokens are signed, canonicalised (`+x+z` ordering), world-frame by default; per subject/object `frame` override: `world` (default), `local`, `component:<id>`.
   - Share the same subject/object shape across alignment helpers and checks using `pos` tokens (1/2/3 axes) with optional frames; allow components, datums, or bundles as targets where applicable.
   - Land `run_between` helper: start/end anchors via `start_pos`/`end_pos`, direction from `from→to`, optional `orient: along_run`, `count`/`pitch`/`inset`/`include_seed` for instance spacing.
 
-- [ ] **Land the full relationship-first schema**
+- [x] **Land the full relationship-first schema**
   - Build on the existing relationship-first loader: connect helper parsing to the solver and exporter paths.
   - Ship behind the `DIAGRAM_RELATIONSHIPS` feature flag; legacy anchor specs should remain loadable until migration completes.
-- [ ] **Standardise 3-axis sizes in schema**
+- [x] **Standardise 3-axis sizes in schema**
   - Collapse component `size`/`height` into a single `[x, y, z]` vector (missing axes default to 0).
   - Positional tokens default to edge/face centres when a dimension is zero.
   - Wire this through the relationship loader as the first solver implementation step.
 
 - [ ] **Implement the constraint solver + diagnostics layer**
-  - Resolve face/edge/plane relationships deterministically.
+  - Resolve face/edge/plane relationships deterministically. **Progress:** box-only solver emits neutral primitives with DOF/check diagnostics and deterministic GUID seeds; assemblies and non-box solids remain.
   - Produce canonical transforms for each component (local placement, rotation, flip, inset).
   - Detect and surface **under-constrained**, **over-constrained**, and **inconsistent** relationships.
   - Export the constraint graph + DOF report for debugging.
   - Block CLI builds automatically when solving fails.
 
-- [ ] **Enforce deterministic identifiers**
+- [x] **Enforce deterministic identifiers**
   - Stable component UUIDs seeded from `(component_id, schema_version, option_id)`.
   - Deterministic ordering of constraints, relationships, and transforms.
   - All geometry must be reproducible byte-for-byte given the same YAML.

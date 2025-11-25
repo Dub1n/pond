@@ -17,10 +17,10 @@ Pass `--orthographic` to also emit a headless 3D orthographic snapshot (`orthogr
 
 ### Relationship-first prep schema
 
-- Specs marked `schema: pond-relationship*` are lintable now via `python3 scripts/lint_specs.py`; the CLI refuses to render them until the relationship-first solver/CadQuery path lands.
-- The prep schema uses signed axis tokens and datums/bundles; see `docs/relationship-schema-reference.md` plus the worked example in `docs/examples/option-c-relationship.yaml`.
-- The upcoming solver is gated behind `DIAGRAM_RELATIONSHIPS=1` (flag available now for future plumbing).
-- Legacy specs can optionally include `ifc` blocks (`predefined_type`, `psets`); the loader preserves them in feature/mesh metadata for IFC-ready exports.
+- Specs marked `schema: pond-relationship*` are lintable now via `python3 scripts/lint_specs.py` and renderable when `DIAGRAM_RELATIONSHIPS=1` is set. Without the flag, the CLI skips relationship-first specs.
+- The prep schema uses signed axis tokens, datums/bundles, helpers (`align`, `contact`, `flush_bundle`, `run_between`, `relate_from`), and a `checks` block; see `docs/relationship-schema-reference.md` plus the worked example in `docs/examples/option-c-relationship.yaml`.
+- Relationship solving currently outputs neutral box primitives with deterministic GUID seeds, plan/section projections, and glTF via the existing exporters; CadQuery solids stay on the roadmap for richer profiles.
+- Legacy specs can optionally include `ifc` blocks (`predefined_type`, `psets`); the loader normalises IFC class names/pset names and preserves them in feature/mesh metadata for IFC-ready exports.
 
 ### Blender export
 

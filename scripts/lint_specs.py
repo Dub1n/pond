@@ -14,6 +14,7 @@ if str(ROOT) not in sys.path:
 
 from diagramming.relationships import SchemaError, is_relationship_schema, lint_relationship_spec, load_relationship_spec  # noqa: E402
 from diagramming.schema import load_spec  # noqa: E402
+from diagramming.schema.ifc_lint import lint_ifc_metadata  # noqa: E402
 
 
 def find_spec_paths(explicit: Iterable[str]) -> List[Path]:
@@ -71,9 +72,13 @@ def lint_path(path: Path, *, relationship_only: bool, legacy_only: bool) -> Tupl
         return True, [f"{path.name}: relationship-first lint passed"]
 
     try:
-        load_spec(path)
+        spec = load_spec(path)
     except Exception as exc:  # pragma: no cover - defensive
         return False, [f"{path.name}: legacy schema failed validation ({exc})"]
+    ifc_errors = lint_ifc_metadata(spec)
+    if ifc_errors:
+        prefixed = [f"{path.name}: {err}" for err in ifc_errors]
+        return False, prefixed
     return True, [f"{path.name}: legacy lint passed"]
 
 

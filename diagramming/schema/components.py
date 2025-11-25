@@ -5,6 +5,8 @@ import math
 from dataclasses import dataclass, field
 from typing import Any, Dict, Iterable, List, Literal, Mapping, Optional, Sequence, Tuple
 
+from ..ifc import normalize_ifc_class, normalize_ifc_predefined_type, normalize_pset_name
+
 Alignment = Literal[
     "center",
     "north",
@@ -554,7 +556,7 @@ class IfcMetadata:
     @staticmethod
     def from_dict(data: Mapping[str, object]) -> "IfcMetadata":
         predefined_raw = data.get("predefined_type")
-        predefined_type = str(predefined_raw).upper() if predefined_raw is not None else None
+        predefined_type = normalize_ifc_predefined_type(predefined_raw)
         psets_raw = data.get("psets", ())
         psets: List[IfcPset] = []
         if psets_raw:
@@ -568,7 +570,7 @@ class IfcMetadata:
                 props = item.get("props")
                 if not isinstance(props, Mapping):
                     raise ValueError("ifc.psets.props must be a mapping")
-                psets.append(IfcPset(name=str(item["name"]), props=dict(props)))
+                psets.append(IfcPset(name=normalize_pset_name(item["name"]), props=dict(props)))
         return IfcMetadata(predefined_type=predefined_type, psets=tuple(psets))
 
     def to_dict(self) -> Dict[str, Any]:
@@ -682,7 +684,7 @@ class RectangleComponent(ComponentBase):
             id=str(data["id"]),
             label=data.get("label"),
             label_id=data.get("label_id"),
-            class_name=data.get("class"),
+            class_name=normalize_ifc_class(data.get("class")),
             material=data.get("material"),
             views=views,
             size=(
@@ -782,7 +784,7 @@ class PolylineComponent(ComponentBase):
             id=str(data["id"]),
             label=data.get("label"),
             label_id=data.get("label_id"),
-            class_name=data.get("class"),
+            class_name=normalize_ifc_class(data.get("class")),
             material=data.get("material"),
             views=views,
             points=tuple(points),

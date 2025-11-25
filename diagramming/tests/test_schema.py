@@ -87,6 +87,7 @@ class SpecLoadTests(unittest.TestCase):
                     id: beam
                     size: [100, 200]
                     height: 300
+                    class: ifcbeam
                     ifc:
                       predefined_type: beam
                       psets:
@@ -104,6 +105,7 @@ class SpecLoadTests(unittest.TestCase):
             spec = load_spec(path)
 
         component = spec.get_option("A").components[0]
+        self.assertEqual(component.class_name, "IfcBeam")
         self.assertIsNotNone(component.ifc)
         assert component.ifc  # type narrowing
         self.assertEqual(component.ifc.predefined_type, "BEAM")

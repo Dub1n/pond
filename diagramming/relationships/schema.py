@@ -9,6 +9,7 @@ from typing import Any, Dict, Iterable, List, Mapping, MutableMapping, Optional,
 import yaml
 
 from .flags import is_relationship_schema
+from ..ifc import normalize_ifc_class, normalize_ifc_predefined_type, normalize_pset_name
 
 AxisToken = str
 PosToken = str
@@ -395,6 +396,14 @@ class IfcMetadata:
     predefined_type: Optional[str] = None
     psets: Tuple[IfcPset, ...] = ()
 
+    def to_dict(self) -> Dict[str, Any]:
+        data: Dict[str, Any] = {}
+        if self.predefined_type is not None:
+            data["predefined_type"] = self.predefined_type
+        if self.psets:
+            data["psets"] = [{"name": pset.name, "props": pset.props} for pset in self.psets]
+        return data
+
 
 @dataclass(slots=True)
 class RelationshipComponent:
@@ -431,6 +440,10 @@ class ViewConfig:
     scale_hint: Optional[float] = None
     renders: Tuple[str, ...] = ()
     plane: Optional[ViewPlane] = None
+    aria_label: Optional[str] = None
+    pad: float = 48.0
+    background: Optional[str] = None
+    scale: Optional[float] = None
 
 
 @dataclass(slots=True)
@@ -620,7 +633,7 @@ def _parse_component(data: Mapping[str, Any], dimensions: DimensionResolver) -> 
     if "size" not in data:
         raise SchemaError(f"component '{data['id']}' requires size")
     comp_id = str(data["id"])
-    class_name = str(data["class"])
+    class_name = normalize_ifc_class(data["class"])
     profile = str(data.get("profile", "rectangle"))
 
     size_raw = data["size"]
@@ -675,8 +688,8 @@ def _parse_ifc_block(data: Any) -> Optional[IfcMetadata]:
             props_raw = item.get("props")
             if not isinstance(props_raw, Mapping):
                 raise SchemaError("ifc.psets.props must be a mapping")
-            psets.append(IfcPset(name=str(item["name"]), props=dict(props_raw)))
-    predefined_norm = str(predefined).upper() if predefined is not None else None
+            psets.append(IfcPset(name=normalize_pset_name(item["name"]), props=dict(props_raw)))
+    predefined_norm = normalize_ifc_predefined_type(predefined)
     return IfcMetadata(predefined_type=predefined_norm, psets=tuple(psets))
 
 
@@ -986,14 +999,20 @@ def _parse_views(data: Any, dimensions: DimensionResolver) -> Dict[str, ViewConf
             if not isinstance(renders_raw, Sequence):
                 raise SchemaError("view.renders must be a list")
             renders = tuple(str(item) for item in renders_raw)
-        scale_hint_raw = raw.get("scale_hint")
+        scale_hint_raw = raw.get("scale_hint", raw.get("scale"))
         scale_hint = _resolve_optional_number(scale_hint_raw, dimensions) if scale_hint_raw is not None else None
+        pad_value = _resolve_number(raw.get("pad", 48.0), dimensions)
+        background = str(raw.get("background")) if raw.get("background") is not None else None
         views[name] = ViewConfig(
             name=str(name),
             title=str(raw.get("title")) if raw.get("title") is not None else None,
             scale_hint=scale_hint,
             renders=renders,
             plane=plane,
+            aria_label=str(raw.get("aria_label")) if raw.get("aria_label") is not None else None,
+            pad=pad_value,
+            background=background,
+            scale=scale_hint,
         )
     return views
 
