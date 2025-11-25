@@ -37,7 +37,7 @@ These settings are chosen for maximum interoperability while keeping authoring d
 
 ### Components & classes
 
-- `component` requires: `id`, `class`, `profile` (rectangle unless otherwise stated), `size` (`[x, y, z]` in local axes), `material`, and optional `metadata`.
+- `component` requires: `id`, `class`, `size` (`[x, y, z]` in local axes; omitted axes default to 0), `material`, and optional `metadata`. Profiles are implicit for box solids; non-box profiles are future extensions.
 - `class` must be an IFC entity where applicable. Examples:
   - Joists and beams: `IfcBeam` with `ifc.predefined_type: JOIST` (for joists) or `BEAM` (for beams).
   - Deck surface: `IfcSlab` with `ifc.predefined_type: FLOOR`.
@@ -115,6 +115,7 @@ Profiles & layers: Linear members use `IfcMaterialProfileSet(Usage)`. Deck slabs
 - Axis tokens in authoring are world-space by default; tokens are canonicalised (`+x+z`, not `+z+x`) and may opt into `local` or `component:<id>` frames per subject/object when needed.
 - Local placement: each product’s `IfcLocalPlacement.RelativePlacement` is an `IfcAxis2Placement3D`; Axis = +Z is up; RefDirection = +X; Y is derived.
 - Axis rep: when present, the joist/beam axis runs along local +X.
+- Solids: initial scope uses box primitives; additional solid types (sweeps, wedges) can be added later. When profiles are needed (e.g., IFC Axis reps), derive them from the canonical box unless a non-rectangular profile is specified.
 - Extrusion: `IfcExtrudedAreaSolid.ExtrudedDirection` points along +Z unless a non-vertical sweep is intended; profile rectangles sit in the XY plane of the swept area position.
 - Contexts: establish a 3D “Model” context (precision, TrueNorth as needed) with subcontexts for Axis and Body identifiers.
 

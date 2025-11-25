@@ -9,6 +9,7 @@ This document captures the prep surface for the relationship-first schema descri
 - Datums support points, planes, and face bundles; helpers consume references such as `datums.planes.deck_top` and `datums.bundles.frame.x`.
 - Relationship helpers parsed today: `align` / `contact`, `flush_bundle`, `run_between`, `relate_from`, `touch_planes`, `touch_components`, plus `repeat` spans and `voids`.
 - IFC metadata is accepted (`ifc.predefined_type`, `ifc.psets`) and uppercased for consistency.
+- Components will move to a single 3-axis `size: [x, y, z]` (missing axes default to 0); box solids are the initial scope with room for additional primitives later.
 
 ### Linting
 
