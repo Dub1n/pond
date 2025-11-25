@@ -1,0 +1,66 @@
+schema: pond-relationship-test
+info:
+  option: X
+  title: "Phase 4 minimal test"
+dimensions:
+  structure:
+    span: 2000
+    inset: 50
+datums:
+  anchor:
+    type: point
+    coordinates:
+      +x: 0
+      +y: 0
+      +z: 0
+  bundles:
+    frame:
+      type: faces
+      origin:
+        ref: datums.anchor
+      span:
+        +x: dimensions.structure.span
+        +y: dimensions.structure.span
+  planes:
+    deck_top:
+      base:
+        ref: datums.anchor
+      normal: +z
+      offset: 28
+components:
+  - id: deck_surface
+    class: IfcSlab
+    profile: rectangle
+    size: [dimensions.structure.span, dimensions.structure.span]
+    height: 28
+    material: decking
+    relate:
+      - flush_bundle:
+          bundle: datums.bundles.frame
+          faces: [+x, -x, +y, -y]
+      - touch_planes:
+          object: datums.planes.deck_top
+          faces: [-z]
+    ifc:
+      predefined_type: floor
+      psets:
+        - name: Pset_SlabCommon
+          props:
+            LoadBearing: true
+    repeat:
+      axis: +x
+      span:
+        use: datums.bundles.frame.x
+        inset:
+          start: dimensions.structure.inset
+          end: dimensions.structure.inset
+      pitch: 1000
+views:
+  plan:
+    title: "Plan"
+    renders: [svg]
+  section:
+    title: "Section"
+    plane:
+      axis: y
+      coordinate: 1000

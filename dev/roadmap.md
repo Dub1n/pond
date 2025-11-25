@@ -266,6 +266,12 @@ this remains a useful low-level example but is effectively “Phase 1 era”.
 Phase 4 replaces the Phase 3 anchor-based planner with a *relationship-first constraint solver*, introduces a *CadQuery (OCC) solid kernel*, and formalises a *deterministic, IFC 4.3.2-aligned export path*.
 All work in this phase must preserve the overarching goal: *semantic description → deterministic YAML → canonical transforms → solids → interoperable IFC*.
 
+**Current prep state**
+
+- [x] Relationship-first schema loader + linter scaffolded under `diagramming/relationships` with signed-axis tokens, datums/bundles, helper clauses, IFC metadata, and a CLI guard. Specs opt in via `schema: pond-relationship*`; rendering is still legacy-only pending solver/solids. Feature flag: `POND_RELATIONSHIPS=1`.
+- [x] Relationship-first example spec and fixtures in `docs/examples/option-c-relationship.yaml` and `diagramming/tests/fixtures/relationship_minimal.yaml`; tests cover token canonicalisation and linting.
+- [x] CLI lint entrypoint (`scripts/lint_specs.py`) handles both legacy and relationship-first specs.
+
 #### Schema & solver groundwork
 
 - [ ] **Finish outstanding Phase 3 IFC metadata alignment**
@@ -279,9 +285,9 @@ All work in this phase must preserve the overarching goal: *semantic description
   - Share the same subject/object shape across alignment helpers and checks using `pos` tokens (1/2/3 axes) with optional frames; allow components, datums, or bundles as targets where applicable.
   - Land `run_between` helper: start/end anchors via `start_pos`/`end_pos`, direction from `from→to`, optional `orient: along_run`, `count`/`pitch`/`inset`/`include_seed` for instance spacing.
 
-- [ ] **Land the full relationship-first schema** (from `phase4-prep-report.md`)
-  - Introduce datums, face bundles, alignment helpers (`align`/`contact`, `flush_bundle`, `run_between`, `relate_from`), and assemblies.
-  - Ship behind a feature flag; legacy anchor specs should remain loadable until migration completes.
+- [ ] **Land the full relationship-first schema**
+  - Build on the existing relationship-first loader: connect helper parsing to the solver and exporter paths.
+  - Ship behind the `POND_RELATIONSHIPS` feature flag; legacy anchor specs should remain loadable until migration completes.
 
 - [ ] **Implement the constraint solver + diagnostics layer**
   - Resolve face/edge/plane relationships deterministically.

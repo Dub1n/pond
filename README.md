@@ -15,6 +15,12 @@ SVGs (and PNGs when `cairosvg` is available) will be written to `diagrams/output
 Use `--no-png` if you only need SVG output. A glTF model (`model.glb` by default) is emitted alongside each option; disable it with `--no-gltf` or switch to `.gltf` with `--gltf-format gltf`.
 Pass `--orthographic` to also emit a headless 3D orthographic snapshot (`orthographic.png`); the flag requires the optional `pyrender`/`pyglet` dependencies shipped in `requirements.txt`.
 
+### Relationship-first prep schema
+
+- Specs marked `schema: pond-relationship*` are lintable now via `python3 scripts/lint_specs.py`; the CLI refuses to render them until the relationship-first solver/CadQuery path lands.
+- The prep schema uses signed axis tokens and datums/bundles; see `docs/relationship-schema-reference.md` plus the worked example in `docs/examples/option-c-relationship.yaml`.
+- The upcoming solver is gated behind `POND_RELATIONSHIPS=1` (flag available now for future plumbing).
+
 ### Blender export
 
 Use the existing glTF exporter when you need geometry in Blender or any other glTF 2.0 consumer:

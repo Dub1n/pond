@@ -3,6 +3,7 @@
 ## Project Structure & Module Organization
 
 - `diagramming/` – core engine; planner logic in `planner/`, schema loaders in `schema/`, renderers in `renderers/`, material palette in `materials.py`.
+- `diagramming/relationships/` – relationship-first schema loader/lint + solver stub (opt-in via `schema: pond-relationship*`, feature flag `POND_RELATIONSHIPS=1`).
 - `diagrams/specs/` – author-facing YAML specs; long-lived revisions live under `archive/`.
 - `diagrams/output/` – generated artefacts (`plan.svg/png`, `section.svg/png`, `model.glb`). Git-ignored; regenerate on demand.
 - `scripts/` – CLI entry points (`build_diagrams.py`).
@@ -16,6 +17,7 @@
 - `python scripts/build_diagrams.py --spec archive/diagrams/specs/deck-framing.yaml --option A --outdir diagrams/output --force` – regenerate plan/section PNG/SVG plus `model.glb` for Option A.
 - Flags: `--no-png`, `--no-gltf`, `--gltf-format gltf`, `--spec` (multi-select), `--option`.
 - `python -m unittest discover` – run Phase 1 test suite.
+- `python scripts/lint_specs.py [--relationship-only|--legacy-only]` – lint specs, including relationship-first examples (rendering blocked until solver lands).
 - NEVER use the view image tool to view `.svg`s, only use the view image tool for `.png`s.
 - Helpful local checks: `scripts/check_water_area.py <spec> --option <key>` prints expected vs rendered water coverage; `diagramming/tests/test_layering_debug.py` exercises a minimal ring-over-water fixture for layering regressions.
 - Baseline render freshness: always pair render-count checks with `scripts/baseline_render_check.py --fresh-check`. It rasterises timestamp-sized squares and exits non-zero if the render/pixel counts look stale. Run it alongside any script/test that inspects rendered output; include a short note in logs like “baseline render check passed; rerun `.venv/bin/python scripts/baseline_render_check.py --fresh-check` for details.”

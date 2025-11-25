@@ -2,7 +2,7 @@
 
 ## Overview
 
-Phase 1 delivers a deterministic 2D pipeline that converts declarative YAML specs into SVG (and optional PNG) diagrams. The goal is to minimise hand-tuned geometry while keeping the stack lightweight and easy to extend in later phases.
+Phase 1 delivers a deterministic 2D pipeline that converts declarative YAML specs into SVG (and optional PNG) diagrams. The goal is to minimise hand-tuned geometry while keeping the stack lightweight and easy to extend in later phases. A relationship-first loader/linter now exists in `diagramming/relationships` (feature-flagged via `POND_RELATIONSHIPS=1`) to stage the next-generation schema; rendering still flows through the legacy planner until the constraint solver and CadQuery solids land.
 
 ```diagram
 YAML spec ──> Schema loader ──> DiagramPlanner ──> GeometryBundle ──> SVG/PNG/GLB files

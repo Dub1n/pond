@@ -6,11 +6,14 @@ import sys
 from pathlib import Path
 from typing import Iterable, List, Optional
 
+import yaml
+
 ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
 from diagramming import DiagramPlanner
+from diagramming.relationships import is_relationship_schema, relationship_mode_enabled
 from diagramming.renderers import SvgRenderer
 
 try:  # optional dependency (pyrender + pyglet)
@@ -117,6 +120,21 @@ def main(argv: Optional[List[str]] = None) -> int:
             cairosvg = _cairosvg
 
     for spec_path in spec_paths:
+        raw = yaml.safe_load(spec_path.read_text(encoding="utf-8"))
+        if isinstance(raw, dict) and is_relationship_schema(raw.get("schema")):
+            flag_notice = (
+                " Set POND_RELATIONSHIPS=1 once the solver is ready."
+                if not relationship_mode_enabled()
+                else ""
+            )
+            print(
+                f"Spec {spec_path} is marked as relationship-first; "
+                "build_diagrams currently supports legacy specs only. "
+                "Run scripts/lint_specs.py for validation while the solver is landing."
+                f"{flag_notice}",
+                file=sys.stderr,
+            )
+            return 1
         spec = load_spec(spec_path, include_options=args.options)
         planner = DiagramPlanner(spec)
         renderer = SvgRenderer()
