@@ -25,6 +25,7 @@ from .schema import (
     RepeatSpec,
 )
 from ..ifc import normalize_ifc_class, normalize_ifc_predefined_type
+from .flags import collision_handling_mode
 
 
 GUID_NAMESPACE = uuid.UUID("6c7b3d9e-4f21-4b06-9fbf-2a6e2d6a8b2c")
@@ -339,6 +340,7 @@ class ConstraintSolver:
         self.datum_points = self._build_points(spec)
         self.datum_planes = self._build_planes(spec)
         self.datum_bundles = self._build_bundles(spec, self.datum_points, self.datum_planes)
+        self.collision_mode = collision_handling_mode()
 
     def _rotation_index(self, spec: RelationshipDiagramSpec) -> Dict[str, Dict[int, str]]:
         index: Dict[str, Dict[int, str]] = {}
@@ -1293,6 +1295,8 @@ class ConstraintSolver:
         return build_scene_from_primitives(primitives)
 
     def _detect_collisions(self, primitives: Sequence[NeutralPrimitive], diagnostics: SolveDiagnostics) -> None:
+        if self.collision_mode == "ignore":
+            return
         solids: List[tuple[str, Any]] = []
         void_map: Dict[str, set[str]] = {prim.id: set(prim.voids) for prim in primitives}
         for prim in primitives:
@@ -1316,9 +1320,13 @@ class ConstraintSolver:
                         volume = 0.0
                 if volume > 1e-6:
                     diagnostics.collisions.append((first_id, second_id, volume))
-                    diagnostics.add_error(
+                    message = (
                         f"collision detected between '{first_id}' and '{second_id}' (overlap {volume:.3f} mm³)"
                     )
+                    if self.collision_mode == "warn":
+                        diagnostics.add_warning(message)
+                    else:
+                        diagnostics.add_error(message)
 
     # ------------------------------------------------------------------ #
     def _build_points(self, spec: RelationshipDiagramSpec) -> Dict[str, Dict[str, float]]:

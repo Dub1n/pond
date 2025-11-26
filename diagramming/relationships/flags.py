@@ -6,6 +6,7 @@ from typing import Any
 
 _ENV_FLAG = "DIAGRAM_RELATIONSHIPS"
 _SCHEMA_PREFIX = "pond-relationship"
+_COLLISION_FLAG = "DIAGRAM_RELATIONSHIPS_COLLISIONS"
 
 
 def relationship_mode_enabled() -> bool:
@@ -18,6 +19,26 @@ def relationship_mode_enabled() -> bool:
     if raw is None:
         return False
     return raw.lower() in {"1", "true", "yes", "on"}
+
+
+def collision_handling_mode() -> str:
+    """
+    Controls how the solver treats solid collisions. Defaults to 'error'.
+    Supported values:
+      - 'error' (default): collisions raise errors
+      - 'warn': collisions are recorded as warnings
+      - 'ignore': collisions are skipped
+    """
+
+    raw = os.getenv(_COLLISION_FLAG)
+    if raw is None:
+        return "error"
+    value = raw.strip().lower()
+    if value in {"warn", "warning"}:
+        return "warn"
+    if value in {"ignore", "skip", "off"}:
+        return "ignore"
+    return "error"
 
 
 def is_relationship_schema(schema_field: Any) -> bool:
@@ -36,4 +57,4 @@ def is_relationship_schema(schema_field: Any) -> bool:
     return text.startswith(_SCHEMA_PREFIX)
 
 
-__all__ = ["relationship_mode_enabled", "is_relationship_schema"]
+__all__ = ["relationship_mode_enabled", "collision_handling_mode", "is_relationship_schema"]

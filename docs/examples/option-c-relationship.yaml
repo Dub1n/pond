@@ -298,7 +298,7 @@ components:
       - contact:
           subject:
             component: joist_run_west
-            pos: +z
+            pos: -z
           object:
             datum: datums.planes.joist_top
             pos: +z
@@ -306,14 +306,17 @@ components:
           start_pos: +y
           end_pos: -y
           from:
-            ref: pond_opening
+            ref: datums.bundles.pond_faces
             pos: +y
           to:
-            ref: pond_opening
+            ref: datums.bundles.pond_faces
             pos: -y
           count: 7
           orient: along_run
           include_seed: true
+          inset:
+            start: dimensions.structure.cantilever + dimensions.structure.joist_width / 2
+            end: dimensions.structure.cantilever + dimensions.structure.joist_width / 2
 
   - use: assembly.rotate_quadrants
     with:
@@ -345,10 +348,19 @@ components:
             pos: +z
       - flush_bundle:
           bundle: datums.bundles.deck_faces
-          faces: [-x, -y]
+          faces: [-x]
           inset:
             subject:
-              -x: -dimensions.structure.beam_width / 2
+              -x: -(dimensions.structure.beam_width / 2 + dimensions.site.pad_size / 2)
+    repeat:
+      axis: +y
+      span:
+        use: datums.bundles.deck_faces.y
+        inset:
+          start: dimensions.site.pad_size
+          end: dimensions.site.pad_size
+      count: 2
+      include_seed: true
 
   - use: assembly.rotate_quadrants
     with:
@@ -458,7 +470,7 @@ components:
       attach:
         face: +z
         plane: datums.planes.deck_surface
-      size: [dimensions.structure.deck_span, 30, 6]
+      size: [dimensions.structure.deck_span, 30, 0]
       material: hardware
 
   - id: soil_west
@@ -467,7 +479,7 @@ components:
     size:
       - (dimensions.structure.deck_span - dimensions.structure.pond_span) / 2
       - dimensions.structure.deck_span
-      - dimensions.site.water_depth
+      - 0
     material: soil
     label: "Soil fill"
     label_id: "SO"
@@ -493,7 +505,7 @@ components:
     size:
       - (dimensions.structure.deck_span - dimensions.structure.pond_span) / 2
       - dimensions.structure.deck_span
-      - dimensions.site.water_depth
+      - 0
     material: soil
     label: "Soil fill"
     label_id: "SO"
@@ -526,13 +538,17 @@ components:
     ifc:
       predefined_type: JOIST
     relate:
-      - flush_bundle:
-          bundle: datums.bundles.deck_faces
-          faces: [-x, +y]
+      - align:
+          subject:
+            component: corner_diagonal_nw
+            pos: -x+y
+          object:
+            bundle: datums.bundles.deck_faces
+            pos: -x+y
       - contact:
           subject:
             component: corner_diagonal_nw
-            pos: +z
+            pos: -z
           object:
             datum: datums.planes.joist_top
             pos: +z
@@ -563,7 +579,7 @@ components:
       - contact:
           subject:
             component: corner_tie_horizontal
-            pos: +z
+            pos: -z
           object:
             datum: datums.planes.joist_top
             pos: +z
@@ -594,7 +610,7 @@ components:
       - contact:
           subject:
             component: corner_tie_vertical
-            pos: +z
+            pos: -z
           object:
             datum: datums.planes.joist_top
             pos: +z
