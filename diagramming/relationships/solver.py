@@ -76,6 +76,7 @@ class SolveDiagnostics:
     degrees_of_freedom: Dict[str, int] = field(default_factory=dict)
     check_results: List[str] = field(default_factory=list)
     constraint_graph: Dict[str, List[str]] = field(default_factory=dict)
+    collisions: List[Tuple[str, str, float]] = field(default_factory=list)
 
     def add_error(self, message: str, *, subject: Optional[str] = None) -> None:
         self.errors.append(Diagnostic(level="error", message=message, subject=subject))
@@ -129,6 +130,7 @@ class NeutralPrimitive:
     guid: str
     solid: Optional[Any] = None
     footprint: Optional[ShapelyPolygon] = None
+    mesh: Optional[trimesh.Trimesh] = None
     ifc: Optional[Dict[str, object]] = None
     connections: Tuple[ConnectionHint, ...] = ()
     voids: Tuple[str, ...] = ()
@@ -416,6 +418,7 @@ class ConstraintSolver:
         self._evaluate_checks(resolver, diagnostics)
 
         primitives = tuple(item.primitive for item in solved)
+        self._detect_collisions(primitives, diagnostics)
         scene = self._build_scene(primitives)
         return SolveResult(components=tuple(solved), diagnostics=diagnostics, primitives=primitives, scene=scene)
 
@@ -931,6 +934,34 @@ class ConstraintSolver:
     def _build_scene(self, primitives: Sequence[NeutralPrimitive]) -> trimesh.Scene:
         return build_scene_from_primitives(primitives)
 
+    def _detect_collisions(self, primitives: Sequence[NeutralPrimitive], diagnostics: SolveDiagnostics) -> None:
+        solids: List[tuple[str, Any]] = []
+        void_map: Dict[str, set[str]] = {prim.id: set(prim.voids) for prim in primitives}
+        for prim in primitives:
+            if prim.solid is None:
+                continue
+            solids.append((prim.id, prim.solid))
+
+        for idx, (first_id, first_solid) in enumerate(solids):
+            for second_id, second_solid in solids[idx + 1 :]:
+                if second_id in void_map.get(first_id, set()) or first_id in void_map.get(second_id, set()):
+                    continue
+                try:
+                    intersection = first_solid.intersect(second_solid)
+                except Exception:
+                    continue
+                volume = 0.0
+                if intersection is not None and hasattr(intersection, "Volume"):
+                    try:
+                        volume = float(intersection.Volume())
+                    except Exception:
+                        volume = 0.0
+                if volume > 1e-6:
+                    diagnostics.collisions.append((first_id, second_id, volume))
+                    diagnostics.add_error(
+                        f"collision detected between '{first_id}' and '{second_id}' (overlap {volume:.3f} mm³)"
+                    )
+
     # ------------------------------------------------------------------ #
     def _build_points(self, spec: RelationshipDiagramSpec) -> Dict[str, Dict[str, float]]:
         points: Dict[str, Dict[str, float]] = {}
@@ -1035,6 +1066,13 @@ def footprint_from_solid(solid: Any) -> Optional[ShapelyPolygon]:
 
 
 def mesh_from_primitive(primitive: NeutralPrimitive, *, to_meters: bool = True) -> Optional[trimesh.Trimesh]:
+    cached = getattr(primitive, "mesh", None)
+    if cached is not None:
+        mesh_copy = cached.copy()
+        if to_meters:
+            mesh_copy.apply_scale(MM_TO_METERS)
+        return mesh_copy
+
     if primitive.solid is not None:
         try:
             vectors, faces = primitive.solid.tessellate(0.5)
@@ -1042,21 +1080,25 @@ def mesh_from_primitive(primitive: NeutralPrimitive, *, to_meters: bool = True) 
             vectors, faces = (), ()
         if vectors and faces:
             vertices = np.array([[v.x, v.y, v.z] for v in vectors])
+            mesh_mm = trimesh.Trimesh(vertices=vertices, faces=np.array(faces), process=False)
+            primitive.mesh = mesh_mm.copy()
+            mesh = mesh_mm.copy()
             if to_meters:
-                vertices = vertices * MM_TO_METERS
-            mesh = trimesh.Trimesh(vertices=vertices, faces=np.array(faces), process=False)
+                mesh.apply_scale(MM_TO_METERS)
             return mesh
 
     if primitive.size[2] <= 0.0:
         return None
 
-    mesh = trimesh.creation.box(extents=np.array(primitive.size))
+    mesh_mm = trimesh.creation.box(extents=np.array(primitive.size))
     rotation_z = primitive.transform.rotation[2]
     if rotation_z:
         rot = trimesh.transformations.rotation_matrix(math.radians(rotation_z), [0, 0, 1])
-        mesh.apply_transform(rot)
+        mesh_mm.apply_transform(rot)
     pos = primitive.transform.position
-    mesh.apply_translation((pos[0], pos[1], pos[2]))
+    mesh_mm.apply_translation((pos[0], pos[1], pos[2]))
+    primitive.mesh = mesh_mm.copy()
+    mesh = mesh_mm.copy()
     if to_meters:
         mesh.apply_scale(MM_TO_METERS)
     return mesh

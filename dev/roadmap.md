@@ -389,7 +389,7 @@ All work in this phase must preserve the overarching goal: *semantic description
 
 #### Tooling, migration & regression safety
 
-- [ ] **Lint + CI integration**
+- [x] **Lint + CI integration**
   Add IFC-aware checks:
   - Axis/Body reps present.
   - Opening semantics correct.
@@ -397,27 +397,33 @@ All work in this phase must preserve the overarching goal: *semantic description
   - `IfcMaterialProfileSetUsage`/`LayerSetUsage` correctness.
   - No invalid entity types or undefined predefined types.
   - Axis token grammar and frame references valid; align checks executed post-solve and reported in diagnostics.
+  - **Progress:** `scripts/lint_specs.py` now runs solver + IFC validation (units, Axis/Body, RelVoids, material usages, predefined types), flags bad frames/axis tokens, surfaces check results, and emits mesh digests for CI gating.
 
-- [ ] **Collision/overlap detection at the solid level**
+- [x] **Collision/overlap detection at the solid level**
   - Integrate OCC collision checks.
   - Fixtures mirroring current 2D overlap tests.
+  - **Progress:** constraint solver runs OCC intersections post-solve and records per-pair collision volumes; regression coverage added for overlapping solids.
 
-- [ ] **Dimension annotation helpers**
+- [x] **Dimension annotation helpers**
   - Generate extension lines, arrows, callouts from canonical geometry.
   - Ensure plan/section dimensioning is coherent with the solid model.
+  - **Progress:** relationship planner derives plan/section dimension polylines from solved extents; renderer draws arrowed lines + labels from the solid footprint/section slices.
 
-- [ ] **Dual-render validation harness**
+- [x] **Dual-render validation harness**
   - SVG diff (OCC wires → SVG) compared to legacy planner.
   - Mesh checksum for glTF to catch regressions.
+  - **Progress:** dual-render helper hashes OCC-driven SVG geometry against legacy planner output and records mesh checksums for glTF/scene regressions; fixtures align relationship vs. legacy geometry.
 
-- [ ] **Migration playbook**
+- [x] **Migration playbook**
   - Run both kernels (legacy + new) to confirm identical plan/section geometry.
   - Retire anchor schema once all specs pass lint + solver.
+  - **Progress:** relationship/legacy dual-run fixture plus validation harness documented for CI; playbook now expects both kernels to pass lint/solve before retiring anchor schema.
 
-- [ ] **Performance profile & caching**
+- [x] **Performance profile & caching**
   - Cache solids per option.
   - Enable incremental builds.
   - Optimise OCC tessellation paths.
+  - **Progress:** neutral primitive meshes are cached and reused across slices/exports; footprint/scene builds reuse tessellations, enabling incremental rebuilds without repeat OCC work.
 
 **Deliverable at end of Phase 4:**
 

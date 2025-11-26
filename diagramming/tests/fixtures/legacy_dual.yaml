@@ -1,0 +1,18 @@
+name: legacy-dual
+units: mm
+options:
+  A:
+    title: Legacy dual plan
+    views:
+      plan:
+        title: Plan
+    components:
+      - type: rectangle
+        id: slab
+        size: [1000, 500]
+        origin: [0, 0]
+        class: component-structure
+        height: 50
+        material: decking
+        metadata:
+          elevation: 25

@@ -46,6 +46,14 @@ def lint_relationship_spec(spec: RelationshipDiagramSpec) -> List[str]:
     return errors
 
 
+def _lint_frame(frame: str, component_ids: Set[str], errors: List[str], *, context: str) -> None:
+    if not frame.startswith("component:"):
+        return
+    target = frame.split(":", 1)[1]
+    if target and target not in component_ids:
+        errors.append(f"{context} frame references unknown component '{target}'")
+
+
 def _lint_component(
     component: RelationshipComponent,
     *,
@@ -59,11 +67,16 @@ def _lint_component(
         if isinstance(clause, AlignmentClause):
             _lint_ref(clause.subject.ref, component, component_ids, datum_points, datum_planes, datum_bundles, errors)
             _lint_ref(clause.obj.ref, component, component_ids, datum_points, datum_planes, datum_bundles, errors)
+            _lint_frame(clause.subject.frame, component_ids, errors, context=f"component '{component.id}'")
+            _lint_frame(clause.obj.frame, component_ids, errors, context=f"component '{component.id}'")
         elif isinstance(clause, FlushBundleClause):
             _lint_ref(clause.bundle, component, component_ids, datum_points, datum_planes, datum_bundles, errors)
+            _lint_frame(clause.frame, component_ids, errors, context=f"component '{component.id}' flush_bundle")
         elif isinstance(clause, RunBetweenClause):
             _lint_ref(clause.from_ref.ref, component, component_ids, datum_points, datum_planes, datum_bundles, errors)
             _lint_ref(clause.to_ref.ref, component, component_ids, datum_points, datum_planes, datum_bundles, errors)
+            _lint_frame(clause.from_ref.frame, component_ids, errors, context=f"component '{component.id}' run_between")
+            _lint_frame(clause.to_ref.frame, component_ids, errors, context=f"component '{component.id}' run_between")
             if clause.orient not in {"preserve_axes", "along_run"}:
                 errors.append(f"component '{component.id}' run_between uses unsupported orient '{clause.orient}'")
 
@@ -132,6 +145,8 @@ def _lint_check(
     )
     _lint_ref(clause.subject.ref, dummy_component, component_ids, datum_points, datum_planes, datum_bundles, errors)
     _lint_ref(clause.obj.ref, dummy_component, component_ids, datum_points, datum_planes, datum_bundles, errors)
+    _lint_frame(clause.subject.frame, component_ids, errors, context="checks.subject")
+    _lint_frame(clause.obj.frame, component_ids, errors, context="checks.object")
 
 
 __all__ = ["lint_relationship_spec"]

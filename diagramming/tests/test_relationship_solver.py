@@ -209,6 +209,69 @@ class RelationshipSolverTests(unittest.TestCase):
         errors = [err.message for err in result.diagnostics.errors]
         self.assertTrue(any("over-constrained" in msg for msg in errors))
 
+    def test_collision_detection_reports_overlap(self) -> None:
+        spec_text = dedent(
+            """
+            schema: pond-relationship-test
+            info:
+              option: collide
+            datums:
+              origin:
+                type: point
+                coordinates:
+                  +x: 0
+                  +y: 0
+                  +z: 0
+              bundles:
+                pad:
+                  origin:
+                    ref: datums.origin
+                  span:
+                    +x: 500
+                    +y: 500
+            components:
+              - id: host
+                class: IfcSlab
+                size: [500, 500, 50]
+                material: decking
+                relate:
+                  - flush_bundle:
+                      bundle: datums.bundles.pad
+                      faces: [+x, -x, +y, -y]
+                  - align:
+                      subject:
+                        component: host
+                        pos: -z
+                      object:
+                        datum: datums.origin
+                        pos: +z
+              - id: intruder
+                class: IfcMember
+                size: [400, 400, 50]
+                material: timber
+                relate:
+                  - flush_bundle:
+                      bundle: datums.bundles.pad
+                      faces: [+x, -x, +y, -y]
+                  - align:
+                      subject:
+                        component: intruder
+                        pos: -z
+                      object:
+                        datum: datums.origin
+                        pos: +z
+            """
+        )
+        with TemporaryDirectory() as tmp:
+            path = Path(tmp) / "collide.yaml"
+            path.write_text(spec_text, encoding="utf-8")
+            spec = load_relationship_spec(path)
+        solver = ConstraintSolver(spec)
+        result = solver.solve()
+        errors = [err.message for err in result.diagnostics.errors]
+        self.assertTrue(any("collision" in msg for msg in errors))
+        self.assertTrue(result.diagnostics.collisions)
+
     def test_run_between_missing_axis_reports_error_and_graph(self) -> None:
         spec_text = dedent(
             """
@@ -538,6 +601,12 @@ class RelationshipSolverTests(unittest.TestCase):
                   span:
                     +x: 800
                     +y: 400
+              planes:
+                sweep_base:
+                  base:
+                    ref: datums.origin
+                  normal: +z
+                  offset: 240
             components:
               - id: wedge
                 class: IfcMember
@@ -589,7 +658,7 @@ class RelationshipSolverTests(unittest.TestCase):
                         component: sweep
                         pos: -z
                       object:
-                        datum: datums.origin
+                        datum: datums.planes.sweep_base
                         pos: +z
             """
         )

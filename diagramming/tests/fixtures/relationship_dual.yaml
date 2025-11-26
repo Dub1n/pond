@@ -1,0 +1,42 @@
+schema: pond-relationship-test
+info:
+  option: dual
+  title: "Dual render relationship fixture"
+datums:
+  origin:
+    type: point
+    coordinates:
+      +x: 0
+      +y: 0
+      +z: 0
+  bundles:
+    pad:
+      origin:
+        ref: datums.origin
+      span:
+        +x: 1000
+        +y: 500
+  planes:
+    deck_top:
+      base:
+        ref: datums.origin
+      normal: +z
+      offset: 50
+components:
+  - id: slab
+    class: IfcSlab
+    size: [1000, 500, 50]
+    material: decking
+    relate:
+      - flush_bundle:
+          bundle: datums.bundles.pad
+          faces: [+x, -x, +y, -y]
+      - touch_planes:
+          object: datums.planes.deck_top
+          faces: [-z]
+    ifc:
+      predefined_type: FLOOR
+views:
+  plan:
+    title: Plan
+    renders: [svg]

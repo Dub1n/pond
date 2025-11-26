@@ -80,6 +80,7 @@ class IfcExporter:
                 )
             self._assign_representations(model, contexts, product, primitive, type_record)
             self._assign_materials(model, product, primitive, type_record)
+            self._apply_predefined_type(product, primitive, type_record)
 
             products_by_ref[primitive.id] = product
             base_ref = primitive.metadata.get("component_id") if primitive.metadata else None
@@ -179,6 +180,16 @@ class IfcExporter:
                 name=primitive.metadata.get("label") if primitive.metadata else primitive.id,
                 predefined_type=None,
             )
+        if predefined and hasattr(product, "PredefinedType"):
+            try:
+                product.PredefinedType = predefined
+            except Exception:
+                pass
+        if not getattr(product, "Name", None):
+            try:
+                product.Name = primitive.id
+            except Exception:
+                pass
         if primitive.guid:
             try:
                 product.GlobalId = ifcopenshell.guid.compress(str(uuid.UUID(primitive.guid)))
@@ -225,6 +236,11 @@ class IfcExporter:
                 name=f"{primitive.class_name or 'Element'} type",
                 predefined_type=predefined,
             )
+            if predefined and hasattr(type_entity, "PredefinedType"):
+                try:
+                    type_entity.PredefinedType = predefined
+                except Exception:
+                    pass
             self._set_guid(type_entity, f"type::{key}")
             record.type_entity = type_entity
 
@@ -317,6 +333,26 @@ class IfcExporter:
                 type="IfcMaterial",
                 material=material,
             )
+
+    def _apply_predefined_type(
+        self,
+        product,
+        primitive: NeutralPrimitive,
+        type_record: Optional[TypeRecord],
+    ) -> None:
+        predefined = primitive.ifc.get("predefined_type") if primitive.ifc else None
+        if predefined and hasattr(product, "PredefinedType"):
+            try:
+                product.PredefinedType = predefined
+            except Exception:
+                pass
+        if predefined and type_record and type_record.type_entity is not None and hasattr(
+            type_record.type_entity, "PredefinedType"
+        ):
+            try:
+                type_record.type_entity.PredefinedType = predefined
+            except Exception:
+                pass
 
     # ------------------------------------------------------------------ #
     def _material_set_for_type(

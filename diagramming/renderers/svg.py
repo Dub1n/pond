@@ -7,7 +7,7 @@ from typing import Iterable, List, Optional, Sequence, Tuple
 from shapely.geometry import GeometryCollection, MultiPolygon, Polygon as ShapelyPolygon
 from shapely.geometry.base import BaseGeometry
 
-from ..planner.bundle import GeometryBundle, LegendEntry, PolygonFeature
+from ..planner.bundle import GeometryBundle, LegendEntry, PolygonFeature, PolylineFeature
 from ..materials import get_material_style
 from .svg_scene import SvgScene
 
@@ -29,6 +29,13 @@ class PolygonRenderData:
     class_name: str
     shape: Optional[BaseGeometry]
     top: float
+
+
+@dataclass
+class PolylineRenderData:
+    feature: PolylineFeature
+    points: Sequence[Tuple[float, float]]
+    class_name: str
 
 
 class SvgRenderer:
@@ -71,6 +78,7 @@ class SvgRenderer:
         labels: List[LabelInstruction] = []
         seen_labels: set[str] = set()
         polygon_draws: List[PolygonRenderData] = []
+        polyline_draws: List[PolylineRenderData] = []
         for feature in polygons:
             instruction, draw_data = self._prepare_polygon(
                 scene, feature, body_size, seen_labels
@@ -79,6 +87,12 @@ class SvgRenderer:
                 labels.append(instruction)
             if draw_data:
                 polygon_draws.append(draw_data)
+        for feature in bundle.polylines:
+            instruction, draw_data = self._prepare_polyline(scene, feature, body_size, seen_labels)
+            if instruction:
+                labels.append(instruction)
+            if draw_data:
+                polyline_draws.append(draw_data)
 
         if bundle.view == "plan":
             hidden_style = self._hidden_outline_style(bundle, dash_scale)
@@ -86,6 +100,9 @@ class SvgRenderer:
         else:
             for draw_data in polygon_draws:
                 self._draw_standard_polygon(scene, draw_data)
+
+        if polyline_draws:
+            self._draw_polylines(scene, polyline_draws)
 
         if labels:
             self._render_labels(scene, labels)
@@ -139,6 +156,40 @@ class SvgRenderer:
                         class_name="feature-label",
                     ),
                     render_data,
+        )
+        return (None, render_data)
+
+    def _prepare_polyline(
+        self,
+        scene: SvgScene,
+        feature: PolylineFeature,
+        label_size: float,
+        seen_labels: set[str],
+    ) -> Tuple[Optional["LabelInstruction"], Optional[PolylineRenderData]]:
+        class_name = feature.class_name or "polyline"
+        points = tuple(feature.points)
+        if points:
+            xs = [pt[0] for pt in points]
+            ys = [pt[1] for pt in points]
+            scene.bounds.include(xs, ys)
+        render_data = PolylineRenderData(feature=feature, points=points, class_name=class_name)
+        label_text, base_key = self._label_text(feature.label_id, feature.label)
+        label_key = self._label_key(feature.id, base_key)
+        if label_text and label_key not in seen_labels:
+            label_pos = self._polyline_label_position(points)
+            if label_pos is not None:
+                lx, ly = label_pos
+                seen_labels.add(label_key)
+                return (
+                    LabelInstruction(
+                        x=lx,
+                        y=ly,
+                        text=label_text,
+                        font_size=label_size,
+                        anchor="middle",
+                        class_name="dimension-label" if "dimension" in class_name else "feature-label",
+                    ),
+                    render_data,
                 )
         return (None, render_data)
 
@@ -183,6 +234,17 @@ class SvgRenderer:
                 font_size=body_size,
                 class_="legend",
             )
+
+    def _draw_polylines(self, scene: SvgScene, polylines: List[PolylineRenderData]) -> None:
+        arrow_marker = scene.ensure_arrow_marker(color="#4a5568")
+        for data in polylines:
+            attrs = {"class_": data.class_name}
+            if data.feature.stroke_width:
+                attrs["stroke_width"] = data.feature.stroke_width
+            if data.feature.metadata.get("arrows") or "dimension" in data.class_name:
+                attrs["marker_start"] = arrow_marker
+                attrs["marker_end"] = arrow_marker
+            scene.polyline(data.points, **attrs)
 
     def _render_labels(self, scene: SvgScene, labels: List["LabelInstruction"]) -> None:
         label_group = scene.group(class_="feature-labels")
@@ -249,6 +311,14 @@ class SvgRenderer:
                     if gap_bottom > label_size * 1.5:
                         cy = max_hole_bottom + gap_bottom / 2
         return (cx, cy)
+
+    @staticmethod
+    def _polyline_label_position(points: Sequence[Tuple[float, float]]) -> Optional[Tuple[float, float]]:
+        if not points:
+            return None
+        xs = [pt[0] for pt in points]
+        ys = [pt[1] for pt in points]
+        return (sum(xs) / len(xs), sum(ys) / len(ys))
 
     @staticmethod
     def _baseline_adjust(y: float, font_size: float) -> float:

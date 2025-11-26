@@ -12,7 +12,13 @@ ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
-from diagramming.relationships import SchemaError, is_relationship_schema, lint_relationship_spec, load_relationship_spec  # noqa: E402
+from diagramming.relationships import (  # noqa: E402
+    SchemaError,
+    is_relationship_schema,
+    lint_relationship_spec,
+    load_relationship_spec,
+    validate_relationship_spec,
+)
 from diagramming.schema import load_spec  # noqa: E402
 from diagramming.schema.ifc_lint import lint_ifc_metadata  # noqa: E402
 
@@ -64,12 +70,21 @@ def lint_path(path: Path, *, relationship_only: bool, legacy_only: bool) -> Tupl
         try:
             spec = load_relationship_spec(path)
             errors = lint_relationship_spec(spec)
+            report = validate_relationship_spec(spec)
+            errors.extend(report.errors)
+            warnings = report.warnings
         except SchemaError as exc:
             return False, [f"{path.name}: {exc}"]
+        messages: List[str] = []
+        if warnings:
+            messages.extend([f"{path.name}: warning: {warn}" for warn in warnings])
         if errors:
             prefixed = [f"{path.name}: {err}" for err in errors]
+            prefixed.extend(messages)
             return False, prefixed
-        return True, [f"{path.name}: relationship-first lint passed"]
+        checksum_note = f" (mesh {report.mesh_checksum[:12]})" if report.mesh_checksum else ""
+        messages.append(f"{path.name}: relationship-first lint passed{checksum_note}")
+        return True, messages
 
     try:
         spec = load_spec(path)

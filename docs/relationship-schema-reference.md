@@ -12,13 +12,14 @@ This document captures the prep surface for the relationship-first schema descri
 - Components use a single 3-axis `size: [x, y, z]` (missing axes default to 0); box, wedge, and swept profiles are supported with optional `profile_params` to drive slopes or custom sections.
 - Constraint solver resolves faces/planes/bundles into deterministic transforms and neutral CadQuery primitives (box, wedge, sweep) with stable GUID seeds; checks report pass/fail, diagnostics carry DOF/graph information, and component-to-component alignments provide connection hints for IFC `RelConnects` geometry. `assembly.rotate_quadrants` now expands into cloned, rotated components with per-instance transforms.
 - Relationship planner slices CadQuery solids directly for plan and section geometry before handing off to the existing SVG/PNG/glTF/IFC/STEP/OBJ pipeline when the feature flag is set.
+- Plan and section bundles add dimension polylines (arrowed lines + labels) derived from solved extents so annotations track the solid model.
 - CLI exports glTF by default and can also emit `model.step` / `model.obj` for relationship-first specs via `--step` and `--obj`. Output folders are keyed by the lowercased option ID so all artefacts for an option land in the same directory.
 - IFC export now targets IFC4X3 Reference View with Model/Axis/Body contexts, mm/deg units, swept solids for rectangular members, profile/layer material usages, openings linked via `RelVoids`, mapped items for repeats, and connection geometry derived from face/edge/point contacts.
 
 ### Linting
 
 - Run `python3 scripts/lint_specs.py` (or `.venv/bin/python scripts/lint_specs.py`) to lint both legacy and relationship-first specs. Use `--relationship-only` when iterating on the new schema.
-- The linter checks reference integrity (component IDs, datums, bundles, planes), axis token ordering, `run_between.orient` values, IFC coverage, and checks block references.
+- The linter runs the solver + IFC exporter and checks reference integrity (component IDs, datums, bundles, planes), axis token ordering, `run_between.orient` values, frame targets, IFC coverage (mm/deg units, Axis/Body contexts, predefined types, material usages, RelVoids wiring), collision overlaps, and checks block references; outputs include check results and a mesh checksum for regression gates.
 - `scripts/build_diagrams.py` now builds relationship-first specs when `DIAGRAM_RELATIONSHIPS=1` is set; solver failures block rendering.
 
 ### Feature flag

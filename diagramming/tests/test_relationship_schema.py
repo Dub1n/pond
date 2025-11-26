@@ -113,6 +113,40 @@ class Phase4SchemaTests(unittest.TestCase):
         self.assertTrue(errors)
         self.assertIn("orient", errors[0])
 
+    def test_frame_reference_must_point_to_known_component(self) -> None:
+        spec_text = dedent(
+            """
+            schema: pond-relationship-test
+            info:
+              option: frame
+            datums:
+              origin:
+                type: point
+                coordinates:
+                  +x: 0
+                  +y: 0
+            components:
+              - id: slab
+                class: IfcSlab
+                size: [1000, 500]
+                relate:
+                  - align:
+                      subject:
+                        component: slab
+                        pos: +x
+                        frame: component:missing
+                      object:
+                        datum: datums.origin
+                        pos: +x
+            """
+        )
+        with TemporaryDirectory() as tmp:
+            path = Path(tmp) / "frame.yaml"
+            path.write_text(spec_text, encoding="utf-8")
+            spec = load_relationship_spec(path)
+        errors = lint_relationship_spec(spec)
+        self.assertTrue(any("frame" in err for err in errors))
+
 
 if __name__ == "__main__":  # pragma: no cover
     unittest.main()

@@ -10,6 +10,7 @@ from ..materials import apply_material_class
 from ..planner.bundle import GeometryBundle, PolygonFeature
 from .solver import NeutralPrimitive, SolveResult, footprint_from_solid, mesh_from_primitive
 from .schema import RelationshipDiagramSpec, ViewConfig
+from .dimensions import dimension_features_for_bundle
 
 
 @dataclass(slots=True)
@@ -53,6 +54,8 @@ class RelationshipPlanner:
                 for feature in plan_features:
                     if view_name in feature.views:
                         bundle.add_polygon(feature)
+            for dimension in dimension_features_for_bundle(bundle):
+                bundle.add_polyline(dimension)
             bundle.scene = self.solved.scene
             bundle.build_legend()
             planned.append(

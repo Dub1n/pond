@@ -12,6 +12,7 @@ YAML spec ──> Schema loader ──> DiagramPlanner ──> GeometryBundle �
 - **Planner (`diagramming/planner/`)** resolves anchoring/repeats with Shapely geometries and emits reusable primitives (2D + 2.5D metadata).
 - **Renderer (`diagramming/renderers/`)** serialises primitives to SVG, with shared styles and legend rendering.
 - **CLI (`scripts/build_diagrams.py`)** orchestrates builds across specs/options and produces artefacts under `diagrams/output/` (SVG/PNG plus glTF/GLB models).
+- **Validation harness (`scripts/lint_specs.py` + `diagramming/relationships/validation.py`)** executes solver + IFC export, enforces IFC/unit constraints, detects collisions, and emits mesh checksums for regression gates.
 
 ## Schema Layer
 
@@ -48,6 +49,7 @@ YAML spec ──> Schema loader ──> DiagramPlanner ──> GeometryBundle �
 - Apply boolean subtraction when components declare `boolean.subtract`, unioning the referenced components’ geometry (including repeats and rotated clones) before removing it from the host component.
 - Build `GeometryBundle` with polygon/polyline features plus legend metadata and 3D traits (height, elevation, material). Each option caches a Shapely-/trimesh-backed scene reused by all views and exporters.
 - Slice section views directly from the cached scene: a `plane.axis` (`x` or `y`) plus `plane.coordinate` defines the cut, and only components that list the section in their `views` set are considered. Labels are de-duplicated to avoid repeated callouts for repeated geometry.
+- In relationship mode, annotate plan/section bundles with arrowed dimension polylines derived from solved extents so callouts stay aligned with solids.
 
 ### Important classes
 
@@ -76,6 +78,7 @@ YAML spec ──> Schema loader ──> DiagramPlanner ──> GeometryBundle �
 - Labels render for every resolved component (including repeats and rotated clones) so mirrored geometry carries its own tag; the legend still deduplicates entries.
 - Optional orthographic renderer (`render_orthographic_png`) reuses the canonical `trimesh.Scene`, pushing it through pyrender's off-screen pipeline to produce `orthographic.png` snapshots without touching the SVG stack.
 - Plan views execute a two-pass layering routine: first pass clips each polygon against the union of higher-elevation coverage so buried members drop their fill, then a dedicated hidden pass replays the full footprint with dashed strokes (beams are temporarily forced to green for debug sessions).
+- Dimension polylines render with arrow markers and labels when provided by the bundle (relationship mode), keeping annotations consistent with plan/section geometry.
 
 ### PNG Support
 
@@ -88,7 +91,7 @@ YAML spec ──> Schema loader ──> DiagramPlanner ──> GeometryBundle �
 3. Write SVG to `diagrams/output/<spec>/<option>/<view>.svg`.
 4. Unless `--no-png` is passed (or `cairosvg` is missing), emit matching PNG using the rendered SVG string.
 5. Unless `--no-gltf` is passed, extrude plan geometry via `trimesh` and write `model.glb` (or `.gltf`) alongside the option.
-6. When `DIAGRAM_RELATIONSHIPS=1` is set and a spec declares `schema: pond-relationship*`, load via `diagramming.relationships`, solve to neutral CadQuery-backed solids (box/wedge/sweep) with deterministic GUID seeds, project plan/section footprints via `RelationshipPlanner`, and reuse the same SVG/PNG/glTF/IFC pipeline. IFC exports now target IFC4X3 Reference View with Model/Axis/Body contexts, mm/deg units, swept solids where possible, material usages, openings, mapped items, and connection geometry. Assembly helpers such as `assembly.rotate_quadrants` are expanded in-solver; broader assembly support remains future work. Linear `run_between` clauses now lay out arrays against datum/bundle faces, relationship components supply explicit 3D `size` vectors, and section slices flip Z internally to render upright.
+6. When `DIAGRAM_RELATIONSHIPS=1` is set and a spec declares `schema: pond-relationship*`, load via `diagramming.relationships`, solve to neutral CadQuery-backed solids (box/wedge/sweep) with deterministic GUID seeds, detect collisions, project plan/section footprints via `RelationshipPlanner`, and reuse the same SVG/PNG/glTF/IFC pipeline. IFC exports target IFC4X3 Reference View with Model/Axis/Body contexts, mm/deg units, swept solids where possible, material usages, openings, mapped items, and connection geometry. Assembly helpers such as `assembly.rotate_quadrants` are expanded in-solver; broader assembly support remains future work. Linear `run_between` clauses lay out arrays against datum/bundle faces, relationship components supply explicit 3D `size` vectors, section slices flip Z internally to render upright, and lint/CI can compare OCC-derived SVG hashes against the legacy planner.
 
 ### Command-Line Flags
 
@@ -118,4 +121,4 @@ The following seams were left to simplify upgrades:
 - `GeometryBundle` already separates polygons and polylines for additional exporters (GeoJSON, glTF).
 - CLI wiring anticipates more exporters; guard rails for missing dependencies are in place.
 - Schema/primitives stored as dataclasses to support future `pydantic`/`jsonschema` validation upgrades.
-- `GeometryBundle.scene` exposes the canonical `trimesh.Scene` so new exporters (GeoJSON, IFC) can reuse the same geometry without re-running the planner.
+- `GeometryBundle.scene` exposes the canonical `trimesh.Scene` so new exporters (GeoJSON, IFC) can reuse the same geometry without re-running the planner; mesh digests and dual-render hashes are available for regression checks.

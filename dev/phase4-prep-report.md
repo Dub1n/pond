@@ -123,13 +123,15 @@ Profiles & layers: Linear members use `IfcMaterialProfileSet(Usage)`. Deck slabs
 
 ## Validation & tooling
 
-- Constraint solver: resolves face/edge relationships and reports degrees of freedom; blocks builds on under/over-constraint.
-- IFC export adapter: validates per-entity rules (Axis+Body presence, material usage alignment, opening relationships).
-- Lint CLI (`scripts/lint_specs.py`) checks: missing datums, clashing spans, duplicate IDs, non-IFC `class` values, missing `predefined_type`, misuse of LayerSet/ProfileSet usages, and absence of Axis/Body where required.
+- Constraint solver: resolves face/edge relationships, reports degrees of freedom, blocks builds on under/over-constraint, and records OCC collision volumes between solids (void pairs excluded).
+- IFC export adapter: validates per-entity rules (Axis+Body presence, material usage alignment, opening relationships) and now feeds the lint harness used by CI.
+- Lint CLI (`scripts/lint_specs.py`) checks: missing datums, clashing spans, duplicate IDs, non-IFC `class` values, missing `predefined_type`, misuse of LayerSet/ProfileSet usages, absence of Axis/Body where required, and invalid frame/axis tokens; it executes the solver + IFC exporter and surfaces check results plus mesh digests.
 - Determinism: stable GUIDs derived from `(component_id, schema_version, option_id)`; exporter emits a build manifest containing unit settings, context IDs, and hash of canonical geometry.
+- Dual-render harness: compares OCC-driven SVG hashes against legacy planner output and records mesh checksums (glTF parity guard) for relationship-first fixtures.
+- Dimension helpers: plan/section bundles now add arrowed dimension polylines from solved extents so annotations track solids rather than ad-hoc offsets.
 - Tests:
   - Schema: helper expansions are canonical.
-  - Solver: DOF counts, mirror/repeat parity, collision checks.
+  - Solver: DOF counts, mirror/repeat parity, collision checks with OCC overlap volumes.
 - Exporter: unit assignment is mm, contexts include Axis/Body, JOIST mapping is correct, openings are rel-voided, material usages match entity type.
 - Round-trip: import -> check entity counts & types -> re-emit -> compare manifests.
 - Checks: axis token linting (order, sign, frame validity); align checks evaluate post-solve with defaults applied and report pass/fail counts in solver diagnostics.

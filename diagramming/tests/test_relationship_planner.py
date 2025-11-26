@@ -151,6 +151,68 @@ class RelationshipPlannerTests(unittest.TestCase):
         unique_z = {round(val, 3) for val in zs}
         self.assertGreaterEqual(len(unique_z), 3)
 
+    def test_plan_includes_dimension_annotations(self) -> None:
+        spec_text = dedent(
+            """
+            schema: pond-relationship-test
+            info:
+              option: dims
+            datums:
+              origin:
+                type: point
+                coordinates:
+                  +x: 0
+                  +y: 0
+                  +z: 0
+              bundles:
+                frame:
+                  origin:
+                    ref: datums.origin
+                  span:
+                    +x: 1200
+                    +y: 800
+              planes:
+                top:
+                  base:
+                    ref: datums.origin
+                  normal: +z
+                  offset: 50
+            components:
+              - id: slab
+                class: IfcSlab
+                size: [1200, 800, 50]
+                material: decking
+                relate:
+                  - flush_bundle:
+                      bundle: datums.bundles.frame
+                      faces: [+x, -x, +y, -y]
+                  - touch_planes:
+                      object: datums.planes.top
+                      faces: [-z]
+            views:
+              plan:
+                title: Plan
+                renders: [svg]
+            """
+        )
+        with TemporaryDirectory() as tmp:
+            path = Path(tmp) / "dims.yaml"
+            path.write_text(spec_text, encoding="utf-8")
+            spec = load_relationship_spec(path)
+
+        solver = ConstraintSolver(spec)
+        solved = solver.solve()
+        self.assertTrue(solved.diagnostics.ok)
+
+        planner = RelationshipPlanner(spec, solved)
+        planned_views = planner.plan()
+        plan = next(view for view in planned_views if view.view == "plan")
+        dim_lines = [line for line in plan.bundle.polylines if line.class_name and "dimension" in line.class_name]
+        self.assertGreaterEqual(len(dim_lines), 2)
+        labels = [line.label_id for line in dim_lines if line.label_id]
+        self.assertTrue(any("1200" in label for label in labels))
+        self.assertTrue(any("800" in label for label in labels))
+
 
 if __name__ == "__main__":  # pragma: no cover
     unittest.main()

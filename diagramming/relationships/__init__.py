@@ -22,9 +22,18 @@ from .schema import (
     load_relationship_spec,
 )
 from .planner import RelationshipPlanner, RelationshipPlannedView, RelationshipOption
+from .validation import (
+    DualRenderDiff,
+    ValidationReport,
+    dual_render_compare,
+    mesh_checksum,
+    relationship_bundle,
+    validate_relationship_spec,
+)
 
 __all__ = [
     "AlignmentClause",
+    "DualRenderDiff",
     "canonical_pos_token",
     "DimensionResolver",
     "FlushBundleClause",
@@ -39,10 +48,15 @@ __all__ = [
     "SolveDiagnostics",
     "SolveResult",
     "SolvedComponent",
+    "ValidationReport",
     "RelationshipPlanner",
     "RelationshipPlannedView",
     "RelationshipOption",
+    "relationship_bundle",
+    "dual_render_compare",
     "is_relationship_schema",
     "load_relationship_spec",
+    "mesh_checksum",
     "relationship_mode_enabled",
+    "validate_relationship_spec",
 ]
