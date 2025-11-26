@@ -157,17 +157,28 @@ class IfcExporter:
     # ------------------------------------------------------------------ #
     def _create_product(self, model, primitive: NeutralPrimitive):
         class_name = primitive.class_name or "IfcBuildingElementProxy"
+        if not class_name.lower().startswith("ifc"):
+            class_name = "IfcBuildingElementProxy"
         predefined = None
         if primitive.ifc and isinstance(primitive.ifc, dict):
             predefined = primitive.ifc.get("predefined_type")
 
-        product = ifcopenshell.api.run(
-            "root.create_entity",
-            model,
-            ifc_class=class_name,
-            name=primitive.metadata.get("label") if primitive.metadata else primitive.id,
-            predefined_type=predefined,
-        )
+        try:
+            product = ifcopenshell.api.run(
+                "root.create_entity",
+                model,
+                ifc_class=class_name,
+                name=primitive.metadata.get("label") if primitive.metadata else primitive.id,
+                predefined_type=predefined,
+            )
+        except Exception:
+            product = ifcopenshell.api.run(
+                "root.create_entity",
+                model,
+                ifc_class="IfcBuildingElementProxy",
+                name=primitive.metadata.get("label") if primitive.metadata else primitive.id,
+                predefined_type=None,
+            )
         if primitive.guid:
             try:
                 product.GlobalId = ifcopenshell.guid.compress(str(uuid.UUID(primitive.guid)))

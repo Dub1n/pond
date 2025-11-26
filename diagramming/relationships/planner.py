@@ -29,7 +29,8 @@ class RelationshipPlanner:
     def __init__(self, spec: RelationshipDiagramSpec, solved: SolveResult) -> None:
         self.spec = spec
         self.solved = solved
-        self.option = RelationshipOption(key=spec.info.option or "relationship", title=spec.info.title)
+        key = spec.info.option.lower() if spec.info.option else "relationship"
+        self.option = RelationshipOption(key=key, title=spec.info.title)
 
     def plan(self) -> List[RelationshipPlannedView]:
         plan_features = list(self._footprint_features(self.solved.primitives))

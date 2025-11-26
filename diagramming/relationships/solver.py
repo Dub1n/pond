@@ -11,12 +11,16 @@ from shapely.geometry import MultiPoint, Polygon as ShapelyPolygon
 import trimesh
 
 from .schema import (
+    AXIS_ORDER,
     AlignmentClause,
+    AlignmentTarget,
     FlushBundleClause,
+    FlushFace,
     IfcMetadata,
     RelationshipComponent,
     RelationshipDiagramSpec,
     RunBetweenClause,
+    RepeatSpec,
 )
 
 
@@ -226,24 +230,185 @@ class ConstraintSolver:
 
     def __init__(self, spec: RelationshipDiagramSpec) -> None:
         self.spec = spec
+        self.components = list(spec.components)
+        self.rotation_index = self._rotation_index(spec)
+        self._apply_assemblies()
         self.datum_points = self._build_points(spec)
         self.datum_planes = self._build_planes(spec)
         self.datum_bundles = self._build_bundles(spec, self.datum_points, self.datum_planes)
+
+    def _rotation_index(self, spec: RelationshipDiagramSpec) -> Dict[str, Dict[int, str]]:
+        index: Dict[str, Dict[int, str]] = {}
+        for component in spec.components:
+            index.setdefault(component.id, {})[0] = component.id
+        for assembly in spec.assemblies:
+            if assembly.template != "assembly.rotate_quadrants":
+                continue
+            source_id = assembly.args.get("source")
+            ids = assembly.args.get("ids", {}) or {}
+            if not source_id:
+                continue
+            mapping = index.setdefault(source_id, {})
+            mapping[0] = source_id
+            mapping[3] = ids.get("north", mapping.get(3))
+            mapping[2] = ids.get("east", mapping.get(2))
+            mapping[1] = ids.get("south", mapping.get(1))
+        return index
+
+    def _apply_assemblies(self) -> None:
+        if not self.spec.assemblies:
+            return
+        components_by_id = {component.id: component for component in self.components}
+        for assembly in self.spec.assemblies:
+            if assembly.template != "assembly.rotate_quadrants":
+                continue
+            source_id = assembly.args.get("source")
+            ids = assembly.args.get("ids", {}) or {}
+            about = assembly.args.get("about", {}) or {}
+            axis = str(about.get("axis", "+z")).lower()
+            if axis not in {"+z", "z"}:
+                continue
+            source = components_by_id.get(source_id or "")
+            if source is None:
+                continue
+            turns_map = {"north": 3, "east": 2, "south": 1}
+            for direction, turns in turns_map.items():
+                new_id = ids.get(direction)
+                if not new_id:
+                    continue
+                rotated = self._rotate_component(source, new_id, turns)
+                self.components.append(rotated)
+                components_by_id[new_id] = rotated
+
+    def _rotate_component(self, component: RelationshipComponent, new_id: str, turns: int) -> RelationshipComponent:
+        turns = turns % 4
+
+        def rotate_token(token: str) -> str:
+            axes = _axes_from_pos(token)
+            rotated: List[Tuple[str, int]] = []
+            for axis, sign in axes:
+                if axis == "x":
+                    if turns == 0:
+                        rotated.append(("x", sign))
+                    elif turns == 1:
+                        rotated.append(("y", sign))
+                    elif turns == 2:
+                        rotated.append(("x", -sign))
+                    elif turns == 3:
+                        rotated.append(("y", -sign))
+                elif axis == "y":
+                    if turns == 0:
+                        rotated.append(("y", sign))
+                    elif turns == 1:
+                        rotated.append(("x", -sign))
+                    elif turns == 2:
+                        rotated.append(("y", -sign))
+                    elif turns == 3:
+                        rotated.append(("x", sign))
+                else:
+                    rotated.append((axis, sign))
+            rotated.sort(key=lambda item: AXIS_ORDER[item[0]])
+            return "".join(f"{'+' if sign > 0 else '-'}{axis}" for axis, sign in rotated)
+
+        def map_ref(ref: str) -> str:
+            rotations = self.rotation_index.get(ref)
+            if rotations is None:
+                return ref
+            return rotations.get(turns, ref)
+
+        def rotate_alignment(target: AlignmentTarget) -> AlignmentTarget:
+            return AlignmentTarget(ref=map_ref(target.ref), pos=rotate_token(target.pos), frame=target.frame)
+
+        rotated_relationships: List[AlignmentClause | FlushBundleClause | RunBetweenClause | RelateFromClause] = []
+        for clause in component.relationships:
+            if isinstance(clause, AlignmentClause):
+                rotated_relationships.append(
+                    AlignmentClause(
+                        kind=clause.kind,
+                        subject=rotate_alignment(clause.subject),
+                        obj=rotate_alignment(clause.obj),
+                        gap=clause.gap,
+                        tolerance=clause.tolerance,
+                        on_fail=clause.on_fail,
+                    )
+                )
+            elif isinstance(clause, FlushBundleClause):
+                faces: List[FlushFace] = []
+                for face in clause.faces:
+                    faces.append(FlushFace(subject=rotate_token(face.subject), obj=rotate_token(face.obj)))
+                inset_subject = {rotate_token(face): value for face, value in clause.inset_subject.items()}
+                inset_object = {rotate_token(face): value for face, value in clause.inset_object.items()}
+                rotated_relationships.append(
+                    FlushBundleClause(
+                        bundle=map_ref(clause.bundle),
+                        faces=tuple(faces),
+                        inset_subject=inset_subject,
+                        inset_object=inset_object,
+                        frame=clause.frame,
+                    )
+                )
+            elif isinstance(clause, RunBetweenClause):
+                rotated_relationships.append(
+                    RunBetweenClause(
+                        start_pos=rotate_token(clause.start_pos),
+                        end_pos=rotate_token(clause.end_pos),
+                        from_ref=rotate_alignment(clause.from_ref),
+                        to_ref=rotate_alignment(clause.to_ref),
+                        orient=clause.orient,
+                        count=clause.count,
+                        pitch=clause.pitch,
+                        inset_start=clause.inset_start,
+                        inset_end=clause.inset_end,
+                        include_seed=clause.include_seed,
+                    )
+                )
+            else:
+                rotated_relationships.append(clause)
+
+        repeat = component.repeat
+        rotated_repeat = repeat
+        if repeat is not None:
+            rotated_axis = rotate_token(repeat.axis)
+            rotated_repeat = RepeatSpec(
+                axis=rotated_axis,
+                span_use=map_ref(repeat.span_use) if repeat.span_use else None,
+                pitch=repeat.pitch,
+                count=repeat.count,
+                inset_start=repeat.inset_start,
+                inset_end=repeat.inset_end,
+                include_seed=repeat.include_seed,
+            )
+
+        metadata = dict(component.metadata)
+        base_rotation = float(metadata.get("_rotation_z", 0.0))
+        metadata["_rotation_z"] = base_rotation
+
+        size_xy = component.size_xy if turns % 2 == 0 else (component.size_xy[1], component.size_xy[0])
+
+        return RelationshipComponent(
+            id=new_id,
+            class_name=component.class_name,
+            profile=component.profile,
+            profile_params=dict(component.profile_params),
+            size_xy=size_xy,
+            height=component.height,
+            material=component.material,
+            metadata=metadata,
+            relationships=tuple(rotated_relationships),
+            repeat=rotated_repeat,
+            ifc=component.ifc,
+            voids=component.voids,
+            description=component.description,
+        )
 
     def solve(self) -> SolveResult:
         diagnostics = SolveDiagnostics()
         component_states: Dict[str, ComponentState] = {}
         solved: List[SolvedComponent] = []
 
-        if self.spec.assemblies:
-            diagnostics.add_warning(
-                "Assembly calls are not yet expanded in the solver output.",
-                subject="assemblies",
-            )
-
         resolver = ReferenceResolver(self.spec, component_states, self.datum_points, self.datum_planes, self.datum_bundles)
 
-        for component in self.spec.components:
+        for component in self.components:
             solved_instances = self._solve_component(component, resolver, component_states, diagnostics)
             solved.extend(solved_instances)
 
@@ -261,11 +426,12 @@ class ConstraintSolver:
         component_states: Dict[str, ComponentState],
         diagnostics: SolveDiagnostics,
     ) -> List[SolvedComponent]:
-        instances: List[InstanceState] = [InstanceState(name=component.id)]
+        base_rotation = float(component.metadata.get("_rotation_z", 0.0)) if component.metadata else 0.0
+        instances: List[InstanceState] = [InstanceState(name=component.id, rotation_z=base_rotation)]
 
         run_between_clause = next((c for c in component.relationships if isinstance(c, RunBetweenClause)), None)
         if run_between_clause:
-            instances = self._apply_run_between(component, run_between_clause, resolver, diagnostics)
+            instances = self._apply_run_between(component, run_between_clause, resolver, diagnostics, base_rotation)
             diagnostics.record_graph_edge(component.id, run_between_clause.from_ref.ref)
             diagnostics.record_graph_edge(component.id, run_between_clause.to_ref.ref)
 
@@ -303,6 +469,7 @@ class ConstraintSolver:
         clause: RunBetweenClause,
         resolver: ReferenceResolver,
         diagnostics: SolveDiagnostics,
+        base_rotation: float,
     ) -> List[InstanceState]:
         start_axes = _axes_from_pos(clause.start_pos)
         end_axes = _axes_from_pos(clause.end_pos)
@@ -393,7 +560,7 @@ class ConstraintSolver:
         for idx, pos in enumerate(positions):
             axis_values = {"x": pos[0], "y": pos[1], "z": pos[2]}
             name = component.id if idx == 0 else f"{component.id}#{idx}"
-            instances.append(InstanceState(name=name, axis_values=axis_values, rotation_z=rotation))
+            instances.append(InstanceState(name=name, axis_values=axis_values, rotation_z=rotation + base_rotation))
         return instances
 
     def _apply_relationships(

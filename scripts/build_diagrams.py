@@ -172,9 +172,10 @@ def main(argv: Optional[List[str]] = None) -> int:
             except SchemaError as exc:
                 print(f"{spec_path.name} failed to load: {exc}", file=sys.stderr)
                 return 1
-            option_key = relationship_spec.info.option or "relationship"
+            option_key = (relationship_spec.info.option or "relationship").lower()
             if args.options:
-                if option_key not in args.options:
+                normalized_options = {opt.lower() for opt in args.options}
+                if option_key not in normalized_options:
                     continue
             solver = ConstraintSolver(relationship_spec)
             solve_result = solver.solve()
@@ -190,7 +191,7 @@ def main(argv: Optional[List[str]] = None) -> int:
             print(f"Building relationship-first spec {spec_name} from {spec_path}")
             plan_bundle = None
             for planned in planned_views:
-                output_dir = outdir / spec_name / planned.option.key.lower()
+                output_dir = outdir / spec_name / option_key
                 output_dir.mkdir(parents=True, exist_ok=True)
                 svg_path = output_dir / f"{planned.view}.svg"
                 png_path = output_dir / f"{planned.view}.png"

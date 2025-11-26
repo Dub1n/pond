@@ -5,7 +5,8 @@ info:
   description: >
     Illustrative Phase 4 rewrite of Option C using IFC-aligned axes, relationship
     constraints, datum bundles, face batching, and rotation helpers. Emphasises
-    readable intent with minimal boilerplate.
+    readable intent with minimal boilerplate. Bundles and placements are centered
+    around the origin to simplify rotation-based assemblies.
 
 dimensions:
   structure:
@@ -40,6 +41,9 @@ datums:
       type: faces
       origin:
         ref: datums.anchor
+      translate:
+        +x: -dimensions.structure.deck_span / 2
+        +y: -dimensions.structure.deck_span / 2
       span:
         +x: dimensions.structure.deck_span
         +y: dimensions.structure.deck_span
@@ -47,9 +51,9 @@ datums:
       type: faces
       origin:
         ref: datums.anchor
-        translate:
-          +x: dimensions.structure.backspan
-          +y: dimensions.structure.backspan
+      translate:
+        +x: -dimensions.structure.pond_span / 2
+        +y: -dimensions.structure.pond_span / 2
       span:
         +x: dimensions.structure.pond_span
         +y: dimensions.structure.pond_span
@@ -62,18 +66,22 @@ datums:
     deck_surface:
       base:
         ref: datums.planes.joist_top
+      normal: +z
       offset: dimensions.finishes.deck_thickness
     water_surface:
       base:
         ref: datums.planes.joist_top
+      normal: +z
       offset: -dimensions.structure.deck_clearance
     water_bottom:
       base:
         ref: datums.planes.water_surface
+      normal: +z
       offset: -dimensions.site.water_depth
     pad_top:
       base:
         ref: datums.planes.joist_top
+      normal: +z
       offset: -dimensions.structure.joist_depth
 
 components:
@@ -86,6 +94,7 @@ components:
     relate:
       - flush_bundle:
           bundle: datums.bundles.pond_faces
+          faces: [+x, -x, +y, -y]
       - touch_planes:
           object: datums.planes.water_surface
           faces: [+z]
@@ -102,6 +111,7 @@ components:
     relate:
       - flush_bundle:
           bundle: datums.bundles.deck_faces
+          faces: [+x, -x, +y, -y]
       - touch_planes:
           object: datums.planes.joist_top
           faces: [-z]
@@ -144,7 +154,7 @@ components:
     profile: rectangle
     size:
       - dimensions.structure.beam_width
-      - dimensions.structure.pond_span + 2 * dimensions.structure.beam_width
+      - dimensions.structure.pond_span
     height: dimensions.structure.beam_height
     material: timber
     relate:
@@ -157,10 +167,6 @@ components:
               object: -y
             - subject: +y
               object: +y
-          inset:
-            subject:
-              -y: -dimensions.structure.beam_width
-              +y: dimensions.structure.beam_width
       - touch_planes:
           object: datums.planes.joist_top
           faces: [+z]
@@ -193,12 +199,6 @@ components:
             - subject_face: -x
               object_face: +x
               object_component: outer_beam_west
-            - subject_face: +x
-              object_face: +x
-              object_component: inner_beam_west
-              offsets:
-                subject:
-                  +x: dimensions.structure.cantilever
       - touch_planes:
           object: datums.planes.joist_top
           faces: [+z]
@@ -287,5 +287,5 @@ views:
   section:
     title: "Section — Option C relationship-first schema example"
     plane:
-      axis: +y
+      axis: y
       coordinate: dimensions.structure.deck_span / 2
