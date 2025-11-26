@@ -358,6 +358,14 @@ class ConstraintSolver:
             mapping[3] = ids.get("north", mapping.get(3))
             mapping[2] = ids.get("east", mapping.get(2))
             mapping[1] = ids.get("south", mapping.get(1))
+            # Also track rotated copies of numbered instances that come from repeats/run_between.
+            for comp in spec.components:
+                if not comp.id.startswith(f"{source_id}#"):
+                    continue
+                idx_text = comp.id.split("#", 1)[1]
+                for turns in (0, 1, 2, 3):
+                    mapped_base = mapping.get(turns, source_id)
+                    index.setdefault(comp.id, {})[turns] = f"{mapped_base}#{idx_text}"
         return index
 
     def _apply_assemblies(self) -> None:
@@ -421,6 +429,13 @@ class ConstraintSolver:
         def map_ref(ref: str) -> str:
             rotations = self.rotation_index.get(ref)
             if rotations is None:
+                if "#" in ref:
+                    base, suffix = ref.split("#", 1)
+                    rotations = self.rotation_index.get(base)
+                    if rotations is None:
+                        return ref
+                    mapped_base = rotations.get(turns, base)
+                    return f"{mapped_base}#{suffix}"
                 return ref
             return rotations.get(turns, ref)
 
@@ -430,12 +445,21 @@ class ConstraintSolver:
         rotated_relationships: List[AlignmentClause | FlushBundleClause | RunBetweenClause | RelateFromClause] = []
         for clause in component.relationships:
             if isinstance(clause, AlignmentClause):
+                gap = clause.gap
+                # Preserve physical inset when axis sign flips during rotation.
+                subject_axes_before = _axes_from_pos(clause.subject.pos)
+                subject_axes_after = _axes_from_pos(rotate_token(clause.subject.pos))
+                if (
+                    len(subject_axes_before) == len(subject_axes_after) == 1
+                    and subject_axes_before[0][1] != subject_axes_after[0][1]
+                ):
+                    gap = -gap
                 rotated_relationships.append(
                     AlignmentClause(
                         kind=clause.kind,
                         subject=rotate_alignment(clause.subject),
                         obj=rotate_alignment(clause.obj),
-                        gap=clause.gap,
+                        gap=gap,
                         tolerance=clause.tolerance,
                         on_fail=clause.on_fail,
                     )

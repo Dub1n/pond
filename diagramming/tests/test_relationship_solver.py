@@ -13,6 +13,7 @@ import ifcopenshell.guid
 from unittest import mock
 
 from diagramming.relationships import ConstraintSolver, load_relationship_spec
+from diagramming.relationships.solver import AlignmentClause
 from diagramming.planner.exporters import IfcExporter, ObjExporter, StepExporter
 from diagramming.relationships.solver import GUID_NAMESPACE
 
@@ -210,6 +211,156 @@ class RelationshipSolverTests(unittest.TestCase):
         self.assertFalse(result.diagnostics.ok)
         errors = [err.message for err in result.diagnostics.errors]
         self.assertTrue(any("over-constrained" in msg for msg in errors))
+
+    def test_rotate_quadrants_flips_alignment_gap_with_sign(self) -> None:
+        spec_text = dedent(
+            """
+            schema: pond-relationship-test
+            info:
+              option: rotate
+            datums:
+              anchor:
+                type: point
+                coordinates:
+                  +x: 0
+                  +y: 0
+                  +z: 0
+              bundles:
+                deck:
+                  type: faces
+                  origin:
+                    ref: datums.anchor
+                  translate:
+                    +x: -1000
+                    +y: -1000
+                  span:
+                    +x: 2000
+                    +y: 2000
+              planes:
+                top:
+                  base:
+                    ref: datums.anchor
+                  normal: +z
+                  offset: 0
+            components:
+              - id: pad_west
+                class: IfcFooting
+                profile: rectangle
+                size: [100, 100, 50]
+                material: pad
+                relate:
+                  - align:
+                      subject:
+                        component: pad_west
+                        pos: +x
+                      object:
+                        bundle: datums.bundles.deck
+                        pos: -x
+                      gap: -50
+                  - align:
+                      subject:
+                        component: pad_west
+                        pos: +y
+                      object:
+                        datum: datums.anchor
+                        pos: +y
+                  - contact:
+                      subject:
+                        component: pad_west
+                        pos: +z
+                      object:
+                        datum: datums.planes.top
+                        pos: +z
+              - use: assembly.rotate_quadrants
+                with:
+                  source: pad_west
+                  ids:
+                    north: pad_north
+                    east: pad_east
+                    south: pad_south
+                  about:
+                    point: datums.anchor
+                    axis: +z
+            """
+        )
+        with TemporaryDirectory() as tmp:
+            path = Path(tmp) / "rotate.yaml"
+            path.write_text(spec_text, encoding="utf-8")
+            spec = load_relationship_spec(path)
+        solver = ConstraintSolver(spec)
+        result = solver.solve()
+        self.assertTrue(result.diagnostics.ok)
+
+        def face_coord(instance_id: str, axis: int, sign: int) -> float:
+            state = next(comp for comp in result.components if comp.instance_id == instance_id)
+            return state.transform.position[axis] + sign * state.primitive.size[axis] / 2
+
+        deck_west = -1000
+        deck_north = 1000
+        self.assertAlmostEqual(face_coord("pad_west", axis=0, sign=1), deck_west - 50)
+        self.assertAlmostEqual(face_coord("pad_north", axis=1, sign=-1), deck_north - 50)
+
+    def test_rotate_quadrants_maps_numbered_refs(self) -> None:
+        spec_text = dedent(
+            """
+            schema: pond-relationship-test
+            info:
+              option: rotate-run-between
+            datums:
+              anchor:
+                type: point
+                coordinates:
+                  +x: 0
+                  +y: 0
+            components:
+              - id: runner_west
+                class: IfcBeam
+                profile: rectangle
+                size: [100, 50, 10]
+                material: timber
+              - use: assembly.rotate_quadrants
+                with:
+                  source: runner_west
+                  ids:
+                    east: runner_east
+                    north: runner_north
+                    south: runner_south
+                  about:
+                    point: datums.anchor
+                    axis: +z
+              - id: tag_runner
+                class: IfcFooting
+                profile: rectangle
+                size: [10, 10, 10]
+                material: pad
+                relate:
+                  - align:
+                      subject:
+                        component: tag_runner
+                        pos: +y
+                      object:
+                        component: runner_west#1
+                        pos: +y
+              - use: assembly.rotate_quadrants
+                with:
+                  source: tag_runner
+                  ids:
+                    east: tag_runner_east
+                    north: tag_runner_north
+                    south: tag_runner_south
+                  about:
+                    point: datums.anchor
+                    axis: +z
+            """
+        )
+        with TemporaryDirectory() as tmp:
+            path = Path(tmp) / "rotate-run.yaml"
+            path.write_text(spec_text, encoding="utf-8")
+            spec = load_relationship_spec(path)
+        solver = ConstraintSolver(spec)
+        tag_north = solver.components_by_id["tag_runner_north"]
+        align_clause = next(c for c in tag_north.relationships if isinstance(c, AlignmentClause))
+        self.assertEqual(align_clause.obj.ref, "runner_north#1")
 
     def test_collision_detection_reports_overlap(self) -> None:
         spec_text = dedent(
