@@ -270,6 +270,7 @@ All work in this phase must preserve the overarching goal: *semantic description
 
 - [x] Relationship-first schema loader + linter scaffolded under `diagramming/relationships` with signed-axis tokens, datums/bundles, helper clauses, IFC metadata, and a CLI guard. Specs opt in via `schema: pond-relationship*`; rendering is still legacy-only pending solver/solids. Feature flag: `DIAGRAM_RELATIONSHIPS=1`.
 - [x] Relationship-first example spec and fixtures in `docs/examples/option-c-relationship.yaml` and `diagramming/tests/fixtures/relationship_minimal.yaml`; tests cover token canonicalisation and linting.
+- [ ] Relationship section booleans: carve pond/water voids and soil fill correctly in section slices once solid booleans are wired through
 - [x] CLI lint entrypoint (`scripts/lint_specs.py`) handles both legacy and relationship-first specs.
 
 #### Schema & solver groundwork
@@ -410,9 +411,7 @@ All work in this phase must preserve the overarching goal: *semantic description
   - Mesh checksum for glTF to catch regressions.
 
 - [ ] **Migration playbook**
-  - Convert *Option C* first using full relationship-first schema.
   - Run both kernels (legacy + new) to confirm identical plan/section geometry.
-  - Batch-migrate remaining specs.
   - Retire anchor schema once all specs pass lint + solver.
 
 - [ ] **Performance profile & caching**

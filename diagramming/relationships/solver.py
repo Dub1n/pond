@@ -157,6 +157,7 @@ class InstanceState:
     axis_values: Dict[str, float] = field(default_factory=dict)
     rotation_z: float = 0.0
     connections: List[ConnectionHint] = field(default_factory=list)
+    soft_axes: set[str] = field(default_factory=set)
 
 
 class ReferenceResolver:
@@ -550,17 +551,29 @@ class ConstraintSolver:
                     end_point["y"] - unit[1] * inset_end,
                     end_point["z"] - unit[2] * inset_end,
                 )
-            )
+                )
 
         rotation = 0.0
         if clause.orient == "along_run":
             rotation = math.degrees(math.atan2(direction[1], direction[0]))
 
+        axes_present = {axis for axis, _ in start_axes} | {axis for axis, _ in end_axes}
+        if not axes_present:
+            axes_present = {"x", "y", "z"}
+
         instances: List[InstanceState] = []
         for idx, pos in enumerate(positions):
-            axis_values = {"x": pos[0], "y": pos[1], "z": pos[2]}
+            axis_values = {axis: value for axis, value in zip(("x", "y", "z"), pos) if axis in axes_present}
+            soft_axes: set[str] = set()
+            for axis, value in zip(("x", "y", "z"), pos):
+                if axis in axes_present:
+                    continue
+                axis_values[axis] = value
+                soft_axes.add(axis)
             name = component.id if idx == 0 else f"{component.id}#{idx}"
-            instances.append(InstanceState(name=name, axis_values=axis_values, rotation_z=rotation + base_rotation))
+            instances.append(
+                InstanceState(name=name, axis_values=axis_values, rotation_z=rotation + base_rotation, soft_axes=soft_axes)
+            )
         return instances
 
     def _apply_relationships(
@@ -742,6 +755,12 @@ class ConstraintSolver:
         existing = instance.axis_values.get(axis)
         if existing is None:
             instance.axis_values[axis] = value
+            if axis in instance.soft_axes:
+                instance.soft_axes.remove(axis)
+            return
+        if axis in instance.soft_axes:
+            instance.axis_values[axis] = value
+            instance.soft_axes.remove(axis)
             return
         if abs(existing - value) > tolerance:
             diagnostics.add_error(
@@ -920,6 +939,7 @@ class ConstraintSolver:
             for axis_token, value in point.coordinates.items():
                 axis = axis_token[-1]
                 coords[axis] = value
+                coords[axis_token] = value
             self._register_ref(points, name, coords, category="points")
         return points
 

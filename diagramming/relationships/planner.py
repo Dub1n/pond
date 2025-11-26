@@ -6,6 +6,7 @@ from typing import Dict, Iterable, List, Sequence
 from shapely.affinity import rotate as shapely_rotate, translate as shapely_translate
 from shapely.geometry import MultiPoint, Polygon as ShapelyPolygon, box as shapely_box
 
+from ..materials import apply_material_class
 from ..planner.bundle import GeometryBundle, PolygonFeature
 from .solver import NeutralPrimitive, SolveResult, footprint_from_solid, mesh_from_primitive
 from .schema import RelationshipDiagramSpec, ViewConfig
@@ -46,10 +47,12 @@ class RelationshipPlanner:
             )
             if view_config.plane is not None:
                 for feature in self._section_features(self.solved.primitives, view_config):
-                    bundle.add_polygon(feature)
+                    if view_name in feature.views:
+                        bundle.add_polygon(feature)
             else:
                 for feature in plan_features:
-                    bundle.add_polygon(feature)
+                    if view_name in feature.views:
+                        bundle.add_polygon(feature)
             bundle.scene = self.solved.scene
             bundle.build_legend()
             planned.append(
@@ -69,6 +72,7 @@ class RelationshipPlanner:
             shape = footprints.get(primitive.id)
             if shape is None or shape.is_empty:
                 continue
+            metadata = primitive.metadata or {}
             if primitive.voids:
                 void_shapes = [footprints.get(vid) for vid in primitive.voids if footprints.get(vid) is not None]
                 if void_shapes:
@@ -92,11 +96,15 @@ class RelationshipPlanner:
                     holes=holes,
                     height=primitive.size[2],
                     elevation=primitive.transform.position[2] - (primitive.size[2] / 2),
-                    class_name=primitive.class_name,
+                    class_name=apply_material_class(primitive.class_name, primitive.material),
                     material=primitive.material,
-                    metadata=primitive.metadata.copy(),
+                    label=metadata.get("label"),
+                    label_id=metadata.get("label_id"),
+                    metadata=metadata.copy(),
                     shape=polygon,
-                    views=tuple(self.spec.views.keys()) if self.spec.views else ("plan",),
+                    views=tuple(metadata.get("views"))
+                    if metadata.get("views")
+                    else tuple(self.spec.views.keys()) if self.spec.views else ("plan",),
                 )
                 yield feature
 
@@ -149,6 +157,8 @@ class RelationshipPlanner:
         section_features: List[PolygonFeature] = []
 
         for primitive in primitives:
+            metadata = primitive.metadata or {}
+            views = tuple(metadata.get("views")) if metadata.get("views") else ("section",)
             for polygon in self._slice_primitive(primitive, origin, normal, plane.axis):
                 segment_index = per_feature_segment.get(primitive.id, 0)
                 per_feature_segment[primitive.id] = segment_index + 1
@@ -157,15 +167,15 @@ class RelationshipPlanner:
                         id=f"{primitive.id}@section#{segment_index}",
                         outer=tuple(polygon.exterior.coords),
                         holes=tuple(tuple(ring.coords) for ring in polygon.interiors),
-                        label=primitive.metadata.get("label") if primitive.metadata else None,
-                        label_id=primitive.metadata.get("label_id") if primitive.metadata else None,
-                        class_name=primitive.class_name,
+                        label=metadata.get("label"),
+                        label_id=metadata.get("label_id"),
+                        class_name=apply_material_class(primitive.class_name, primitive.material),
                         height=primitive.size[2],
                         elevation=primitive.transform.position[2] - (primitive.size[2] / 2),
                         material=primitive.material,
-                        metadata=primitive.metadata.copy(),
+                        metadata=metadata.copy(),
                         shape=polygon,
-                        views=("section",),
+                        views=views,
                     )
                 )
 
@@ -190,7 +200,7 @@ class RelationshipPlanner:
             coords_3d = list(polyline)
             if len(coords_3d) < 3:
                 continue
-            coords_2d = [(pt[1], pt[2]) if axis == "x" else (pt[0], pt[2]) for pt in coords_3d]
+            coords_2d = [(pt[1], -pt[2]) if axis == "x" else (pt[0], -pt[2]) for pt in coords_3d]
             if coords_2d[0] != coords_2d[-1]:
                 coords_2d.append(coords_2d[0])
             shape = ShapelyPolygon(coords_2d).buffer(0)

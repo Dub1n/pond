@@ -21,6 +21,7 @@ Pass `--orthographic` to also emit a headless 3D orthographic snapshot (`orthogr
 - Specs marked `schema: pond-relationship*` are lintable now via `python3 scripts/lint_specs.py` and renderable when `DIAGRAM_RELATIONSHIPS=1` is set. Without the flag, the CLI skips relationship-first specs.
 - The prep schema uses signed axis tokens, datums/bundles, helpers (`align`, `contact`, `flush_bundle`, `run_between`, `relate_from`), and a `checks` block; see `docs/relationship-schema-reference.md` plus the worked example in `docs/examples/option-c-relationship.yaml`.
 - Relationship solving outputs neutral CadQuery-backed solids (box/wedge/sweep) with deterministic GUID seeds, OCC footprints/sections, and glTF/IFC/STEP/OBJ exports. IFC builds target IFC4X3 Reference View with Model/Axis/Body contexts, mm/deg units, swept solids where possible, material usages, openings, mapped items, and connection geometry.
+- Helpers now support linear `run_between` layouts in relationship mode (e.g., joists/pads tied to an opening edge) and expect explicit 3D `size: [x, y, z]` tuples for component solids; section slices render upright with Z flipped internally.
 - Legacy specs can optionally include `ifc` blocks (`predefined_type`, `psets`); the loader normalises IFC class names/pset names and preserves them in feature/mesh metadata for IFC-ready exports.
 
 ### Blender export

@@ -671,8 +671,33 @@ def _parse_component(data: Mapping[str, Any], dimensions: DimensionResolver) -> 
     height = resolved_size[2] if len(resolved_size) == 3 else _resolve_number(data.get("height", 0.0), dimensions)
 
     metadata = _resolve_metadata(data.get("metadata"), dimensions)
+    label = data.get("label")
+    if label is not None:
+        metadata.setdefault("label", str(label))
+    label_id = data.get("label_id")
+    if label_id is not None:
+        metadata.setdefault("label_id", str(label_id))
+    views_raw = data.get("views")
+    if views_raw is not None:
+        if not isinstance(views_raw, Sequence) or isinstance(views_raw, (str, bytes)):
+            raise SchemaError(f"component '{comp_id}' views must be a list when provided")
+        metadata.setdefault("views", tuple(str(view) for view in views_raw))
+
     ifc_block = _parse_ifc_block(data.get("ifc"))
-    voids = tuple(str(item) for item in data.get("voids", ()))
+    voids_raw = data.get("voids", ())
+    voids: List[str] = []
+    if voids_raw:
+        if not isinstance(voids_raw, Sequence) or isinstance(voids_raw, (str, bytes)):
+            raise SchemaError(f"component '{comp_id}' voids must be a list when provided")
+        for entry in voids_raw:
+            if isinstance(entry, Mapping):
+                ref = entry.get("ref")
+                if ref is None:
+                    raise SchemaError(f"component '{comp_id}' void entry requires 'ref'")
+                voids.append(str(ref))
+            else:
+                voids.append(str(entry))
+    voids_tuple = tuple(voids)
     repeat = _parse_repeat(data.get("repeat"), dimensions)
     relationships = tuple(_parse_relationships(data.get("relate", ()), dimensions))
     description = str(data["description"]) if "description" in data else None
@@ -690,7 +715,7 @@ def _parse_component(data: Mapping[str, Any], dimensions: DimensionResolver) -> 
         relationships=relationships,
         repeat=repeat,
         ifc=ifc_block,
-        voids=voids,
+        voids=voids_tuple,
         description=description,
     )
 
