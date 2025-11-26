@@ -372,8 +372,8 @@ components:
           faces: [-x, +y]
           inset:
             subject:
-              -x: -(dimensions.structure.joist_width / 2)
-              +y: -(dimensions.structure.joist_width / 2)
+              -x: -(dimensions.site.pad_size / 2 - dimensions.structure.joist_width / 2)
+              +y: -(dimensions.site.pad_size / 2 - dimensions.structure.joist_width / 2)
       - contact:
           subject:
             component: pad_corner_west
@@ -397,7 +397,7 @@ components:
           faces: [-x]
           inset:
             subject:
-              -x: -(dimensions.structure.joist_width / 2)
+              -x: -(dimensions.site.pad_size / 2 - dimensions.structure.joist_width / 2)
       - align:
           subject:
             component: pad_run2_west
@@ -429,7 +429,7 @@ components:
           faces: [-x]
           inset:
             subject:
-              -x: -(dimensions.structure.joist_width / 2)
+              -x: -(dimensions.site.pad_size / 2 - dimensions.structure.joist_width / 2)
       - align:
           subject:
             component: pad_run6_west

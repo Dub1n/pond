@@ -449,9 +449,12 @@ class ConstraintSolver:
                 # Preserve physical inset when axis sign flips during rotation.
                 subject_axes_before = _axes_from_pos(clause.subject.pos)
                 subject_axes_after = _axes_from_pos(rotate_token(clause.subject.pos))
+                object_axes_before = _axes_from_pos(clause.obj.pos)
                 if (
-                    len(subject_axes_before) == len(subject_axes_after) == 1
+                    len(subject_axes_before) == len(subject_axes_after) == len(object_axes_before) == 1
                     and subject_axes_before[0][1] != subject_axes_after[0][1]
+                    and subject_axes_before[0][0] != subject_axes_after[0][0]
+                    and subject_axes_before[0][1] != object_axes_before[0][1]
                 ):
                     gap = -gap
                 rotated_relationships.append(
