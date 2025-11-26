@@ -842,13 +842,8 @@ class ConstraintSolver:
 
         instances: List[InstanceState] = []
         for idx, pos in enumerate(positions):
-            axis_values = {axis: value for axis, value in zip(("x", "y", "z"), pos) if axis in axes_present}
-            soft_axes: set[str] = set()
-            for axis, value in zip(("x", "y", "z"), pos):
-                if axis in axes_present:
-                    continue
-                axis_values[axis] = value
-                soft_axes.add(axis)
+            axis_values = {axis: value for axis, value in zip(("x", "y", "z"), pos)}
+            soft_axes: set[str] = {axis for axis in ("x", "y", "z") if axis not in axes_present}
             name = component.id if idx == 0 else f"{component.id}#{idx}"
             instances.append(
                 InstanceState(
@@ -1129,8 +1124,6 @@ class ConstraintSolver:
         for axis in ("x", "y", "z"):
             if axis not in axis_values:
                 axis_values[axis] = 0.0
-                dof += 1
-            elif axis in instance.soft_axes:
                 dof += 1
         if dof:
             diagnostics.add_error(

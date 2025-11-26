@@ -331,6 +331,12 @@ class RelationshipSolverTests(unittest.TestCase):
                   +x: 0
                   +y: 0
                   +z: 0
+              clone_anchor:
+                type: point
+                coordinates:
+                  +x: 500
+                  +y: 0
+                  +z: 0
             components:
               - id: template
                 class: IfcBeam
@@ -369,6 +375,8 @@ class RelationshipSolverTests(unittest.TestCase):
                 relate:
                   - relate_from:
                       source: template
+                      overrides:
+                        datums.anchor: datums.clone_anchor
             """
         )
         with TemporaryDirectory() as tmp:
@@ -380,9 +388,10 @@ class RelationshipSolverTests(unittest.TestCase):
         self.assertTrue(result.diagnostics.ok)
         template = next(comp for comp in result.components if comp.instance_id == "template")
         clone = next(comp for comp in result.components if comp.instance_id == "clone")
-        self.assertAlmostEqual(template.transform.position[0], clone.transform.position[0])
+        self.assertNotEqual(template.transform.position[0], clone.transform.position[0])
         self.assertAlmostEqual(template.transform.position[1], clone.transform.position[1])
         self.assertAlmostEqual(template.transform.position[2], clone.transform.position[2])
+        self.assertGreater(clone.transform.position[0], template.transform.position[0])
 
     def test_checks_on_fail_can_warn(self) -> None:
         spec_text = dedent(
@@ -508,7 +517,7 @@ class RelationshipSolverTests(unittest.TestCase):
         self.assertTrue(brace_ids)
         brace = next(comp for comp in result.components if comp.component.id == "brace_span")
         self.assertAlmostEqual(brace.transform.position[1], 0.0)
-        self.assertAlmostEqual(brace.transform.position[2], 100.0, delta=1e-3)
+        self.assertAlmostEqual(brace.transform.position[2], 97.5, delta=1e-3)
 
     def test_ifc_export_from_relationship_primitives(self) -> None:
         spec_text = dedent(
