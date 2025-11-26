@@ -11,6 +11,14 @@ from .schema import (
 )
 
 
+IFC_REQUIREMENTS = {
+    "ifcbeam": {"predefined": True, "material": True},
+    "ifcmember": {"predefined": True, "material": True},
+    "ifcslab": {"predefined": True, "material": True},
+    "ifcopeningelement": {"predefined": True, "material": False},
+}
+
+
 def lint_relationship_spec(spec: RelationshipDiagramSpec) -> List[str]:
     """
     Returns a list of human-friendly error messages describing schema issues.
@@ -63,6 +71,7 @@ def _lint_component(
     datum_bundles: Set[str],
     errors: List[str],
 ) -> None:
+    class_lower = component.class_name.lower()
     for clause in component.relationships:
         if isinstance(clause, AlignmentClause):
             _lint_ref(clause.subject.ref, component, component_ids, datum_points, datum_planes, datum_bundles, errors)
@@ -87,9 +96,16 @@ def _lint_component(
     repeat = component.repeat
     if repeat and repeat.span_use:
         _lint_ref(repeat.span_use, component, component_ids, datum_points, datum_planes, datum_bundles, errors)
-
-    if component.class_name.lower().startswith("ifc") and component.ifc is None:
+    if class_lower.startswith("ifc") and component.ifc is None:
         errors.append(f"component '{component.id}' uses IFC class '{component.class_name}' without an ifc block")
+    requirements = IFC_REQUIREMENTS.get(class_lower)
+    if requirements:
+        if requirements.get("predefined") and (component.ifc is None or component.ifc.predefined_type is None):
+            errors.append(
+                f"component '{component.id}' ({component.class_name}) must declare ifc.predefined_type per mapping table"
+            )
+        if requirements.get("material") and not component.material:
+            errors.append(f"component '{component.id}' ({component.class_name}) must declare a material")
 
 
 def _lint_ref(

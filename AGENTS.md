@@ -3,7 +3,7 @@
 ## Project Structure & Module Organization
 
 - `diagramming/` – core engine; planner logic in `planner/`, schema loaders in `schema/`, renderers in `renderers/`, material palette in `materials.py`.
-- `diagramming/relationships/` – relationship-first schema loader/lint + solver (opt-in via `schema: pond-relationship*`, feature flag `DIAGRAM_RELATIONSHIPS=1`) emitting neutral CadQuery-backed primitives plus plan/section projections and exporter-ready metadata.
+- `diagramming/relationships/` – relationship-first schema loader/lint + solver (opt-in via `schema: pond-relationship*`, feature flag `DIAGRAM_RELATIONSHIPS=1`) emitting neutral CadQuery-backed primitives plus plan/section projections and exporter-ready metadata; frames (`world`/`local`/`component:<id>`) are honoured across align/contact/flush helpers, `relate_from` and `assembly.linear_bracing` expand in-solver, and `run_between orient: along_run` aligns local +X to 3D spans.
 - Relationship specs supply explicit 3D `size` vectors and can use `run_between` for linear arrays tied to datum/bundle faces (e.g., joists/pads around openings).
 - `diagrams/specs/` – author-facing YAML specs; long-lived revisions live under `archive/`.
 - `diagrams/output/` – generated artefacts (`plan.svg/png`, `section.svg/png`, `model.glb`). Git-ignored; regenerate on demand.

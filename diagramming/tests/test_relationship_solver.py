@@ -318,6 +318,198 @@ class RelationshipSolverTests(unittest.TestCase):
         self.assertTrue(any("datums.start" in target for target in graph_targets))
         self.assertTrue(any("datums.end" in target for target in graph_targets))
 
+    def test_relate_from_inherits_relationships(self) -> None:
+        spec_text = dedent(
+            """
+            schema: pond-relationship-test
+            info:
+              option: relate
+            datums:
+              anchor:
+                type: point
+                coordinates:
+                  +x: 0
+                  +y: 0
+                  +z: 0
+            components:
+              - id: template
+                class: IfcBeam
+                size: [200, 100, 50]
+                material: timber
+                ifc:
+                  predefined_type: BEAM
+                relate:
+                  - align:
+                      subject:
+                        component: template
+                        pos: +x
+                      object:
+                        datum: datums.anchor
+                        pos: +x
+                  - align:
+                      subject:
+                        component: template
+                        pos: +y
+                      object:
+                        datum: datums.anchor
+                        pos: +y
+                  - align:
+                      subject:
+                        component: template
+                        pos: -z
+                      object:
+                        datum: datums.anchor
+                        pos: +z
+              - id: clone
+                class: IfcBeam
+                size: [200, 100, 50]
+                material: timber
+                ifc:
+                  predefined_type: BEAM
+                relate:
+                  - relate_from:
+                      source: template
+            """
+        )
+        with TemporaryDirectory() as tmp:
+            path = Path(tmp) / "relate.yaml"
+            path.write_text(spec_text, encoding="utf-8")
+            spec = load_relationship_spec(path)
+        solver = ConstraintSolver(spec)
+        result = solver.solve()
+        self.assertTrue(result.diagnostics.ok)
+        template = next(comp for comp in result.components if comp.instance_id == "template")
+        clone = next(comp for comp in result.components if comp.instance_id == "clone")
+        self.assertAlmostEqual(template.transform.position[0], clone.transform.position[0])
+        self.assertAlmostEqual(template.transform.position[1], clone.transform.position[1])
+        self.assertAlmostEqual(template.transform.position[2], clone.transform.position[2])
+
+    def test_checks_on_fail_can_warn(self) -> None:
+        spec_text = dedent(
+            """
+            schema: pond-relationship-test
+            info:
+              option: warn
+            datums:
+              origin:
+                type: point
+                coordinates:
+                  +x: 0
+                  +y: 0
+                  +z: 0
+            components:
+              - id: block
+                class: IfcSlab
+                size: [100, 100, 50]
+                material: decking
+                ifc:
+                  predefined_type: FLOOR
+                relate:
+                  - align:
+                      subject:
+                        component: block
+                        pos: +x
+                      object:
+                        datum: datums.origin
+                        pos: +x
+                  - align:
+                      subject:
+                        component: block
+                        pos: +y
+                      object:
+                        datum: datums.origin
+                        pos: +y
+                  - align:
+                      subject:
+                        component: block
+                        pos: -z
+                      object:
+                        datum: datums.origin
+                        pos: +z
+            checks:
+              - align:
+                  subject:
+                    component: block
+                    pos: +x
+                  object:
+                    datum: datums.origin
+                    pos: -x
+                  gap: 10
+                  tolerance: 0.1
+                  on_fail: warn
+            """
+        )
+        with TemporaryDirectory() as tmp:
+            path = Path(tmp) / "warn.yaml"
+            path.write_text(spec_text, encoding="utf-8")
+            spec = load_relationship_spec(path)
+        solver = ConstraintSolver(spec)
+        result = solver.solve()
+        self.assertTrue(result.diagnostics.ok)
+        self.assertTrue(result.diagnostics.warnings)
+        self.assertTrue(any("check failed" in warning.message for warning in result.diagnostics.warnings))
+
+    def test_linear_bracing_assembly_expands(self) -> None:
+        spec_text = dedent(
+            """
+            schema: pond-relationship-test
+            info:
+              option: brace
+            datums:
+              start:
+                type: point
+                coordinates:
+                  +x: 0
+                  +y: 0
+                  +z: 0
+              end:
+                type: point
+                coordinates:
+                  +x: 1200
+                  +y: 0
+                  +z: 0
+              planes:
+                top:
+                  base:
+                    ref: datums.start
+                  normal: +z
+                  offset: 100
+            components:
+              - id: placeholder
+                class: IfcSlab
+                size: [100, 100, 10]
+                material: decking
+                ifc:
+                  predefined_type: FLOOR
+              - use: assembly.linear_bracing
+                with:
+                  id: brace_span
+                  path:
+                    start:
+                      component: datums.start
+                      face: +x
+                    end:
+                      component: datums.end
+                      face: +x
+                  attach:
+                    face: +z
+                    plane: datums.planes.top
+                  size: [1200, 30, 5]
+                  material: hardware
+            """
+        )
+        with TemporaryDirectory() as tmp:
+            path = Path(tmp) / "bracing.yaml"
+            path.write_text(spec_text, encoding="utf-8")
+            spec = load_relationship_spec(path)
+        solver = ConstraintSolver(spec)
+        result = solver.solve()
+        brace_ids = [comp.instance_id for comp in result.components if comp.component.id == "brace_span"]
+        self.assertTrue(brace_ids)
+        brace = next(comp for comp in result.components if comp.component.id == "brace_span")
+        self.assertAlmostEqual(brace.transform.position[1], 0.0)
+        self.assertAlmostEqual(brace.transform.position[2], 100.0, delta=1e-3)
+
     def test_ifc_export_from_relationship_primitives(self) -> None:
         spec_text = dedent(
             """

@@ -296,6 +296,7 @@ All work in this phase must preserve the overarching goal: *semantic description
 
 - [x] **Implement the constraint solver + diagnostics layer**
   - Resolve face/edge/plane relationships deterministically. **Progress:** box-only solver emits CadQuery-backed neutral primitives with DOF/check diagnostics, constraint graph export, and deterministic GUID seeds; assemblies and non-box solids remain.
+  - Honour `world`/`local`/`component:<id>` frames through align/contact/flush clauses, rotate `run_between orient: along_run` to the 3D span vector, expand `relate_from` and `assembly.linear_bracing` in-solver, and downgrade check failures when `on_fail: warn` is set.
   - Produce canonical transforms for each component (local placement, rotation, flip, inset).
   - Detect and surface **under-constrained**, **over-constrained**, and **inconsistent** relationships.
   - Export the constraint graph + DOF report for debugging.
@@ -397,7 +398,7 @@ All work in this phase must preserve the overarching goal: *semantic description
   - `IfcMaterialProfileSetUsage`/`LayerSetUsage` correctness.
   - No invalid entity types or undefined predefined types.
   - Axis token grammar and frame references valid; align checks executed post-solve and reported in diagnostics.
-  - **Progress:** `scripts/lint_specs.py` now runs solver + IFC validation (units, Axis/Body, RelVoids, material usages, predefined types), flags bad frames/axis tokens, surfaces check results, and emits mesh digests for CI gating.
+  - **Progress:** `scripts/lint_specs.py` now runs solver + IFC validation (units, Axis/Body, RelVoids, class/predefined-type/material mapping), flags bad frames/axis tokens, surfaces check results (with `on_fail` downgrade support), and emits mesh digests for CI gating.
 
 - [x] **Collision/overlap detection at the solid level**
   - Integrate OCC collision checks.

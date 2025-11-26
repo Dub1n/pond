@@ -31,8 +31,7 @@ components:
   - id: deck_surface
     class: IfcSlab
     profile: rectangle
-    size: [dimensions.structure.span, dimensions.structure.span]
-    height: 28
+    size: [dimensions.structure.span, dimensions.structure.span, 28]
     material: decking
     relate:
       - flush_bundle:

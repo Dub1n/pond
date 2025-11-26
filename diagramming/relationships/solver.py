@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import math
 import uuid
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from typing import Any, Dict, Iterable, List, Mapping, Optional, Sequence, Tuple
 
 import cadquery as cq
@@ -17,11 +17,14 @@ from .schema import (
     FlushBundleClause,
     FlushFace,
     IfcMetadata,
+    RelateFromClause,
     RelationshipComponent,
     RelationshipDiagramSpec,
     RunBetweenClause,
+    canonical_pos_token,
     RepeatSpec,
 )
+from ..ifc import normalize_ifc_class, normalize_ifc_predefined_type
 
 
 GUID_NAMESPACE = uuid.UUID("6c7b3d9e-4f21-4b06-9fbf-2a6e2d6a8b2c")
@@ -29,6 +32,12 @@ GUID_NAMESPACE = uuid.UUID("6c7b3d9e-4f21-4b06-9fbf-2a6e2d6a8b2c")
 AxisSign = int
 AxisName = str
 MM_TO_METERS = 0.001
+OrientationMatrix = Tuple[Tuple[float, float, float], Tuple[float, float, float], Tuple[float, float, float]]
+IDENTITY_ORIENTATION: OrientationMatrix = (
+    (1.0, 0.0, 0.0),
+    (0.0, 1.0, 0.0),
+    (0.0, 0.0, 1.0),
+)
 
 
 def _axes_from_pos(pos_token: str) -> List[Tuple[AxisName, AxisSign]]:
@@ -60,6 +69,90 @@ def _ifc_to_dict(ifc: Optional[IfcMetadata]) -> Optional[Dict[str, object]]:
     if ifc is None:
         return None
     return ifc.to_dict()
+
+
+def _normalise_vector(vec: Tuple[float, float, float]) -> Tuple[float, float, float]:
+    length = math.sqrt(vec[0] ** 2 + vec[1] ** 2 + vec[2] ** 2)
+    if length <= 1e-9:
+        return (0.0, 0.0, 0.0)
+    return (vec[0] / length, vec[1] / length, vec[2] / length)
+
+
+def _axis_vector(orientation: OrientationMatrix, axis: str) -> Tuple[float, float, float]:
+    if axis == "x":
+        return orientation[0]
+    if axis == "y":
+        return orientation[1]
+    return orientation[2]
+
+
+def _orientation_from_z_rotation(angle_deg: float) -> OrientationMatrix:
+    radians = math.radians(angle_deg)
+    cos_a = math.cos(radians)
+    sin_a = math.sin(radians)
+    return (
+        (cos_a, sin_a, 0.0),
+        (-sin_a, cos_a, 0.0),
+        (0.0, 0.0, 1.0),
+    )
+
+
+def _orientation_from_direction(direction: Tuple[float, float, float], twist_deg: float = 0.0) -> OrientationMatrix:
+    x_axis = _normalise_vector(direction)
+    if x_axis == (0.0, 0.0, 0.0):
+        return IDENTITY_ORIENTATION
+    up = (0.0, 0.0, 1.0)
+    if abs(sum(a * b for a, b in zip(x_axis, up))) > 0.999:
+        up = (0.0, 1.0, 0.0)
+    y_axis = _normalise_vector(
+        (
+            up[1] * x_axis[2] - up[2] * x_axis[1],
+            up[2] * x_axis[0] - up[0] * x_axis[2],
+            up[0] * x_axis[1] - up[1] * x_axis[0],
+        )
+    )
+    z_axis = _normalise_vector(
+        (
+            x_axis[1] * y_axis[2] - x_axis[2] * y_axis[1],
+            x_axis[2] * y_axis[0] - x_axis[0] * y_axis[2],
+            x_axis[0] * y_axis[1] - x_axis[1] * y_axis[0],
+        )
+    )
+    orientation = (x_axis, y_axis, z_axis)
+    if twist_deg:
+        twist_rad = math.radians(twist_deg)
+        axis = np.array(x_axis)
+        axis = axis / (np.linalg.norm(axis) or 1.0)
+        twist_matrix = trimesh.transformations.rotation_matrix(twist_rad, axis)[:3, :3]
+        orientation_matrix = np.array(orientation).T
+        oriented = twist_matrix @ orientation_matrix
+        orientation = (
+            tuple(float(val) for val in oriented[:, 0]),
+            tuple(float(val) for val in oriented[:, 1]),
+            tuple(float(val) for val in oriented[:, 2]),
+        )
+    return orientation
+
+
+def _rotation_from_orientation(orientation: OrientationMatrix) -> Tuple[float, float, float]:
+    matrix = np.array(
+        [
+            [orientation[0][0], orientation[1][0], orientation[2][0], 0.0],
+            [orientation[0][1], orientation[1][1], orientation[2][1], 0.0],
+            [orientation[0][2], orientation[1][2], orientation[2][2], 0.0],
+            [0.0, 0.0, 0.0, 1.0],
+        ]
+    )
+    try:
+        rx, ry, rz = trimesh.transformations.euler_from_matrix(matrix, axes="sxyz")
+    except Exception:
+        return (0.0, 0.0, 0.0)
+    return (math.degrees(rx), math.degrees(ry), math.degrees(rz))
+
+
+def _world_axis_component(axis: str, vector: Tuple[float, float, float]) -> float:
+    idx = AXIS_ORDER[axis]
+    return vector[idx]
 
 
 @dataclass(slots=True)
@@ -100,6 +193,7 @@ class SolveDiagnostics:
 class ComponentTransform:
     position: Tuple[float, float, float]
     rotation: Tuple[float, float, float] = (0.0, 0.0, 0.0)
+    orientation: OrientationMatrix = IDENTITY_ORIENTATION
 
 
 @dataclass(slots=True)
@@ -108,6 +202,7 @@ class ComponentState:
     size: Tuple[float, float, float]
     transform: ComponentTransform
     class_name: Optional[str]
+    orientation: OrientationMatrix
 
 
 @dataclass(slots=True)
@@ -158,6 +253,7 @@ class InstanceState:
     name: str
     axis_values: Dict[str, float] = field(default_factory=dict)
     rotation_z: float = 0.0
+    orientation: OrientationMatrix = IDENTITY_ORIENTATION
     connections: List[ConnectionHint] = field(default_factory=list)
     soft_axes: set[str] = field(default_factory=set)
 
@@ -198,8 +294,11 @@ class ReferenceResolver:
     ) -> Optional[float]:
         if ref in self.component_states:
             state = self.component_states[ref]
-            half = state.size[0] / 2 if axis == "x" else state.size[1] / 2 if axis == "y" else state.size[2] / 2
-            base = state.transform.position[0] if axis == "x" else state.transform.position[1] if axis == "y" else state.transform.position[2]
+            idx = AXIS_ORDER[axis]
+            orientation = getattr(state, "orientation", IDENTITY_ORIENTATION)
+            axis_vec = _axis_vector(orientation, axis)
+            half = state.size[idx] / 2 * _world_axis_component(axis, axis_vec)
+            base = state.transform.position[idx]
             return base + sign * half
 
         if ref in self.datum_bundles:
@@ -234,6 +333,7 @@ class ConstraintSolver:
     def __init__(self, spec: RelationshipDiagramSpec) -> None:
         self.spec = spec
         self.components = list(spec.components)
+        self.components_by_id: Dict[str, RelationshipComponent] = {component.id: component for component in self.components}
         self.rotation_index = self._rotation_index(spec)
         self._apply_assemblies()
         self.datum_points = self._build_points(spec)
@@ -261,27 +361,30 @@ class ConstraintSolver:
     def _apply_assemblies(self) -> None:
         if not self.spec.assemblies:
             return
-        components_by_id = {component.id: component for component in self.components}
         for assembly in self.spec.assemblies:
-            if assembly.template != "assembly.rotate_quadrants":
-                continue
-            source_id = assembly.args.get("source")
-            ids = assembly.args.get("ids", {}) or {}
-            about = assembly.args.get("about", {}) or {}
-            axis = str(about.get("axis", "+z")).lower()
-            if axis not in {"+z", "z"}:
-                continue
-            source = components_by_id.get(source_id or "")
-            if source is None:
-                continue
-            turns_map = {"north": 3, "east": 2, "south": 1}
-            for direction, turns in turns_map.items():
-                new_id = ids.get(direction)
-                if not new_id:
+            if assembly.template == "assembly.rotate_quadrants":
+                source_id = assembly.args.get("source")
+                ids = assembly.args.get("ids", {}) or {}
+                about = assembly.args.get("about", {}) or {}
+                axis = str(about.get("axis", "+z")).lower()
+                if axis not in {"+z", "z"}:
                     continue
-                rotated = self._rotate_component(source, new_id, turns)
-                self.components.append(rotated)
-                components_by_id[new_id] = rotated
+                source = self.components_by_id.get(source_id or "")
+                if source is None:
+                    continue
+                turns_map = {"north": 3, "east": 2, "south": 1}
+                for direction, turns in turns_map.items():
+                    new_id = ids.get(direction)
+                    if not new_id:
+                        continue
+                    rotated = self._rotate_component(source, new_id, turns)
+                    self.components.append(rotated)
+                    self.components_by_id[new_id] = rotated
+            elif assembly.template == "assembly.linear_bracing":
+                new_component = self._build_linear_bracing(assembly)
+                if new_component is not None:
+                    self.components.append(new_component)
+                    self.components_by_id[new_component.id] = new_component
 
     def _rotate_component(self, component: RelationshipComponent, new_id: str, turns: int) -> RelationshipComponent:
         turns = turns % 4
@@ -404,6 +507,103 @@ class ConstraintSolver:
             description=component.description,
         )
 
+    def _build_linear_bracing(self, assembly: AssemblyCall) -> Optional[RelationshipComponent]:
+        args = assembly.args or {}
+        brace_id = args.get("id")
+        path = args.get("path", {}) or {}
+        start = path.get("start", {}) or {}
+        end = path.get("end", {}) or {}
+        start_component = start.get("component")
+        start_face = start.get("face")
+        end_component = end.get("component")
+        end_face = end.get("face")
+        if not brace_id or not start_component or not start_face or not end_component or not end_face:
+            return None
+
+        size_raw = args.get("size") or []
+        resolved_size: List[float] = []
+        if isinstance(size_raw, Sequence) and not isinstance(size_raw, (str, bytes)):
+            for entry in size_raw:
+                if isinstance(entry, (int, float)):
+                    resolved_size.append(float(entry))
+                elif isinstance(entry, str):
+                    try:
+                        resolved_size.append(self.spec.dimensions.evaluate(entry))
+                    except Exception:
+                        continue
+        if len(resolved_size) != 3:
+            length_raw = args.get("length", 0.0)
+            width_raw = args.get("width", 50.0)
+            thickness_raw = args.get("thickness", 6.0)
+            length = (
+                self.spec.dimensions.evaluate(length_raw)
+                if isinstance(length_raw, str)
+                else float(length_raw or 0.0)
+            )
+            width = (
+                self.spec.dimensions.evaluate(width_raw) if isinstance(width_raw, str) else float(width_raw or 0.0)
+            )
+            thickness = (
+                self.spec.dimensions.evaluate(thickness_raw)
+                if isinstance(thickness_raw, str)
+                else float(thickness_raw or 0.0)
+            )
+            resolved_size = [length, width, thickness]
+
+        material = args.get("material")
+        description = args.get("description")
+        class_name = normalize_ifc_class(args.get("class", "IfcMember"))
+        predefined = args.get("predefined_type", "BRACE")
+        ifc_block = IfcMetadata(predefined_type=normalize_ifc_predefined_type(predefined))
+
+        start_pos = canonical_pos_token(start_face)
+        end_pos = canonical_pos_token(end_face)
+        relationships: List[AlignmentClause | FlushBundleClause | RunBetweenClause | RelateFromClause] = [
+            RunBetweenClause(
+                start_pos=start_pos,
+                end_pos=end_pos,
+                from_ref=AlignmentTarget(ref=str(start_component), pos=start_pos, frame="local"),
+                to_ref=AlignmentTarget(ref=str(end_component), pos=end_pos, frame="local"),
+                orient="along_run",
+                include_seed=True,
+            )
+        ]
+
+        attach = args.get("attach", {}) or {}
+        attach_face = canonical_pos_token(attach.get("face", "+z"))
+        attach_plane = attach.get("plane")
+        if attach_plane:
+            relationships.append(
+                AlignmentClause(
+                    kind="contact",
+                    subject=AlignmentTarget(ref=str(brace_id), pos=attach_face, frame="local"),
+                    obj=AlignmentTarget(ref=str(attach_plane), pos=attach_face, frame="world"),
+                    gap=0.0,
+                    tolerance=0.5,
+                    on_fail="error",
+                )
+            )
+
+        metadata: Dict[str, object] = {}
+        if description:
+            metadata["description"] = description
+
+        return RelationshipComponent(
+            id=str(brace_id),
+            class_name=class_name,
+            profile="rectangle",
+            size_xy=(resolved_size[0], resolved_size[1]),
+            height=resolved_size[2],
+            profile_params={},
+            material=str(material) if material is not None else None,
+            metadata=metadata,
+            relationships=tuple(relationships),
+            repeat=None,
+            ifc=ifc_block,
+            voids=(),
+            description=str(description) if description else None,
+        )
+
     def solve(self) -> SolveResult:
         diagnostics = SolveDiagnostics()
         component_states: Dict[str, ComponentState] = {}
@@ -423,6 +623,75 @@ class ConstraintSolver:
         return SolveResult(components=tuple(solved), diagnostics=diagnostics, primitives=primitives, scene=scene)
 
     # ------------------------------------------------------------------ #
+    def _expanded_relationships(
+        self,
+        component: RelationshipComponent,
+        diagnostics: SolveDiagnostics,
+        _seen: Optional[set[str]] = None,
+    ) -> List[AlignmentClause | FlushBundleClause | RunBetweenClause | RelateFromClause]:
+        relationships: List[AlignmentClause | FlushBundleClause | RunBetweenClause | RelateFromClause] = []
+        visited = _seen or set()
+        if component.id in visited:
+            diagnostics.add_error(f"relate_from cycle detected at component '{component.id}'", subject=component.id)
+            return relationships
+        visited.add(component.id)
+        for clause in component.relationships:
+            if isinstance(clause, RelateFromClause):
+                source = self.components_by_id.get(clause.source)
+                if source is None:
+                    diagnostics.add_error(
+                        f"component '{component.id}' relates from unknown source '{clause.source}'",
+                        subject=component.id,
+                    )
+                    continue
+                inherited = self._expanded_relationships(source, diagnostics, visited)
+                for inherited_clause in inherited:
+                    relationships.append(self._apply_relate_overrides(inherited_clause, clause.overrides))
+            else:
+                relationships.append(clause)
+        visited.remove(component.id)
+        return relationships
+
+    def _apply_relate_overrides(
+        self,
+        clause: AlignmentClause | FlushBundleClause | RunBetweenClause,
+        overrides: Mapping[str, Any],
+    ) -> AlignmentClause | FlushBundleClause | RunBetweenClause:
+        def replace_ref(ref: str) -> str:
+            return str(overrides.get(ref, ref))
+
+        if isinstance(clause, AlignmentClause):
+            return AlignmentClause(
+                kind=clause.kind,
+                subject=replace(clause.subject, ref=replace_ref(clause.subject.ref)),
+                obj=replace(clause.obj, ref=replace_ref(clause.obj.ref)),
+                gap=clause.gap,
+                tolerance=clause.tolerance,
+                on_fail=clause.on_fail,
+            )
+        if isinstance(clause, FlushBundleClause):
+            return FlushBundleClause(
+                bundle=replace_ref(clause.bundle),
+                faces=clause.faces,
+                inset_subject=dict(clause.inset_subject),
+                inset_object=dict(clause.inset_object),
+                frame=clause.frame,
+            )
+        if isinstance(clause, RunBetweenClause):
+            return RunBetweenClause(
+                start_pos=clause.start_pos,
+                end_pos=clause.end_pos,
+                from_ref=replace(clause.from_ref, ref=replace_ref(clause.from_ref.ref)),
+                to_ref=replace(clause.to_ref, ref=replace_ref(clause.to_ref.ref)),
+                orient=clause.orient,
+                count=clause.count,
+                pitch=clause.pitch,
+                inset_start=clause.inset_start,
+                inset_end=clause.inset_end,
+                include_seed=clause.include_seed,
+            )
+        return clause
+
     def _solve_component(
         self,
         component: RelationshipComponent,
@@ -431,15 +700,19 @@ class ConstraintSolver:
         diagnostics: SolveDiagnostics,
     ) -> List[SolvedComponent]:
         base_rotation = float(component.metadata.get("_rotation_z", 0.0)) if component.metadata else 0.0
-        instances: List[InstanceState] = [InstanceState(name=component.id, rotation_z=base_rotation)]
+        base_orientation = _orientation_from_z_rotation(base_rotation)
+        instances: List[InstanceState] = [
+            InstanceState(name=component.id, rotation_z=base_rotation, orientation=base_orientation)
+        ]
 
-        run_between_clause = next((c for c in component.relationships if isinstance(c, RunBetweenClause)), None)
+        relationships = self._expanded_relationships(component, diagnostics)
+        run_between_clause = next((c for c in relationships if isinstance(c, RunBetweenClause)), None)
         if run_between_clause:
             instances = self._apply_run_between(component, run_between_clause, resolver, diagnostics, base_rotation)
             diagnostics.record_graph_edge(component.id, run_between_clause.from_ref.ref)
             diagnostics.record_graph_edge(component.id, run_between_clause.to_ref.ref)
 
-        instances = self._apply_relationships(component, instances, resolver, diagnostics)
+        instances = self._apply_relationships(component, relationships, instances, resolver, diagnostics)
         instances = self._apply_repeat(component, instances, resolver, diagnostics)
 
         solved_components: List[SolvedComponent] = []
@@ -461,6 +734,7 @@ class ConstraintSolver:
                 size=_component_size(component),
                 transform=transform,
                 class_name=component.class_name,
+                orientation=instance.orientation,
             )
             if component.id not in component_states:
                 component_states[component.id] = component_states[instance.name]
@@ -478,21 +752,21 @@ class ConstraintSolver:
         start_axes = _axes_from_pos(clause.start_pos)
         end_axes = _axes_from_pos(clause.end_pos)
 
-        def point_for(target_ref: str, axes: List[Tuple[str, int]]) -> Dict[str, float]:
+        def point_for(target: AlignmentTarget, axes: List[Tuple[str, int]]) -> Dict[str, float]:
             coords: Dict[str, float] = {"x": 0.0, "y": 0.0, "z": 0.0}
             for axis, sign in axes:
-                value = resolver.axis_coordinate(target_ref, axis, sign)
+                value = self._face_coordinate(target.ref, axis, sign, target.frame, resolver, instance=None)
                 if value is None:
                     diagnostics.add_error(
-                        f"component '{component.id}' run_between references unknown target '{target_ref}' on {axis}",
+                        f"component '{component.id}' run_between references unknown target '{target.ref}' on {axis}",
                         subject=component.id,
                     )
                     continue
                 coords[axis] = value
             return coords
 
-        start_point = point_for(clause.from_ref.ref, start_axes)
-        end_point = point_for(clause.to_ref.ref, end_axes if end_axes else start_axes)
+        start_point = point_for(clause.from_ref, start_axes)
+        end_point = point_for(clause.to_ref, end_axes if end_axes else start_axes)
 
         direction = (
             end_point["x"] - start_point["x"],
@@ -557,8 +831,10 @@ class ConstraintSolver:
                 )
 
         rotation = 0.0
+        orientation = _orientation_from_z_rotation(base_rotation)
         if clause.orient == "along_run":
             rotation = math.degrees(math.atan2(direction[1], direction[0]))
+            orientation = _orientation_from_direction(direction, base_rotation)
 
         axes_present = {axis for axis, _ in start_axes} | {axis for axis, _ in end_axes}
         if not axes_present:
@@ -575,18 +851,25 @@ class ConstraintSolver:
                 soft_axes.add(axis)
             name = component.id if idx == 0 else f"{component.id}#{idx}"
             instances.append(
-                InstanceState(name=name, axis_values=axis_values, rotation_z=rotation + base_rotation, soft_axes=soft_axes)
+                InstanceState(
+                    name=name,
+                    axis_values=axis_values,
+                    rotation_z=rotation + base_rotation,
+                    soft_axes=soft_axes,
+                    orientation=orientation,
+                )
             )
         return instances
 
     def _apply_relationships(
         self,
         component: RelationshipComponent,
+        relationships: List[AlignmentClause | FlushBundleClause | RunBetweenClause | RelateFromClause],
         instances: List[InstanceState],
         resolver: ReferenceResolver,
         diagnostics: SolveDiagnostics,
     ) -> List[InstanceState]:
-        for clause in component.relationships:
+        for clause in relationships:
             if isinstance(clause, AlignmentClause):
                 for instance in instances:
                     self._apply_alignment_clause(component, instance, clause, resolver, diagnostics)
@@ -598,11 +881,59 @@ class ConstraintSolver:
             elif isinstance(clause, RunBetweenClause):
                 continue
             else:
-                diagnostics.add_warning(
+                diagnostics.add_error(
                     f"component '{component.id}' uses unsupported helper '{type(clause).__name__}'",
                     subject=component.id,
                 )
         return instances
+
+    def _frame_orientation(
+        self,
+        frame: str,
+        resolver: ReferenceResolver,
+        *,
+        ref: Optional[str] = None,
+        instance: Optional[InstanceState] = None,
+    ) -> OrientationMatrix:
+        if frame == "world":
+            return IDENTITY_ORIENTATION
+        if frame == "local":
+            if ref == "self" and instance is not None:
+                return instance.orientation
+            state = resolver.component_states.get(ref or "")
+            if state is not None:
+                return state.orientation
+            if instance is not None:
+                return instance.orientation
+        if frame.startswith("component:"):
+            target = frame.split(":", 1)[1]
+            state = resolver.component_states.get(target)
+            if state is not None:
+                return state.orientation
+        return IDENTITY_ORIENTATION
+
+    def _face_coordinate(
+        self,
+        ref: str,
+        axis: str,
+        sign: int,
+        frame: str,
+        resolver: ReferenceResolver,
+        *,
+        instance: Optional[InstanceState],
+    ) -> Optional[float]:
+        orientation = self._frame_orientation(frame, resolver, ref=ref, instance=instance)
+        idx = AXIS_ORDER[axis]
+        if ref in resolver.component_states:
+            state = resolver.component_states[ref]
+            size = state.size[idx] / 2
+            axis_vector = _axis_vector(orientation, axis)
+            offset = sign * size * _world_axis_component(axis, axis_vector)
+            return state.transform.position[idx] + offset
+        coord = resolver.axis_coordinate(ref, axis, sign)
+        if coord is None:
+            return None
+        return coord
 
     def _apply_alignment_clause(
         self,
@@ -614,6 +945,10 @@ class ConstraintSolver:
     ) -> None:
         subject_axes = _axes_from_pos(clause.subject.pos)
         object_axes = {axis: sign for axis, sign in _axes_from_pos(clause.obj.pos)}
+        subject_orientation = self._frame_orientation(
+            clause.subject.frame, resolver, ref=clause.subject.ref, instance=instance
+        )
+        object_orientation = self._frame_orientation(clause.obj.frame, resolver, ref=clause.obj.ref, instance=instance)
         if clause.obj.ref in resolver.component_states and clause.obj.ref != component.id:
             already_recorded = any(
                 hint.target == clause.obj.ref
@@ -628,7 +963,9 @@ class ConstraintSolver:
 
         for axis, subject_sign in subject_axes:
             object_sign = object_axes.get(axis, subject_sign)
-            target_coord = resolver.axis_coordinate(clause.obj.ref, axis, object_sign)
+            target_coord = self._face_coordinate(
+                clause.obj.ref, axis, object_sign, clause.obj.frame, resolver, instance=instance
+            )
             if target_coord is None:
                 diagnostics.add_error(
                     f"component '{component.id}' alignment references unknown target '{clause.obj.ref}'",
@@ -636,7 +973,8 @@ class ConstraintSolver:
                 )
                 continue
 
-            half = _half_size(component, axis)
+            axis_vector = _axis_vector(subject_orientation, axis)
+            half = _half_size(component, axis) * abs(_world_axis_component(axis, axis_vector))
             gap_direction = 1.0 if subject_sign > 0 else -1.0
             face_target = target_coord + clause.gap * gap_direction
             origin_value = face_target - gap_direction * half
@@ -650,12 +988,15 @@ class ConstraintSolver:
         resolver: ReferenceResolver,
         diagnostics: SolveDiagnostics,
     ) -> None:
+        subject_orientation = self._frame_orientation(clause.frame, resolver, ref=component.id, instance=instance)
         for face in clause.faces:
             subject_axes = _axes_from_pos(face.subject)
             object_axes = {axis: sign for axis, sign in _axes_from_pos(face.obj)}
             for axis, subject_sign in subject_axes:
                 object_sign = object_axes.get(axis, subject_sign)
-                target_coord = resolver.axis_coordinate(clause.bundle, axis, object_sign)
+                target_coord = self._face_coordinate(
+                    clause.bundle, axis, object_sign, "world", resolver, instance=instance
+                )
                 if target_coord is None:
                     diagnostics.add_error(
                         f"component '{component.id}' flush_bundle references unknown bundle '{clause.bundle}'",
@@ -665,7 +1006,9 @@ class ConstraintSolver:
                 inset_subject = clause.inset_subject.get(face.subject, 0.0)
                 inset_object = clause.inset_object.get(face.obj, 0.0)
                 effective_gap = inset_object - inset_subject
-                half = _half_size(component, axis)
+                half = _half_size(component, axis) * abs(
+                    _world_axis_component(axis, _axis_vector(subject_orientation, axis))
+                )
                 gap_direction = 1.0 if subject_sign > 0 else -1.0
                 face_target = target_coord + effective_gap * gap_direction
                 origin_value = face_target - gap_direction * half
@@ -720,7 +1063,9 @@ class ConstraintSolver:
                         name=name,
                         axis_values=axis_values,
                         rotation_z=base.rotation_z,
+                        orientation=base.orientation,
                         connections=list(base.connections),
+                        soft_axes=set(base.soft_axes),
                     )
                 )
         return expanded or instances
@@ -785,6 +1130,8 @@ class ConstraintSolver:
             if axis not in axis_values:
                 axis_values[axis] = 0.0
                 dof += 1
+            elif axis in instance.soft_axes:
+                dof += 1
         if dof:
             diagnostics.add_error(
                 f"component '{component.id}' remains under-constrained on {dof} axis/axes",
@@ -792,7 +1139,8 @@ class ConstraintSolver:
             )
         transform = ComponentTransform(
             position=(axis_values["x"], axis_values["y"], axis_values["z"]),
-            rotation=(0.0, 0.0, instance.rotation_z),
+            rotation=_rotation_from_orientation(instance.orientation),
+            orientation=instance.orientation,
         )
         return transform, dof
 
@@ -847,9 +1195,13 @@ class ConstraintSolver:
         wp = self._workplane_for_component(component)
         if wp is None:
             return None, None
-        rotation_z = transform.rotation[2]
-        if rotation_z:
-            wp = wp.rotate((0, 0, 0), (0, 0, 1), rotation_z)
+        rotation = transform.rotation
+        if rotation[0]:
+            wp = wp.rotate((0, 0, 0), (1, 0, 0), rotation[0])
+        if rotation[1]:
+            wp = wp.rotate((0, 0, 0), (0, 1, 0), rotation[1])
+        if rotation[2]:
+            wp = wp.rotate((0, 0, 0), (0, 0, 1), rotation[2])
         pos = transform.position
         wp = wp.translate((pos[0], pos[1], pos[2]))
         solid = wp.val()
@@ -911,22 +1263,35 @@ class ConstraintSolver:
             passed = True
             for axis, subject_sign in subject_axes:
                 object_sign = object_axes.get(axis, subject_sign)
-                subject_coord = resolver.axis_coordinate(clause.subject.ref, axis, subject_sign)
-                object_coord = resolver.axis_coordinate(clause.obj.ref, axis, object_sign)
+                subject_coord = self._face_coordinate(
+                    clause.subject.ref, axis, subject_sign, clause.subject.frame, resolver, instance=None
+                )
+                object_coord = self._face_coordinate(
+                    clause.obj.ref, axis, object_sign, clause.obj.frame, resolver, instance=None
+                )
                 if subject_coord is None or object_coord is None:
-                    diagnostics.add_error(
-                        f"check '{clause.kind}' references unknown target(s)",
-                        subject=clause.subject.ref,
-                    )
+                    if clause.on_fail == "warn":
+                        diagnostics.add_warning(
+                            f"check '{clause.kind}' references unknown target(s)",
+                            subject=clause.subject.ref,
+                        )
+                    else:
+                        diagnostics.add_error(
+                            f"check '{clause.kind}' references unknown target(s)",
+                            subject=clause.subject.ref,
+                        )
                     passed = False
                     continue
                 gap_direction = 1.0 if subject_sign > 0 else -1.0
                 expected = object_coord + clause.gap * gap_direction
                 if abs(subject_coord - expected) > clause.tolerance:
-                    diagnostics.add_error(
-                        f"check failed between '{clause.subject.ref}' and '{clause.obj.ref}' on axis {axis}",
-                        subject=clause.subject.ref,
+                    message = (
+                        f"check failed between '{clause.subject.ref}' and '{clause.obj.ref}' on axis {axis}"
                     )
+                    if clause.on_fail == "warn":
+                        diagnostics.add_warning(message, subject=clause.subject.ref)
+                    else:
+                        diagnostics.add_error(message, subject=clause.subject.ref)
                     passed = False
             result_text = "PASS" if passed else "FAIL"
             diagnostics.check_results.append(f"{result_text}: {clause.kind} {clause.subject.ref}→{clause.obj.ref}")
@@ -1081,6 +1446,20 @@ def mesh_from_primitive(primitive: NeutralPrimitive, *, to_meters: bool = True) 
         if vectors and faces:
             vertices = np.array([[v.x, v.y, v.z] for v in vectors])
             mesh_mm = trimesh.Trimesh(vertices=vertices, faces=np.array(faces), process=False)
+            rotation = primitive.transform.rotation
+            if any(rotation):
+                try:
+                    rot = trimesh.transformations.euler_matrix(
+                        math.radians(rotation[0]),
+                        math.radians(rotation[1]),
+                        math.radians(rotation[2]),
+                        axes="sxyz",
+                    )
+                    mesh_mm.apply_transform(rot)
+                except Exception:
+                    pass
+            pos = primitive.transform.position
+            mesh_mm.apply_translation((pos[0], pos[1], pos[2]))
             primitive.mesh = mesh_mm.copy()
             mesh = mesh_mm.copy()
             if to_meters:
@@ -1091,10 +1470,15 @@ def mesh_from_primitive(primitive: NeutralPrimitive, *, to_meters: bool = True) 
         return None
 
     mesh_mm = trimesh.creation.box(extents=np.array(primitive.size))
-    rotation_z = primitive.transform.rotation[2]
-    if rotation_z:
-        rot = trimesh.transformations.rotation_matrix(math.radians(rotation_z), [0, 0, 1])
-        mesh_mm.apply_transform(rot)
+    rotation = primitive.transform.rotation
+    if any(rotation):
+        try:
+            rot = trimesh.transformations.euler_matrix(
+                math.radians(rotation[0]), math.radians(rotation[1]), math.radians(rotation[2]), axes="sxyz"
+            )
+            mesh_mm.apply_transform(rot)
+        except Exception:
+            pass
     pos = primitive.transform.position
     mesh_mm.apply_translation((pos[0], pos[1], pos[2]))
     primitive.mesh = mesh_mm.copy()

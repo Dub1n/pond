@@ -136,7 +136,7 @@ Profiles & layers: Linear members use `IfcMaterialProfileSet(Usage)`. Deck slabs
 - Round-trip: import -> check entity counts & types -> re-emit -> compare manifests.
 - Checks: axis token linting (order, sign, frame validity); align checks evaluate post-solve with defaults applied and report pass/fail counts in solver diagnostics.
 
-Progress note: the relationship-first solver now resolves box primitives with deterministic GUID seeds, DOF/check diagnostics, and Shapely-derived plan/section projections behind `DIAGRAM_RELATIONSHIPS=1`. Legacy specs lint IFC classes for missing `ifc` blocks, and `run_between`/axis tokens carry stricter validation plus regression tests.
+Progress note: the relationship-first solver now resolves box primitives with deterministic GUID seeds, DOF/check diagnostics, Shapely-derived plan/section projections behind `DIAGRAM_RELATIONSHIPS=1`, and frame-aware align/contact/flush handling. Legacy specs lint IFC classes for missing `ifc` blocks, `relate_from` and `assembly.linear_bracing` expand instead of warning, `run_between` picks up 3D `orient: along_run`, and linting enforces class/predefined-type/material expectations alongside regression tests for axis tokens and run helpers.
 
 ---
 

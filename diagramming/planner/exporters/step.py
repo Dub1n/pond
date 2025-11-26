@@ -45,9 +45,13 @@ class StepExporter:
         return self._apply_transform(wp, primitive.transform)
 
     def _apply_transform(self, wp: cq.Workplane, transform: ComponentTransform):
-        rotation_z = transform.rotation[2]
-        if rotation_z:
-            wp = wp.rotate((0, 0, 0), (0, 0, 1), rotation_z)
+        rotation = transform.rotation
+        if rotation[0]:
+            wp = wp.rotate((0, 0, 0), (1, 0, 0), rotation[0])
+        if rotation[1]:
+            wp = wp.rotate((0, 0, 0), (0, 1, 0), rotation[1])
+        if rotation[2]:
+            wp = wp.rotate((0, 0, 0), (0, 0, 1), rotation[2])
         pos = transform.position
         wp = wp.translate((pos[0], pos[1], pos[2]))
         return wp.val()

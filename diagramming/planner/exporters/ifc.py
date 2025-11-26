@@ -207,9 +207,7 @@ class IfcExporter:
         )
 
     def _place_product(self, model, product, primitive: NeutralPrimitive, parent_placement):
-        position = primitive.transform.position
-        rotation = primitive.transform.rotation[2]
-        placement = self._placement_from_transform(model, position, rotation, parent_placement)
+        placement = self._placement_from_transform(model, primitive.transform, parent_placement)
         product.ObjectPlacement = placement
 
     # ------------------------------------------------------------------ #
@@ -440,11 +438,12 @@ class IfcExporter:
         if class_lower not in LINEAR_CLASSES:
             return None
         length = primitive.size[0]
-        direction = self._axis_direction(primitive.transform.rotation[2])
+        orientation = self._orientation_axes(primitive)
+        direction = self._axis_direction(primitive.transform.rotation[2], orientation=orientation)
         tx, ty, tz = primitive.transform.position
         half = length / 2.0
-        start = (tx - direction[0] * half, ty - direction[1] * half, tz)
-        end = (tx + direction[0] * half, ty + direction[1] * half, tz)
+        start = (tx - direction[0] * half, ty - direction[1] * half, tz - direction[2] * half)
+        end = (tx + direction[0] * half, ty + direction[1] * half, tz + direction[2] * half)
         axis = (
             (start[0] * MM_TO_METERS, start[1] * MM_TO_METERS, start[2] * MM_TO_METERS),
             (end[0] * MM_TO_METERS, end[1] * MM_TO_METERS, end[2] * MM_TO_METERS),
@@ -485,13 +484,14 @@ class IfcExporter:
     ) -> Tuple[Optional[ifcopenshell.entity_instance], float, Tuple[Tuple[float, float, float], Tuple[float, float, float]]]:
         class_lower = (primitive.class_name or "").lower()
         profile = primitive.profile.lower()
-        axis_dir = self._axis_direction(primitive.transform.rotation[2])
-        default_axes = ((0.0, 0.0, 1.0), (1.0, 0.0, 0.0))
+        orientation = self._orientation_axes(primitive)
+        axis_dir = self._axis_direction(primitive.transform.rotation[2], orientation=orientation)
+        default_axes = (orientation[2], orientation[0])
 
         if profile == "rectangle":
             if class_lower in LINEAR_CLASSES:
                 profile_def = self._rectangle_profile(model, primitive.size[2], primitive.size[1])
-                placement_axes = (axis_dir, (0.0, 0.0, 1.0))
+                placement_axes = (axis_dir, orientation[2])
                 return profile_def, primitive.size[0], placement_axes
             profile_def = self._rectangle_profile(model, primitive.size[0], primitive.size[1])
             return profile_def, primitive.size[2], default_axes
@@ -533,9 +533,7 @@ class IfcExporter:
                     name=f"Opening:{void_id}",
                 )
                 self._set_guid(opening, f"opening::{host_id}::{void_id}")
-                placement = self._placement_from_transform(
-                    model, void_prim.transform.position, void_prim.transform.rotation[2], storey.ObjectPlacement
-                )
+                placement = self._placement_from_transform(model, void_prim.transform, storey.ObjectPlacement)
                 opening.ObjectPlacement = placement
                 rep = self._body_representation(model, contexts["body"], void_prim)
                 if rep:
@@ -600,23 +598,39 @@ class IfcExporter:
         return model.createIfcConnectionPointGeometry(point, obj_point)
 
     # ------------------------------------------------------------------ #
-    def _placement_from_transform(self, model, position, rotation_deg: float, parent_placement):
-        tx, ty, tz = position
-        angle = math.radians(rotation_deg)
-        x_dir = (math.cos(angle), math.sin(angle), 0.0)
-        z_dir = (0.0, 0.0, 1.0)
+    def _placement_from_transform(self, model, transform, parent_placement):
+        tx, ty, tz = transform.position
+        orientation = getattr(transform, "orientation", None)
+        if orientation is None:
+            angle = math.radians(transform.rotation[2] if transform.rotation else 0.0)
+            x_dir = (math.cos(angle), math.sin(angle), 0.0)
+            z_dir = (0.0, 0.0, 1.0)
+        else:
+            x_dir = orientation[0]
+            z_dir = orientation[2]
         location = model.createIfcCartesianPoint((tx, ty, tz))
-        axis2placement = model.createIfcAxis2Placement3D(location, model.createIfcDirection(z_dir), model.createIfcDirection(x_dir))
+        axis2placement = model.createIfcAxis2Placement3D(
+            location, model.createIfcDirection(z_dir), model.createIfcDirection(x_dir)
+        )
         return model.createIfcLocalPlacement(RelativePlacement=axis2placement, PlacementRelTo=parent_placement)
 
     def _ensure_placement(self, model, element, parent):
         if element.ObjectPlacement is None:
-            element.ObjectPlacement = self._placement_from_transform(model, (0.0, 0.0, 0.0), 0.0, parent)
+            transform = type(
+                "_PlacementTransform",
+                (),
+                {
+                    "position": (0.0, 0.0, 0.0),
+                    "rotation": (0.0, 0.0, 0.0),
+                    "orientation": ((1.0, 0.0, 0.0), (0.0, 1.0, 0.0), (0.0, 0.0, 1.0)),
+                },
+            )
+            element.ObjectPlacement = self._placement_from_transform(model, transform, parent)
 
     def _plane_from_face(self, model, primitive: Optional[NeutralPrimitive], axis: Tuple[str, int]):
         if primitive is None:
             return None
-        normal = self._face_normal(axis, primitive.transform.rotation[2])
+        normal = self._face_normal(primitive, axis)
         point = self._face_point(primitive, axis)
         ref_dir = self._orthogonal_direction(normal)
         placement = model.createIfcAxis2Placement3D(
@@ -640,19 +654,14 @@ class IfcExporter:
 
     # ------------------------------------------------------------------ #
     def _face_point(self, primitive: NeutralPrimitive, axis: Tuple[str, int]):
-        dx = dy = dz = 0.0
         ax, sign = axis
-        if ax == "x":
-            dx = (primitive.size[0] / 2) * sign
-        elif ax == "y":
-            dy = (primitive.size[1] / 2) * sign
-        elif ax == "z":
-            dz = (primitive.size[2] / 2) * sign
-        angle = math.radians(primitive.transform.rotation[2])
-        rot_x = dx * math.cos(angle) - dy * math.sin(angle)
-        rot_y = dx * math.sin(angle) + dy * math.cos(angle)
+        orientation = self._orientation_axes(primitive)
+        idx = {"x": 0, "y": 1, "z": 2}[ax]
+        half = primitive.size[idx] / 2
+        axis_vec = orientation[idx]
+        offset = (axis_vec[0] * half * sign, axis_vec[1] * half * sign, axis_vec[2] * half * sign)
         tx, ty, tz = primitive.transform.position
-        return (tx + rot_x, ty + rot_y, tz + dz)
+        return (tx + offset[0], ty + offset[1], tz + offset[2])
 
     def _edge_points(self, primitive: NeutralPrimitive, axes: List[Tuple[str, int]]):
         remaining_axis = {"x", "y", "z"} - {axis for axis, _ in axes}
@@ -669,32 +678,24 @@ class IfcExporter:
     def _coordinate_from_axes(
         self, primitive: NeutralPrimitive, axes: List[Tuple[str, int]], span: bool = False
     ) -> Tuple[float, float, float]:
-        dx = dy = dz = 0.0
+        orientation = self._orientation_axes(primitive)
+        offsets = [0.0, 0.0, 0.0]
         for axis, sign in axes:
-            if axis == "x":
-                dx = (primitive.size[0] / 2) * sign
-            elif axis == "y":
-                dy = (primitive.size[1] / 2) * sign
-            elif axis == "z":
-                dz = (primitive.size[2] / 2) * sign
-        angle = math.radians(primitive.transform.rotation[2])
-        rot_x = dx * math.cos(angle) - dy * math.sin(angle)
-        rot_y = dx * math.sin(angle) + dy * math.cos(angle)
+            idx = {"x": 0, "y": 1, "z": 2}[axis]
+            half = primitive.size[idx] / 2
+            axis_vec = orientation[idx]
+            offsets[0] += axis_vec[0] * half * sign
+            offsets[1] += axis_vec[1] * half * sign
+            offsets[2] += axis_vec[2] * half * sign
         tx, ty, tz = primitive.transform.position
-        return (tx + rot_x, ty + rot_y, tz + dz)
+        return (tx + offsets[0], ty + offsets[1], tz + offsets[2])
 
-    def _face_normal(self, axis: Tuple[str, int], rotation_deg: float) -> Tuple[float, float, float]:
+    def _face_normal(self, primitive: NeutralPrimitive, axis: Tuple[str, int]) -> Tuple[float, float, float]:
         ax, sign = axis
-        if ax == "z":
-            return (0.0, 0.0, float(sign))
-        angle = math.radians(rotation_deg)
-        if ax == "x":
-            base = (float(sign), 0.0, 0.0)
-        else:
-            base = (0.0, float(sign), 0.0)
-        rot_x = base[0] * math.cos(angle) - base[1] * math.sin(angle)
-        rot_y = base[0] * math.sin(angle) + base[1] * math.cos(angle)
-        return (rot_x, rot_y, 0.0)
+        idx = {"x": 0, "y": 1, "z": 2}[ax]
+        orientation = self._orientation_axes(primitive)
+        axis_vec = orientation[idx]
+        return (axis_vec[0] * sign, axis_vec[1] * sign, axis_vec[2] * sign)
 
     def _orthogonal_direction(self, normal: Tuple[float, float, float]) -> Tuple[float, float, float]:
         ref = (0.0, 0.0, 1.0)
@@ -721,7 +722,20 @@ class IfcExporter:
             axes.append((axis, sign))
         return axes
 
-    def _axis_direction(self, rotation_deg: float) -> Tuple[float, float, float]:
+    def _orientation_axes(self, primitive: NeutralPrimitive) -> Tuple[Tuple[float, float, float], ...]:
+        orientation = getattr(primitive.transform, "orientation", None)
+        if orientation is None:
+            angle = math.radians(primitive.transform.rotation[2]) if primitive.transform.rotation else 0.0
+            return (
+                (math.cos(angle), math.sin(angle), 0.0),
+                (-math.sin(angle), math.cos(angle), 0.0),
+                (0.0, 0.0, 1.0),
+            )
+        return orientation
+
+    def _axis_direction(self, rotation_deg: float, *, orientation: Optional[Tuple[Tuple[float, float, float], ...]] = None) -> Tuple[float, float, float]:
+        if orientation is not None:
+            return orientation[0]
         angle = math.radians(rotation_deg)
         return (math.cos(angle), math.sin(angle), 0.0)
 
@@ -789,17 +803,14 @@ class IfcExporter:
             (hx, hy, hz),
             (-hx, hy, hz),
         ]
-        angle = math.radians(primitive.transform.rotation[2])
-        cos_a, sin_a = math.cos(angle), math.sin(angle)
+        orientation = self._orientation_axes(primitive)
         tx, ty, tz = primitive.transform.position
-        rotated = [
-            (
-                corner[0] * cos_a - corner[1] * sin_a + tx,
-                corner[0] * sin_a + corner[1] * cos_a + ty,
-                corner[2] + tz,
-            )
-            for corner in corners
-        ]
+        rotated = []
+        for corner in corners:
+            offset_x = corner[0] * orientation[0][0] + corner[1] * orientation[1][0] + corner[2] * orientation[2][0]
+            offset_y = corner[0] * orientation[0][1] + corner[1] * orientation[1][1] + corner[2] * orientation[2][1]
+            offset_z = corner[0] * orientation[0][2] + corner[1] * orientation[1][2] + corner[2] * orientation[2][2]
+            rotated.append((tx + offset_x, ty + offset_y, tz + offset_z))
         faces = [
             (0, 1, 2),
             (0, 2, 3),

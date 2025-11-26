@@ -4,9 +4,9 @@ info:
   title: "Option C — Phase 4 relationship-first schema sketch"
   description: >
     Illustrative Phase 4 rewrite of Option C using IFC-aligned axes, relationship
-    constraints, datum bundles, face batching, and rotation helpers. Emphasises
-    readable intent with minimal boilerplate. Bundles and placements are centered
-    around the origin to simplify rotation-based assemblies.
+    constraints, datum bundles, face batching, rotation helpers, and inline assemblies.
+    Bundles and placements are centered around the origin to simplify rotation-based
+    assemblies.
 
 dimensions:
   structure:
@@ -98,25 +98,32 @@ datums:
 
 components:
   - id: pond_water
-    class: PondWater
+    class: IfcBuildingElementProxy
     profile: rectangle
-    size:
-      - dimensions.structure.pond_span
-      - dimensions.structure.pond_span
-      - dimensions.site.water_depth
+    size: [dimensions.structure.pond_span, dimensions.structure.pond_span, dimensions.site.water_depth]
     material: water
     label: "Pond water"
     label_id: "C2"
+    ifc:
+      predefined_type: ELEMENT
     relate:
       - flush_bundle:
           bundle: datums.bundles.pond_faces
           faces: [+x, -x, +y, -y]
-      - touch_planes:
-          object: datums.planes.water_surface
-          faces: [+z]
-      - touch_planes:
-          object: datums.planes.water_bottom
-          faces: [-z]
+      - contact:
+          subject:
+            component: pond_water
+            pos: +z
+          object:
+            datum: datums.planes.water_surface
+            pos: +z
+      - contact:
+          subject:
+            component: pond_water
+            pos: -z
+          object:
+            datum: datums.planes.water_bottom
+            pos: +z
 
   - id: pond_opening
     class: IfcOpeningElement
@@ -125,6 +132,8 @@ components:
       - dimensions.structure.pond_span - 2 * dimensions.structure.cantilever
       - dimensions.structure.pond_span - 2 * dimensions.structure.cantilever
       - dimensions.finishes.deck_thickness
+    ifc:
+      predefined_type: OPENING
     relate:
       - flush_bundle:
           bundle: datums.bundles.pond_faces
@@ -136,58 +145,80 @@ components:
               -x: -dimensions.structure.cantilever
               +y: -dimensions.structure.cantilever
               -y: -dimensions.structure.cantilever
-      - touch_planes:
-          object: datums.planes.joist_top
-          faces: [-z]
-      - touch_planes:
-          object: datums.planes.deck_surface
-          faces: [+z]
+      - contact:
+          subject:
+            component: pond_opening
+            pos: -z
+          object:
+            datum: datums.planes.joist_top
+            pos: +z
+      - contact:
+          subject:
+            component: pond_opening
+            pos: +z
+          object:
+            datum: datums.planes.deck_surface
+            pos: +z
     metadata:
       views: [section]
 
   - id: deck_surface
-    class: DeckSurface
+    class: IfcSlab
     profile: rectangle
-    size:
-      - dimensions.structure.deck_span
-      - dimensions.structure.deck_span
-      - dimensions.finishes.deck_thickness
+    size: [dimensions.structure.deck_span, dimensions.structure.deck_span, dimensions.finishes.deck_thickness]
     material: decking
     label: "Deck surface (1.0 m backspan + 0.25 m overhang)"
     label_id: "C1"
+    ifc:
+      predefined_type: FLOOR
     relate:
       - flush_bundle:
           bundle: datums.bundles.deck_faces
           faces: [+x, -x, +y, -y]
-      - touch_planes:
-          object: datums.planes.joist_top
-          faces: [-z]
-      - touch_planes:
-          object: datums.planes.deck_surface
-          faces: [+z]
+      - contact:
+          subject:
+            component: deck_surface
+            pos: -z
+          object:
+            datum: datums.planes.joist_top
+            pos: +z
+      - contact:
+          subject:
+            component: deck_surface
+            pos: +z
+          object:
+            datum: datums.planes.deck_surface
+            pos: +z
     voids:
       - ref: pond_opening
 
   - id: outer_beam_west
     class: IfcBeam
     profile: rectangle
-    size:
-      - dimensions.structure.beam_width
-      - dimensions.structure.deck_span
-      - dimensions.structure.beam_height
+    size: [dimensions.structure.beam_width, dimensions.structure.deck_span, dimensions.structure.beam_height]
     material: timber
     label: "Support beam at outer rim"
     label_id: "C4"
+    ifc:
+      predefined_type: BEAM
     relate:
       - flush_bundle:
           bundle: datums.bundles.deck_faces
           faces: [-x, -y, +y]
-      - touch_planes:
-          object: datums.planes.joist_top
-          faces: [+z]
-      - touch_planes:
-          object: datums.planes.pad_top
-          faces: [-z]
+      - contact:
+          subject:
+            component: outer_beam_west
+            pos: +z
+          object:
+            datum: datums.planes.joist_top
+            pos: +z
+      - contact:
+          subject:
+            component: outer_beam_west
+            pos: -z
+          object:
+            datum: datums.planes.pad_top
+            pos: +z
 
   - use: assembly.rotate_quadrants
     with:
@@ -203,13 +234,12 @@ components:
   - id: inner_beam_west
     class: IfcBeam
     profile: rectangle
-    size:
-      - dimensions.structure.beam_width
-      - dimensions.structure.deck_span
-      - dimensions.structure.beam_height
+    size: [dimensions.structure.beam_width, dimensions.structure.deck_span, dimensions.structure.beam_height]
     material: timber
     label: "Inner beam (saddle hanger rebate)"
     label_id: "C4B"
+    ifc:
+      predefined_type: BEAM
     relate:
       - flush_bundle:
           bundle: datums.bundles.pond_faces
@@ -219,12 +249,20 @@ components:
       - flush_bundle:
           bundle: datums.bundles.deck_faces
           faces: [-y, +y]
-      - touch_planes:
-          object: datums.planes.joist_top
-          faces: [+z]
-      - touch_planes:
-          object: datums.planes.pad_top
-          faces: [-z]
+      - contact:
+          subject:
+            component: inner_beam_west
+            pos: +z
+          object:
+            datum: datums.planes.joist_top
+            pos: +z
+      - contact:
+          subject:
+            component: inner_beam_west
+            pos: -z
+          object:
+            datum: datums.planes.pad_top
+            pos: +z
 
   - use: assembly.rotate_quadrants
     with:
@@ -238,7 +276,7 @@ components:
         axis: +z
 
   - id: joist_run_west
-    class: IfcJoist
+    class: IfcBeam
     profile: rectangle
     size:
       - dimensions.structure.backspan + dimensions.structure.cantilever - dimensions.structure.beam_width
@@ -247,15 +285,23 @@ components:
     material: timber
     label: "47×150 mm joist (1.0 m backspan + 0.25 m cantilever)"
     label_id: "C5"
+    ifc:
+      predefined_type: JOIST
     relate:
-      - touch_components:
-          pairs:
-            - subject_face: -x
-              object_face: +x
-              object_component: outer_beam_west
-      - touch_planes:
-          object: datums.planes.joist_top
-          faces: [+z]
+      - contact:
+          subject:
+            component: joist_run_west
+            pos: -x
+          object:
+            component: outer_beam_west
+            pos: +x
+      - contact:
+          subject:
+            component: joist_run_west
+            pos: +z
+          object:
+            datum: datums.planes.joist_top
+            pos: +z
       - run_between:
           start_pos: +y
           end_pos: -y
@@ -266,7 +312,7 @@ components:
             ref: pond_opening
             pos: -y
           count: 7
-          orient: preserve_axes
+          orient: along_run
           include_seed: true
 
   - use: assembly.rotate_quadrants
@@ -281,19 +327,22 @@ components:
         axis: +z
 
   - id: pad_belt_west
-    class: Pad
+    class: IfcFooting
     profile: rectangle
-    size:
-      - dimensions.site.pad_size
-      - dimensions.site.pad_size
-      - dimensions.site.pad_height
+    size: [dimensions.site.pad_size, dimensions.site.pad_size, dimensions.site.pad_height]
     material: pad
     label: "Shallow pad foundation"
     label_id: "C6"
+    ifc:
+      predefined_type: PAD_FOOTING
     relate:
-      - touch_planes:
-          object: datums.planes.pad_top
-          faces: [+z]
+      - contact:
+          subject:
+            component: pad_belt_west
+            pos: +z
+          object:
+            datum: datums.planes.pad_top
+            pos: +z
       - flush_bundle:
           bundle: datums.bundles.deck_faces
           faces: [-x, -y]
@@ -313,19 +362,22 @@ components:
         axis: +z
 
   - id: pad_first_west
-    class: Pad
+    class: IfcFooting
     profile: rectangle
-    size:
-      - dimensions.site.pad_size
-      - dimensions.site.pad_size
-      - dimensions.site.pad_height
+    size: [dimensions.site.pad_size, dimensions.site.pad_size, dimensions.site.pad_height]
     material: pad
     label: "Shallow pad foundation"
     label_id: "C6"
+    ifc:
+      predefined_type: PAD_FOOTING
     relate:
-      - touch_planes:
-          object: datums.planes.pad_top
-          faces: [+z]
+      - contact:
+          subject:
+            component: pad_first_west
+            pos: +z
+          object:
+            datum: datums.planes.pad_top
+            pos: +z
       - flush_bundle:
           bundle: datums.bundles.deck_faces
           faces: [-x]
@@ -334,7 +386,7 @@ components:
               -x: -dimensions.structure.beam_width / 2
       - align:
           subject:
-            ref: self
+            component: pad_first_west
             pos: +y
           object:
             ref: pad_first_y
@@ -352,19 +404,22 @@ components:
         axis: +z
 
   - id: pad_sixth_west
-    class: Pad
+    class: IfcFooting
     profile: rectangle
-    size:
-      - dimensions.site.pad_size
-      - dimensions.site.pad_size
-      - dimensions.site.pad_height
+    size: [dimensions.site.pad_size, dimensions.site.pad_size, dimensions.site.pad_height]
     material: pad
     label: "Shallow pad foundation"
     label_id: "C6"
+    ifc:
+      predefined_type: PAD_FOOTING
     relate:
-      - touch_planes:
-          object: datums.planes.pad_top
-          faces: [+z]
+      - contact:
+          subject:
+            component: pad_sixth_west
+            pos: +z
+          object:
+            datum: datums.planes.pad_top
+            pos: +z
       - flush_bundle:
           bundle: datums.bundles.deck_faces
           faces: [-x]
@@ -373,7 +428,7 @@ components:
               -x: -dimensions.structure.beam_width / 2
       - align:
           subject:
-            ref: self
+            component: pad_sixth_west
             pos: +y
           object:
             ref: pad_sixth_y
@@ -389,6 +444,160 @@ components:
       about:
         point: datums.anchor
         axis: +z
+
+  - use: assembly.linear_bracing
+    with:
+      id: strap_brace_outer
+      path:
+        start:
+          component: outer_beam_south
+          face: +y
+        end:
+          component: outer_beam_north
+          face: -y
+      attach:
+        face: +z
+        plane: datums.planes.deck_surface
+      size: [dimensions.structure.deck_span, 30, 6]
+      material: hardware
+
+  - id: soil_west
+    class: IfcSlab
+    profile: rectangle
+    size:
+      - (dimensions.structure.deck_span - dimensions.structure.pond_span) / 2
+      - dimensions.structure.deck_span
+      - dimensions.site.water_depth
+    material: soil
+    label: "Soil fill"
+    label_id: "SO"
+    ifc:
+      predefined_type: FLOOR
+    relate:
+      - flush_bundle:
+          bundle: datums.bundles.deck_faces
+          faces: [-x, -y, +y]
+      - contact:
+          subject:
+            component: soil_west
+            pos: +z
+          object:
+            datum: datums.planes.water_surface
+            pos: +z
+    metadata:
+      views: [section]
+
+  - id: soil_east
+    class: IfcSlab
+    profile: rectangle
+    size:
+      - (dimensions.structure.deck_span - dimensions.structure.pond_span) / 2
+      - dimensions.structure.deck_span
+      - dimensions.site.water_depth
+    material: soil
+    label: "Soil fill"
+    label_id: "SO"
+    ifc:
+      predefined_type: FLOOR
+    relate:
+      - flush_bundle:
+          bundle: datums.bundles.deck_faces
+          faces: [+x, -y, +y]
+      - contact:
+          subject:
+            component: soil_east
+            pos: +z
+          object:
+            datum: datums.planes.water_surface
+            pos: +z
+    metadata:
+      views: [section]
+
+  - id: corner_diagonal_nw
+    class: IfcBeam
+    profile: rectangle
+    size: [dimensions.structure.corner_diagonal_length, dimensions.structure.joist_width, dimensions.structure.joist_depth]
+    material: joist
+    label: "Corner joist to overhang"
+    label_id: "C8"
+    metadata:
+      _rotation_z: 45
+      views: [plan]
+    ifc:
+      predefined_type: JOIST
+    relate:
+      - flush_bundle:
+          bundle: datums.bundles.deck_faces
+          faces: [-x, +y]
+      - contact:
+          subject:
+            component: corner_diagonal_nw
+            pos: +z
+          object:
+            datum: datums.planes.joist_top
+            pos: +z
+
+  - id: corner_tie_horizontal
+    class: IfcBeam
+    profile: rectangle
+    size: [dimensions.structure.corner_tie_spacing, dimensions.structure.joist_width, dimensions.structure.joist_depth]
+    material: joist
+    label: "Corner tie to diagonal"
+    label_id: "C9"
+    metadata:
+      views: [plan]
+    ifc:
+      predefined_type: JOIST
+    relate:
+      - flush_bundle:
+          bundle: datums.bundles.deck_faces
+          faces:
+            - subject: -x
+              object: -x
+            - subject: +y
+              object: +y
+          inset:
+            subject: {}
+            object:
+              +y: -dimensions.structure.corner_tie_spacing + dimensions.structure.joist_width / 2
+      - contact:
+          subject:
+            component: corner_tie_horizontal
+            pos: +z
+          object:
+            datum: datums.planes.joist_top
+            pos: +z
+
+  - id: corner_tie_vertical
+    class: IfcBeam
+    profile: rectangle
+    size: [dimensions.structure.joist_width, dimensions.structure.corner_tie_spacing, dimensions.structure.joist_depth]
+    material: joist
+    label: "Corner tie to diagonal"
+    label_id: "C9"
+    metadata:
+      views: [plan]
+    ifc:
+      predefined_type: JOIST
+    relate:
+      - flush_bundle:
+          bundle: datums.bundles.deck_faces
+          faces:
+            - subject: -x
+              object: -x
+            - subject: +y
+              object: +y
+          inset:
+            subject: {}
+            object:
+              -x: -dimensions.structure.corner_tie_spacing + dimensions.structure.joist_width / 2
+      - contact:
+          subject:
+            component: corner_tie_vertical
+            pos: +z
+          object:
+            datum: datums.planes.joist_top
+            pos: +z
 
   - use: assembly.rotate_quadrants
     with:
@@ -422,139 +631,6 @@ components:
       about:
         point: datums.anchor
         axis: +z
-
-  - use: assembly.linear_bracing
-    with:
-      id: strap_brace_outer
-      path:
-        start:
-          component: outer_beam_south
-          face: +y
-        end:
-          component: outer_beam_north
-          face: -y
-      attach:
-        face: +z
-        plane: datums.planes.deck_surface
-      material: hardware
-      description: "Flat strap X-brace tying outer beams"
-
-  - id: soil_west
-    class: IfcSlab
-    profile: rectangle
-    size:
-      - (dimensions.structure.deck_span - dimensions.structure.pond_span) / 2
-      - dimensions.structure.deck_span
-    height: dimensions.site.water_depth
-    material: soil
-    label: "Soil fill"
-    label_id: "SO"
-    relate:
-      - flush_bundle:
-          bundle: datums.bundles.deck_faces
-          faces: [-x, -y, +y]
-      - touch_planes:
-          object: datums.planes.water_surface
-          faces: [+z]
-    metadata:
-      views: [section]
-
-  - id: soil_east
-    class: IfcSlab
-    profile: rectangle
-    size:
-      - (dimensions.structure.deck_span - dimensions.structure.pond_span) / 2
-      - dimensions.structure.deck_span
-    height: dimensions.site.water_depth
-    material: soil
-    label: "Soil fill"
-    label_id: "SO"
-    relate:
-      - flush_bundle:
-          bundle: datums.bundles.deck_faces
-          faces: [+x, -y, +y]
-      - touch_planes:
-          object: datums.planes.water_surface
-          faces: [+z]
-    metadata:
-      views: [section]
-
-  - id: corner_diagonal_nw
-    class: IfcJoist
-    profile: rectangle
-    size:
-      - dimensions.structure.corner_diagonal_length
-      - dimensions.structure.joist_width
-      - dimensions.structure.joist_depth
-    material: joist
-    label: "Corner joist to overhang"
-    label_id: "C8"
-    metadata:
-      _rotation_z: 45
-      views: [plan]
-    relate:
-      - flush_bundle:
-          bundle: datums.bundles.deck_faces
-          faces: [-x, +y]
-      - touch_planes:
-          object: datums.planes.joist_top
-          faces: [+z]
-
-  - id: corner_tie_horizontal
-    class: IfcJoist
-    profile: rectangle
-    size:
-      - dimensions.structure.corner_tie_spacing
-      - dimensions.structure.joist_width
-      - dimensions.structure.joist_depth
-    material: joist
-    label: "Corner tie to diagonal"
-    label_id: "C9"
-    metadata:
-      views: [plan]
-    relate:
-      - flush_bundle:
-          bundle: datums.bundles.deck_faces
-          faces:
-            - subject: -x
-              object: -x
-            - subject: +y
-              object: +y
-          inset:
-            subject: {}
-            object:
-              +y: -dimensions.structure.corner_tie_spacing + dimensions.structure.joist_width / 2
-      - touch_planes:
-          object: datums.planes.joist_top
-          faces: [+z]
-
-  - id: corner_tie_vertical
-    class: IfcJoist
-    profile: rectangle
-    size:
-      - dimensions.structure.joist_width
-      - dimensions.structure.corner_tie_spacing
-      - dimensions.structure.joist_depth
-    material: joist
-    label: "Corner tie to diagonal"
-    label_id: "C9"
-    metadata:
-      views: [plan]
-    relate:
-      - flush_bundle:
-          bundle: datums.bundles.deck_faces
-          faces:
-            - subject: -x
-              object: -x
-            - subject: +y
-              object: +y
-          inset:
-            subject: {}
-            object:
-              -x: -dimensions.structure.corner_tie_spacing + dimensions.structure.joist_width / 2
-      - touch_planes:
-          object: datums.planes.joist_top
-          faces: [+z]
 
 views:
   plan:
