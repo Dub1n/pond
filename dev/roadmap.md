@@ -399,6 +399,7 @@ All work in this phase must preserve the overarching goal: *semantic description
   - No invalid entity types or undefined predefined types.
   - Axis token grammar and frame references valid; align checks executed post-solve and reported in diagnostics.
   - **Progress:** `scripts/lint_specs.py` now runs solver + IFC validation (units, Axis/Body, RelVoids, class/predefined-type/material mapping), flags bad frames/axis tokens, surfaces check results (with `on_fail` downgrade support), and emits mesh digests for CI gating.
+  - Collision severity is configurable via `DIAGRAM_RELATIONSHIPS_COLLISIONS=error|warn|ignore` (default `error`) so CI can surface overlaps without blocking exploratory renders.
 
 - [x] **Collision/overlap detection at the solid level**
   - Integrate OCC collision checks.

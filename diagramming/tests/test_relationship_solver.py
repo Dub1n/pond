@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import unittest
 from pathlib import Path
+import os
 from tempfile import TemporaryDirectory
 from textwrap import dedent
 
@@ -9,6 +10,7 @@ import uuid
 
 import ifcopenshell
 import ifcopenshell.guid
+from unittest import mock
 
 from diagramming.relationships import ConstraintSolver, load_relationship_spec
 from diagramming.planner.exporters import IfcExporter, ObjExporter, StepExporter
@@ -937,6 +939,86 @@ class RelationshipSolverTests(unittest.TestCase):
             self.assertTrue(obj_path.exists())
             self.assertGreater(step_path.stat().st_size, 0)
             self.assertGreater(obj_path.stat().st_size, 0)
+
+    def _collision_spec_text(self) -> str:
+        return dedent(
+            """
+            schema: pond-relationship-test
+            info:
+              option: collisions
+            datums:
+              origin:
+                type: point
+                coordinates:
+                  +x: 0
+                  +y: 0
+                  +z: 0
+            components:
+              - id: slab_a
+                class: IfcSlab
+                size: [200, 200, 50]
+                material: decking
+                relate:
+                  - align:
+                      subject: {component: slab_a, pos: +x}
+                      object: {datum: datums.origin, pos: +x}
+                  - align:
+                      subject: {component: slab_a, pos: +y}
+                      object: {datum: datums.origin, pos: +y}
+                  - align:
+                      subject: {component: slab_a, pos: -z}
+                      object: {datum: datums.origin, pos: +z}
+              - id: slab_b
+                class: IfcSlab
+                size: [200, 200, 50]
+                material: decking
+                relate:
+                  - align:
+                      subject: {component: slab_b, pos: +x}
+                      object: {datum: datums.origin, pos: +x}
+                  - align:
+                      subject: {component: slab_b, pos: +y}
+                      object: {datum: datums.origin, pos: +y}
+                  - align:
+                      subject: {component: slab_b, pos: -z}
+                      object: {datum: datums.origin, pos: +z}
+            """
+        )
+
+    def test_collision_default_mode_errors(self) -> None:
+        with TemporaryDirectory() as tmp:
+            path = Path(tmp) / "collide.yaml"
+            path.write_text(self._collision_spec_text(), encoding="utf-8")
+            spec = load_relationship_spec(path)
+        solver = ConstraintSolver(spec)
+        result = solver.solve()
+        self.assertFalse(result.diagnostics.ok)
+        self.assertTrue(any("collision" in err.message for err in result.diagnostics.errors))
+
+    def test_collision_warn_mode_downgrades(self) -> None:
+        with mock.patch.dict(os.environ, {"DIAGRAM_RELATIONSHIPS_COLLISIONS": "warn"}):
+            with TemporaryDirectory() as tmp:
+                path = Path(tmp) / "collide.yaml"
+                path.write_text(self._collision_spec_text(), encoding="utf-8")
+                spec = load_relationship_spec(path)
+            solver = ConstraintSolver(spec)
+            result = solver.solve()
+        self.assertTrue(result.diagnostics.ok)
+        self.assertTrue(any("collision" in warn.message for warn in result.diagnostics.warnings))
+        self.assertFalse(result.diagnostics.errors)
+
+    def test_collision_ignore_mode_skips(self) -> None:
+        with mock.patch.dict(os.environ, {"DIAGRAM_RELATIONSHIPS_COLLISIONS": "ignore"}):
+            with TemporaryDirectory() as tmp:
+                path = Path(tmp) / "collide.yaml"
+                path.write_text(self._collision_spec_text(), encoding="utf-8")
+                spec = load_relationship_spec(path)
+            solver = ConstraintSolver(spec)
+            result = solver.solve()
+        self.assertTrue(result.diagnostics.ok)
+        self.assertFalse(result.diagnostics.errors)
+        self.assertFalse(result.diagnostics.warnings)
+        self.assertFalse(result.diagnostics.collisions)
 
 
 if __name__ == "__main__":  # pragma: no cover

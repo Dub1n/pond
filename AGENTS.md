@@ -24,6 +24,7 @@
 - Helpful local checks: `scripts/check_water_area.py <spec> --option <key>` prints expected vs rendered water coverage; `diagramming/tests/test_layering_debug.py` exercises a minimal ring-over-water fixture for layering regressions; `diagramming/tests/test_relationship_validation.py` compares relationship vs legacy SVG hashes and verifies mesh checksums/collision signals.
 - Baseline render freshness: always pair render-count checks with `scripts/baseline_render_check.py --fresh-check`. It rasterises timestamp-sized squares and exits non-zero if the render/pixel counts look stale. Run it alongside any script/test that inspects rendered output; include a short note in logs like “baseline render check passed; rerun `.venv/bin/python scripts/baseline_render_check.py --fresh-check` for details.”
 - If a script/test fails due to a missing dependency, rerun with the venv tools (`.venv/bin/python …` or `source .venv/bin/activate`) and add the missing package to `requirements.txt` so future runs succeed without manual installs.
+- Collision handling for relationship builds is adjustable via `DIAGRAM_RELATIONSHIPS_COLLISIONS=error|warn|ignore` (defaults to `error`).
 
 ## Coding Style & Naming Conventions
 

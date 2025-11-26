@@ -208,13 +208,6 @@ components:
       - contact:
           subject:
             component: outer_beam_west
-            pos: +z
-          object:
-            datum: datums.planes.joist_top
-            pos: +z
-      - contact:
-          subject:
-            component: outer_beam_west
             pos: -z
           object:
             datum: datums.planes.pad_top
@@ -249,13 +242,6 @@ components:
       - flush_bundle:
           bundle: datums.bundles.deck_faces
           faces: [-y, +y]
-      - contact:
-          subject:
-            component: inner_beam_west
-            pos: +z
-          object:
-            datum: datums.planes.joist_top
-            pos: +z
       - contact:
           subject:
             component: inner_beam_west
@@ -298,7 +284,7 @@ components:
       - contact:
           subject:
             component: joist_run_west
-            pos: -z
+            pos: +z
           object:
             datum: datums.planes.joist_top
             pos: +z
@@ -351,15 +337,15 @@ components:
           faces: [-x]
           inset:
             subject:
-              -x: -(dimensions.structure.beam_width / 2 + dimensions.site.pad_size / 2)
+              -x: -dimensions.structure.beam_width / 2
     repeat:
       axis: +y
       span:
         use: datums.bundles.deck_faces.y
         inset:
-          start: dimensions.site.pad_size
-          end: dimensions.site.pad_size
-      count: 2
+          start: dimensions.site.pad_size / 2
+          end: dimensions.site.pad_size / 2
+      count: 3
       include_seed: true
 
   - use: assembly.rotate_quadrants
@@ -372,106 +358,6 @@ components:
       about:
         point: datums.anchor
         axis: +z
-
-  - id: pad_first_west
-    class: IfcFooting
-    profile: rectangle
-    size: [dimensions.site.pad_size, dimensions.site.pad_size, dimensions.site.pad_height]
-    material: pad
-    label: "Shallow pad foundation"
-    label_id: "C6"
-    ifc:
-      predefined_type: PAD_FOOTING
-    relate:
-      - contact:
-          subject:
-            component: pad_first_west
-            pos: +z
-          object:
-            datum: datums.planes.pad_top
-            pos: +z
-      - flush_bundle:
-          bundle: datums.bundles.deck_faces
-          faces: [-x]
-          inset:
-            subject:
-              -x: -dimensions.structure.beam_width / 2
-      - align:
-          subject:
-            component: pad_first_west
-            pos: +y
-          object:
-            ref: pad_first_y
-            pos: +y
-
-  - use: assembly.rotate_quadrants
-    with:
-      source: pad_first_west
-      ids:
-        east: pad_first_east
-        north: pad_first_north
-        south: pad_first_south
-      about:
-        point: datums.anchor
-        axis: +z
-
-  - id: pad_sixth_west
-    class: IfcFooting
-    profile: rectangle
-    size: [dimensions.site.pad_size, dimensions.site.pad_size, dimensions.site.pad_height]
-    material: pad
-    label: "Shallow pad foundation"
-    label_id: "C6"
-    ifc:
-      predefined_type: PAD_FOOTING
-    relate:
-      - contact:
-          subject:
-            component: pad_sixth_west
-            pos: +z
-          object:
-            datum: datums.planes.pad_top
-            pos: +z
-      - flush_bundle:
-          bundle: datums.bundles.deck_faces
-          faces: [-x]
-          inset:
-            subject:
-              -x: -dimensions.structure.beam_width / 2
-      - align:
-          subject:
-            component: pad_sixth_west
-            pos: +y
-          object:
-            ref: pad_sixth_y
-            pos: +y
-
-  - use: assembly.rotate_quadrants
-    with:
-      source: pad_sixth_west
-      ids:
-        east: pad_sixth_east
-        north: pad_sixth_north
-        south: pad_sixth_south
-      about:
-        point: datums.anchor
-        axis: +z
-
-  - use: assembly.linear_bracing
-    with:
-      id: strap_brace_outer
-      path:
-        start:
-          component: outer_beam_south
-          face: +y
-        end:
-          component: outer_beam_north
-          face: -y
-      attach:
-        face: +z
-        plane: datums.planes.deck_surface
-      size: [dimensions.structure.deck_span, 30, 0]
-      material: hardware
 
   - id: soil_west
     class: IfcSlab
@@ -548,7 +434,7 @@ components:
       - contact:
           subject:
             component: corner_diagonal_nw
-            pos: -z
+            pos: +z
           object:
             datum: datums.planes.joist_top
             pos: +z
@@ -579,7 +465,7 @@ components:
       - contact:
           subject:
             component: corner_tie_horizontal
-            pos: -z
+            pos: +z
           object:
             datum: datums.planes.joist_top
             pos: +z
@@ -610,7 +496,7 @@ components:
       - contact:
           subject:
             component: corner_tie_vertical
-            pos: -z
+            pos: +z
           object:
             datum: datums.planes.joist_top
             pos: +z
