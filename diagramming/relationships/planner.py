@@ -31,6 +31,7 @@ class RelationshipPlanner:
         self.solved = solved
         key = spec.info.option.lower() if spec.info.option else "relationship"
         self.option = RelationshipOption(key=key, title=spec.info.title)
+        self._footprints = self._build_footprint_map(solved.primitives)
 
     def plan(self) -> List[RelationshipPlannedView]:
         plan_features = list(self._footprint_features(self.solved.primitives))
@@ -63,29 +64,41 @@ class RelationshipPlanner:
 
     # ------------------------------------------------------------------ #
     def _footprint_features(self, primitives: Sequence[NeutralPrimitive]) -> Iterable[PolygonFeature]:
+        footprints = self._footprints
         for primitive in primitives:
-            shape = (
-                primitive.footprint
-                or footprint_from_solid(primitive.solid)  # type: ignore[arg-type]
-                or self._footprint_from_mesh(primitive)
-                or self._footprint_polygon(primitive)
-            )
+            shape = footprints.get(primitive.id)
             if shape is None or shape.is_empty:
                 continue
-            outer = tuple(shape.exterior.coords)
-            feature = PolygonFeature(
-                id=primitive.id,
-                outer=outer,
-                holes=(),
-                height=primitive.size[2],
-                elevation=primitive.transform.position[2] - (primitive.size[2] / 2),
-                class_name=primitive.class_name,
-                material=primitive.material,
-                metadata=primitive.metadata.copy(),
-                shape=shape,
-                views=tuple(self.spec.views.keys()) if self.spec.views else ("plan",),
-            )
-            yield feature
+            if primitive.voids:
+                void_shapes = [footprints.get(vid) for vid in primitive.voids if footprints.get(vid) is not None]
+                if void_shapes:
+                    union = None
+                    for vshape in void_shapes:
+                        union = vshape if union is None else union.union(vshape)
+                    if union is not None and not union.is_empty:
+                        shape = shape.difference(union)
+            if shape.is_empty:
+                continue
+            polygons = [shape] if isinstance(shape, ShapelyPolygon) else list(shape.geoms)  # type: ignore[attr-defined]
+            for idx, polygon in enumerate(polygons):
+                if polygon.is_empty:
+                    continue
+                outer = tuple(polygon.exterior.coords)
+                holes = tuple(tuple(ring.coords) for ring in polygon.interiors)
+                feature_id = primitive.id if idx == 0 else f"{primitive.id}#{idx}"
+                feature = PolygonFeature(
+                    id=feature_id,
+                    outer=outer,
+                    holes=holes,
+                    height=primitive.size[2],
+                    elevation=primitive.transform.position[2] - (primitive.size[2] / 2),
+                    class_name=primitive.class_name,
+                    material=primitive.material,
+                    metadata=primitive.metadata.copy(),
+                    shape=polygon,
+                    views=tuple(self.spec.views.keys()) if self.spec.views else ("plan",),
+                )
+                yield feature
 
     def _footprint_from_mesh(self, primitive: NeutralPrimitive) -> ShapelyPolygon | None:
         mesh = mesh_from_primitive(primitive, to_meters=False)
@@ -105,6 +118,20 @@ class RelationshipPlanner:
             footprint = shapely_rotate(footprint, rotation_z, origin=(0.0, 0.0), use_radians=False)
         pos = primitive.transform.position
         return shapely_translate(footprint, xoff=pos[0], yoff=pos[1])
+
+    def _build_footprint_map(self, primitives: Sequence[NeutralPrimitive]) -> Dict[str, ShapelyPolygon]:
+        footprints: Dict[str, ShapelyPolygon] = {}
+        for primitive in primitives:
+            shape = (
+                primitive.footprint
+                or footprint_from_solid(primitive.solid)  # type: ignore[arg-type]
+                or self._footprint_from_mesh(primitive)
+                or self._footprint_polygon(primitive)
+            )
+            if shape is None or shape.is_empty:
+                continue
+            footprints[primitive.id] = shape
+        return footprints
 
     def _section_features(
         self,
