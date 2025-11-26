@@ -369,6 +369,155 @@ class RelationshipSolverTests(unittest.TestCase):
         ]
         self.assertTrue(body_contexts)
 
+    def test_ifc_reference_view_features(self) -> None:
+        spec_text = dedent(
+            """
+            schema: pond-relationship-test
+            info:
+              option: reference
+            datums:
+              origin:
+                type: point
+                coordinates:
+                  +x: 0
+                  +y: 0
+                  +z: 0
+            components:
+              - id: slab
+                class: IfcSlab
+                size: [1000, 800, 40]
+                material: decking
+                relate:
+                  - align:
+                      subject:
+                        component: slab
+                        pos: -z
+                      object:
+                        datum: datums.origin
+                        pos: +z
+                voids:
+                  - opening
+              - id: opening
+                class: IfcMember
+                size: [200, 200, 40]
+                material: timber
+                relate:
+                  - align:
+                      subject:
+                        component: opening
+                        pos: +x
+                      object:
+                        component: slab
+                        pos: +x
+                  - align:
+                      subject:
+                        component: opening
+                        pos: +y
+                      object:
+                        component: slab
+                        pos: +y
+                  - align:
+                      subject:
+                        component: opening
+                        pos: -z
+                      object:
+                        component: slab
+                        pos: +z
+              - id: joist
+                class: IfcBeam
+                size: [1000, 60, 100]
+                material: joist
+                relate:
+                  - align:
+                      subject:
+                        component: joist
+                        pos: -z
+                      object:
+                        component: slab
+                        pos: +z
+                  - align:
+                      subject:
+                        component: joist
+                        pos: -x
+                      object:
+                        datum: datums.origin
+                        pos: +x
+                repeat:
+                  axis: +y
+                  pitch: 300
+                  count: 2
+                  include_seed: true
+            """
+        )
+        with TemporaryDirectory() as tmp:
+            path = Path(tmp) / "reference.yaml"
+            path.write_text(spec_text, encoding="utf-8")
+            spec = load_relationship_spec(path)
+            solver = ConstraintSolver(spec)
+            result = solver.solve()
+            exporter = IfcExporter()
+            out_path = Path(tmp) / "model.ifc"
+            exporter.export(result.primitives, out_path)
+            model = ifcopenshell.open(out_path)
+
+        project = model.by_type("IfcProject")[0]
+        units = list(project.UnitsInContext.Units)
+        length_units = [u for u in units if getattr(u, "UnitType", "") == "LENGTHUNIT"]
+        self.assertTrue(any(getattr(u, "Prefix", "").upper() == "MILLI" for u in length_units))
+        angle_units = [u for u in units if getattr(u, "UnitType", "") == "PLANEANGLEUNIT"]
+        self.assertTrue(any(getattr(u, "Name", "").lower() == "degree" for u in angle_units))
+
+        contexts = {ctx.ContextIdentifier for ctx in model.by_type("IfcGeometricRepresentationSubContext")}
+        self.assertIn("Axis", contexts)
+        self.assertIn("Body", contexts)
+
+        beams = model.by_type("IfcBeam")
+        self.assertEqual(len(beams), 2)
+        beam_types = model.by_type("IfcBeamType")
+        self.assertTrue(beam_types)
+        maps = list(beam_types[0].RepresentationMaps or [])
+        self.assertTrue(maps)
+        beam_type_body_reps = [
+            rep for rep in (rm.MappedRepresentation for rm in maps if rm.MappedRepresentation)
+            if rep and rep.ContextOfItems and rep.ContextOfItems.ContextIdentifier == "Body"
+        ]
+        self.assertTrue(
+            any(any(item.is_a("IfcExtrudedAreaSolid") for item in rep.Items or []) for rep in beam_type_body_reps)
+        )
+
+        first_beam_reps = beams[0].Representation.Representations or []
+        self.assertTrue(any(rep.ContextOfItems.ContextIdentifier == "Axis" for rep in first_beam_reps))
+        self.assertTrue(any(rep.RepresentationType == "MappedRepresentation" for rep in first_beam_reps))
+        self.assertTrue(
+            any(
+                getattr(rel.RelatingMaterial, "is_a", lambda *_: False)("IfcMaterialProfileSetUsage")
+                for rel in beams[0].HasAssociations or []
+            )
+        )
+
+        slab = model.by_type("IfcSlab")[0]
+        self.assertTrue(
+            any(
+                getattr(rel.RelatingMaterial, "is_a", lambda *_: False)("IfcMaterialLayerSetUsage")
+                for rel in slab.HasAssociations or []
+            )
+        )
+
+        rel_voids = model.by_type("IfcRelVoidsElement")
+        self.assertTrue(rel_voids)
+        self.assertEqual(rel_voids[0].RelatingBuildingElement, slab)
+        self.assertTrue(rel_voids[0].RelatedOpeningElement.is_a("IfcOpeningElement"))
+
+        connections = [rel for rel in model.by_type("IfcRelConnectsElements") if rel.ConnectionGeometry]
+        self.assertTrue(connections)
+        self.assertTrue(
+            any(
+                rel.ConnectionGeometry.is_a("IfcConnectionSurfaceGeometry")
+                or rel.ConnectionGeometry.is_a("IfcConnectionCurveGeometry")
+                for rel in connections
+            )
+        )
+
     def test_solver_supports_wedge_and_sweep_profiles(self) -> None:
         spec_text = dedent(
             """

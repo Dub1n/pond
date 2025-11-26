@@ -106,6 +106,13 @@ class ComponentState:
 
 
 @dataclass(slots=True)
+class ConnectionHint:
+    target: str
+    subject_pos: str
+    object_pos: str
+
+
+@dataclass(slots=True)
 class NeutralPrimitive:
     id: str
     class_name: Optional[str]
@@ -119,6 +126,8 @@ class NeutralPrimitive:
     solid: Optional[Any] = None
     footprint: Optional[ShapelyPolygon] = None
     ifc: Optional[Dict[str, object]] = None
+    connections: Tuple[ConnectionHint, ...] = ()
+    voids: Tuple[str, ...] = ()
 
 
 @dataclass(slots=True)
@@ -143,6 +152,7 @@ class InstanceState:
     name: str
     axis_values: Dict[str, float] = field(default_factory=dict)
     rotation_z: float = 0.0
+    connections: List[ConnectionHint] = field(default_factory=list)
 
 
 class ReferenceResolver:
@@ -266,7 +276,7 @@ class ConstraintSolver:
         for idx, instance in enumerate(instances):
             transform, dof = self._finalise_transform(component, instance, diagnostics)
             guid = self._stable_guid(component.id, instance.name)
-            primitive = self._neutral_primitive(component, instance.name, transform, guid)
+            primitive = self._neutral_primitive(component, instance.name, transform, guid, instance.connections)
             solved_components.append(
                 SolvedComponent(
                     component=component,
@@ -421,6 +431,17 @@ class ConstraintSolver:
     ) -> None:
         subject_axes = _axes_from_pos(clause.subject.pos)
         object_axes = {axis: sign for axis, sign in _axes_from_pos(clause.obj.pos)}
+        if clause.obj.ref in resolver.component_states and clause.obj.ref != component.id:
+            already_recorded = any(
+                hint.target == clause.obj.ref
+                and hint.subject_pos == clause.subject.pos
+                and hint.object_pos == clause.obj.pos
+                for hint in instance.connections
+            )
+            if not already_recorded:
+                instance.connections.append(
+                    ConnectionHint(target=clause.obj.ref, subject_pos=clause.subject.pos, object_pos=clause.obj.pos)
+                )
 
         for axis, subject_sign in subject_axes:
             object_sign = object_axes.get(axis, subject_sign)
@@ -511,7 +532,14 @@ class ConstraintSolver:
                 axis_values = dict(base.axis_values)
                 axis_values[axis] = base_value + sign * offset
                 name = base.name if not expanded else f"{component.id}#{len(expanded)}"
-                expanded.append(InstanceState(name=name, axis_values=axis_values, rotation_z=base.rotation_z))
+                expanded.append(
+                    InstanceState(
+                        name=name,
+                        axis_values=axis_values,
+                        rotation_z=base.rotation_z,
+                        connections=list(base.connections),
+                    )
+                )
         return expanded or instances
 
     def _span_length(self, span_use: Optional[str], resolver: ReferenceResolver) -> Optional[float]:
@@ -585,9 +613,11 @@ class ConstraintSolver:
         instance_id: str,
         transform: ComponentTransform,
         guid: str,
+        connections: Sequence[ConnectionHint],
     ) -> NeutralPrimitive:
         metadata = dict(component.metadata)
         metadata.setdefault("id", instance_id)
+        metadata.setdefault("component_id", component.id)
         metadata.setdefault("class", component.class_name)
         metadata.setdefault("profile", component.profile)
         metadata.setdefault("guid", guid)
@@ -613,6 +643,8 @@ class ConstraintSolver:
             solid=solid,
             footprint=footprint,
             ifc=_ifc_to_dict(component.ifc),
+            connections=tuple(connections),
+            voids=tuple(component.voids),
         )
 
     def _build_cadquery_block(
@@ -856,6 +888,7 @@ def build_scene_from_primitives(primitives: Sequence[NeutralPrimitive], *, to_me
 
 
 __all__ = [
+    "ConnectionHint",
     "ComponentTransform",
     "ConstraintSolver",
     "NeutralPrimitive",

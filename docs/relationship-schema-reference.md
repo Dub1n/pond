@@ -10,9 +10,10 @@ This document captures the prep surface for the relationship-first schema descri
 - Relationship helpers parsed today: `align` / `contact`, `flush_bundle`, `run_between`, `relate_from`, `touch_planes`, `touch_components`, plus `repeat` spans and `voids`. Checks reuse the same alignment vocabulary and default to `gap: 0`, `tolerance: 0.5`, `on_fail: error`.
 - IFC metadata is accepted (`ifc.predefined_type`, `ifc.psets`) and uppercased for consistency; IFC-classed components lint if they omit an `ifc` block.
 - Components use a single 3-axis `size: [x, y, z]` (missing axes default to 0); box, wedge, and swept profiles are supported with optional `profile_params` to drive slopes or custom sections.
-- Constraint solver resolves faces/planes/bundles into deterministic transforms and neutral CadQuery primitives (box, wedge, sweep) with stable GUID seeds; checks report pass/fail, and diagnostics carry DOF/graph information.
+- Constraint solver resolves faces/planes/bundles into deterministic transforms and neutral CadQuery primitives (box, wedge, sweep) with stable GUID seeds; checks report pass/fail, diagnostics carry DOF/graph information, and component-to-component alignments provide connection hints for IFC `RelConnects` geometry.
 - Relationship planner slices CadQuery solids directly for plan and section geometry before handing off to the existing SVG/PNG/glTF/IFC/STEP/OBJ pipeline when the feature flag is set.
 - CLI exports glTF by default and can also emit `model.step` / `model.obj` for relationship-first specs via `--step` and `--obj`.
+- IFC export now targets IFC4X3 Reference View with Model/Axis/Body contexts, mm/deg units, swept solids for rectangular members, profile/layer material usages, openings linked via `RelVoids`, mapped items for repeats, and connection geometry derived from face/edge/point contacts.
 
 ### Linting
 

@@ -344,13 +344,13 @@ All work in this phase must preserve the overarching goal: *semantic description
 
 #### IFC 4.3.2 (Reference View) export
 
-- [ ] **Build IFC contexts**
+- [x] **Build IFC contexts**
   - 3D model context.
   - Axis + Body subcontexts.
   - UnitAssignment: **millimetres**, **degrees**.
-  - **Progress:** relationship-first exporter now writes a minimal IFC4 model context with Body subcontext in millimetres.
+  - **Progress:** relationship-first exporter now builds IFC4X3 Reference View files with Model/Axis/Body contexts and mm/deg units.
 
-- [ ] **Correct class + predefined type mapping**
+- [x] **Correct class + predefined type mapping**
   - Joists → `IfcBeam` (`PredefinedType=JOIST`)
   - Beams → `IfcBeam` (`BEAM` or `EDGEBEAM`)
   - Blocking/bridging → `IfcMember`
@@ -358,31 +358,31 @@ All work in this phase must preserve the overarching goal: *semantic description
   - Openings → `IfcOpeningElement` + `IfcRelVoidsElement`
   - Hangers/straps (if modelled) → `IfcFastener` or `IfcMember`.
 
-- [ ] **Axis + Body representations**
+- [x] **Axis + Body representations**
   - Axis representation: local +X curve for linear elements.
-  - Body representation: swept solid (`IfcExtrudedAreaSolid`) unless geometry requires tessellation. **Progress:** tessellated Body representations emitted from CadQuery solids; swept profiles still TODO.
+  - Body representation: swept solid (`IfcExtrudedAreaSolid`) unless geometry requires tessellation. **Progress:** rectangular profiles extrude to swept solids, other profiles fall back to tessellated bodies; axis maps ride on the Axis subcontext.
 
-- [ ] **Material assignments**
+- [x] **Material assignments**
   - Linear members: `IfcMaterialProfileSetUsage` (rect profile).
   - Slabs: `IfcMaterialLayerSetUsage` (layer direction = +Z).
-  - Deck planks or monolithic slab selectable per spec.
+  - Deck planks or monolithic slab selectable per spec. **Progress:** profiled/layered usages now attach automatically via type-driven materials.
 
-- [ ] **Openings**
+- [x] **Openings**
   - Pond voids are modelled as true `IfcOpeningElement` bodies.
   - Host slab receives `IfcRelVoidsElement`.
 
-- [ ] **Repeated geometry via types / representation maps**
+- [x] **Repeated geometry via types / representation maps**
   - For repeated joists/beams: create `IfcBeamType` or `IfcMemberType`.
   - Use `IfcMappedItem` for each instance.
   - Ensures identical geometry is not duplicated.
 
-- [ ] **Face/plane relationships → IFC connection geometry**
+- [x] **Face/plane relationships → IFC connection geometry**
   - `touch_planes` → `IfcRelConnectsElements` + `IfcConnectionSurfaceGeometry`.
   - `touch_components` face contacts → `IfcConnectionSurfaceGeometry`.
   - Edge contacts → `IfcConnectionCurveGeometry`.
   - Point contacts → `IfcConnectionPointGeometry`.
 
-- [ ] **GUID determinism**
+- [x] **GUID determinism**
   - IFC GUIDs seeded deterministically using canonicalised component IDs.
   - Write regression tests for any new functionality and update relevant docs; commit changes.
 
