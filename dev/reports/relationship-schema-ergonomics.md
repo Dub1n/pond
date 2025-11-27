@@ -50,6 +50,7 @@
 ## Implementation report (relationship-first surface, March 2024)
 
 ### Scope delivered
+
 - Replaced legacy align/contact parsing with the axis-map shape: subject axes → `{ref,pos,gap,offset,mode,frame}`, supporting multi-axis tokens and center tokens (`c*`, `~*`), with `flush` sugar expanding to axis-map entries (`faces: all` default, scalar/per-face inset).
 - Added reference components (`kind: reference`) with lenient defaults (missing axes → 0) plus size inference only for regular components; explicit size conflicts lint unless matched.
 - Added size inference from relate pairs; components must declare or infer X/Y/Z, references may omit axes.
@@ -61,17 +62,19 @@
 - Docs/tests: refreshed `architecture-spec.md`, `AGENTS.md`, `docs/instructions.md`; test suite rewritten around axis-map parsing/solver/planner/validation; Option C spec updated with missing dimensions.
 
 ### Known gaps / follow-ups
-- Option C diagonal still needed hand tuning: current relate simplification reduces, but does not eliminate, size inference conflicts; next step is to anchor with a single X/Y span (or center + one axis) to keep size at 1768×47 without solver inference drift. Collisions are currently warnings; layout tweaks are needed to clear overlaps (pads/soil, joist/beam clashes).
+
 - Relationship `groups` are not yet separate schema entities; operations run on selectors directly.
 - Collision volumes are reported but not filtered by class/material; no auto-resolution.
 - IFC export relies on provided `class`/`predefined_type`; missing mappings still lint as errors.
 
 ### How Option C changed
+
 - Added missing dimensions (`corner_diagonal_length`, `corner_tie_spacing`) to keep the compact schema valid.
 - Simplified corner diagonal relate to avoid four-way axis pairs; remains to be finalized with a single span to stop inference conflicts.
-- Build currently succeeds to solver output with collisions downgraded via `DIAGRAM_RELATIONSHIPS_COLLISIONS=warn`; render fails only on the remaining diagonal size inference error.
+- Build currently succeeds to solver output with collisions downgraded via `DIAGRAM_RELATIONSHIPS_COLLISIONS=warn`
 
 ### Usage notes
+
 - Prefer one X and one Y axis pair when you want size inference; extra pairs can conflict with explicit `size`.
 - Use center tokens (`cx`, `cy`, `cz`) to avoid mixed-sign pairs when anchoring symmetric geometry.
 - Keep references lean: omit relate entries you don’t need; components must cover all axes or supply explicit sizes.
