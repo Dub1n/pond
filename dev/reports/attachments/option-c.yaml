@@ -89,6 +89,7 @@ components:
     size: [pond_span, pond_span, water_depth]
     material: water
     label: "Pond water"
+    label_id: "C2"
     # Relate anchors all three axes; no implicit centering needed
     relate:
       +x+y-x-y: { ref: pond_frame, pos: +x+y-x-y }  # symmetric faces bound together
@@ -123,6 +124,7 @@ components:
     size: [deck_span, deck_span, deck_thickness]
     material: decking
     label: "Deck surface (1.0 m backspan + 0.25 m overhang)"
+    label_id: "C1"
     # Size repeats the X/Y defined by relate; lint can catch drift if they ever differ
     relate:
       +x+y-x-y: { ref: deck_frame, pos: +x+y-x-y }
@@ -138,9 +140,11 @@ components:
     size: [beam_width, deck_span, beam_height]
     material: timber
     label: "Support beam at outer rim"
+    label_id: "C4"
     # Axis-map relate replaces multiple align/contact clauses
     relate:
-      +x+y-y: { ref: deck_frame, pos: -x+y-y }
+      -x: { ref: deck_frame, pos: -x }
+      +y-y: { ref: deck_frame, pos: +y-y }
       +z: { ref: joist_top, pos: +z }
       -z: { ref: pad_top, pos: +z }
     ifc:
@@ -151,9 +155,10 @@ components:
     size: [beam_width, deck_span, beam_height]
     material: timber
     label: "Inner beam (saddle hanger rebate)"
+    label_id: "C4B"
     # Axis-map relate sets X/Y/Z with one block
     relate:
-      +x: { ref: pond_frame, pos: -x }
+      -x: { ref: pond_frame, pos: -x }
       +y-y: { ref: deck_frame, pos: +y-y }
       +z: { ref: joist_top, pos: +z }
       -z: { ref: pad_top, pos: +z }
@@ -167,23 +172,19 @@ components:
       - joist_width
       - joist_depth
     material: timber
-    label: "Joist (1.0 m backspan + 0.25 m cantilever)"
-    # X set by -x align, Y centered via cy token, Z by joist_top
+    label: "47x150 mm joist (1.0 m backspan + 0.25 m cantilever)"
+    label_id: "C5"
+    # X set by relate, Y/Z driven via run_between axis-map (faces, no manual inset needed)
     relate:
       -x: { ref: outer_beam_west, pos: +x }
-      cy: { ref: pond_frame }
       +z: { ref: joist_top, pos: +z }
     run_between:
-      start_pos: +y
-      end_pos: -y
-      from: { ref: pond_frame, pos: +y }
-      to:   { ref: pond_frame, pos: -y }
+      start:
+        +y: { ref: opening_frame, pos: +y }
+      end:
+        -y: { ref: opening_frame, pos: -y }
       count: 7
       include_seed: true
-      inset:
-        start: cantilever + joist_width / 2
-      end: cantilever + joist_width / 2
-      orient: along_run
     ifc:
       predefined_type: JOIST
 
@@ -191,11 +192,19 @@ components:
     class: IfcBeam
     size: [corner_diagonal_length, joist_width, joist_depth]
     material: joist
-    label: "Corner diagonal"
+    label: "Corner joist to overhang"
+    label_id: "C8"
     relate:
-      cx: { ref: opening_frame, pos: -x }  # anchor X to opening centerline
-      +y: { ref: deck_frame, pos: +y }    # anchor Y to deck edge
       +z: { ref: joist_top, pos: +z }
+    run_between:
+      # Single-instance run_between uses start/end axis-map to land faces without inset
+      start:
+        -x+y: { ref: deck_frame, pos: -x+y }
+      end:
+        -x+y: { ref: opening_frame, pos: -x+y }
+      count: 1
+      include_seed: true
+      orient: along_run
     ifc:
       predefined_type: JOIST
 
@@ -203,9 +212,10 @@ components:
     class: IfcBeam
     size: [corner_tie_spacing, joist_width, joist_depth]
     material: joist
-    label: "Corner tie horizontal"
+    label: "Corner tie to diagonal"
+    label_id: "C9"
     relate:
-      +x:
+      -x:
         ref: deck_frame
         pos: -x
       +y:
@@ -220,12 +230,13 @@ components:
     class: IfcBeam
     size: [joist_width, corner_tie_spacing, joist_depth]
     material: joist
-    label: "Corner tie vertical"
+    label: "Corner tie to diagonal"
+    label_id: "C9"
     relate:
-      +x:
+      -x:
         ref: deck_frame
         pos: -x
-        offset: -corner_tie_spacing + joist_width / 2
+        offset: corner_tie_spacing - joist_width / 2
       +y:
         ref: deck_frame
         pos: +y
@@ -233,11 +244,19 @@ components:
     ifc:
       predefined_type: JOIST
 
+  - id: joist_run_west_y_check
+    kind: reference
+    size: [0, joist_width, 0]
+    relate:
+      +y: { ref: joist_run_west, pos: -y }
+      -y: { ref: opening_frame, pos: +y }
+
   - id: soil_fill
     class: IfcSlab
     size: [deck_span + pad_size, deck_span + pad_size, water_depth]
     material: soil
     label: "Soil fill"
+    views: [section]
     relate:
       +x+y-x-y: { ref: soil_frame, pos: +x+y-x-y }
       +z: { ref: water_surface, pos: +z }
@@ -249,39 +268,57 @@ components:
     class: IfcFooting
     size: [pad_size, pad_size, pad_height]
     material: pad
-    label: "Pad foundation"
+    label: "Shallow pad foundation"
+    label_id: "C6"
     ifc:
       predefined_type: PAD_FOOTING
     place:
       - id: pad_corner_west
-        +x+y:
+        cx:
           ref: deck_frame
-          pos: -x+y
-          offset: -(pad_size / 2 - joist_width / 2)
+          pos: -x
+          offset: beam_width / 2
+        cy:
+          ref: deck_frame
+          pos: +y
+          offset: -beam_width / 2
         +z: { ref: pad_top, pos: +z }
       - id: pad_run2_west
-        +x:
+        cx:
           ref: deck_frame
           pos: -x
-          offset: -(pad_size / 2 - joist_width / 2)
-        +y:
+          offset: beam_width / 2
+        cy:
           ref: joist_run_west#1
-          pos: +y
-          gap: pad_size / 2 - joist_width / 2
         +z: { ref: pad_top, pos: +z }
       - id: pad_run6_west
-        +x:
+        cx:
           ref: deck_frame
           pos: -x
-          offset: -(pad_size / 2 - joist_width / 2)
-        -y:
+          offset: beam_width / 2
+        cy:
           ref: joist_run_west#5
-          pos: -y
-          gap: pad_size / 2 - joist_width / 2
         +z: { ref: pad_top, pos: +z }
+
+  - id: joist_span_check_west
+    kind: reference
+    size: [0, 0, 0]
+    relate:
+      +x: { ref: joist_run_west, pos: +x }
+      -x: { ref: opening_frame, pos: -x }
 
 operations:
   - type: rotate
+    targets:
+      - outer_beam_west
+      - inner_beam_west
+      - joist_run_west
+      - pad_corner_west
+      - pad_run2_west
+      - pad_run6_west
+      - corner_diagonal_nw
+      - corner_tie_horizontal_nw
+      - corner_tie_vertical_nw
     about: { ref: origin, axis: +z }
     count: 4
     include_seed: true

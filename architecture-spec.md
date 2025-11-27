@@ -27,7 +27,7 @@ Core traits:
 - Axis-map relates with explicit `ref`/`pos`/`gap`/`offset`/`mode` (plane|edge|point), frame-aware (`world`/`local`/`component:<id>`).
 - Center tokens (`cx`, `cy`, `cz`, `~x`, etc.) in keys and targets.
 - Reference components (`kind: reference`) are geometry-less anchors with lenient defaults; components infer missing size axes from relation pairs, linting conflicts when explicit sizes disagree.
-- `run_between` spans accept components or references, center tokens in `start_pos`/`end_pos`, `orient: along_run` aligns local +X to the span.
+- `run_between` spans accept components or references and use axis-map `start`/`end` blocks (same shape as `relate`) to seed faces/centers; `orient: along_run` aligns local +X to the span and sizes can be inferred/interpolated from start/end faces.
 - `flush` sugar expands to axis-map entries (`faces: all` default, scalar or per-face inset).
 - `place` blocks embed per-placement axis-maps; no nested `relate`.
 - Aggregate selectors (`id`, `id.original`, `id.clones`) apply everywhere component lists are accepted, including typed `operations` (`rotate`, `mirror`, `translate`, `boolean`).
@@ -43,7 +43,7 @@ Core traits:
 ## Constraint Solver
 - Expands placements and selectors into explicit instances.
 - Applies axis-map relations with size inference, honoring center placements and per-axis gaps/offsets.
-- `run_between` generates spaced instances along spans; `orient: along_run` produces aligned orientations.
+- `run_between` generates spaced instances along spans using `start`/`end` axis-maps (single-axis OK; missing axes fall back to shared relates); sizes interpolate when start/end supply face pairs, and `orient: along_run` produces aligned orientations.
 - Typed operations clone transforms with deterministic IDs; boolean ops attach void references.
 - Emits neutral primitives: CadQuery solids (box/wedge/sweep) + metadata, deterministic GUIDs, stored footprints/meshes.
 - Collision detection via OCC intersections; severity set by `DIAGRAM_RELATIONSHIPS_COLLISIONS`.

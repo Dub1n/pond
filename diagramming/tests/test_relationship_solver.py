@@ -93,10 +93,10 @@ class RelationshipSolverTests(unittest.TestCase):
                   cy: { ref: origin }
                   cz: { ref: origin }
                 run_between:
-                  start_pos: +x
-                  end_pos: +x
-                  from: { ref: start, pos: +x }
-                  to: { ref: end, pos: +x }
+                  start:
+                    +x: { ref: start, pos: +x }
+                  end:
+                    +x: { ref: end, pos: +x }
                   count: 2
                   include_seed: true
                   orient: along_run
@@ -113,10 +113,152 @@ class RelationshipSolverTests(unittest.TestCase):
         runners = [comp for comp in result.components if comp.component.id == "runner"]
         xs = sorted([comp.transform.position[0] for comp in runners])
         self.assertEqual(len(runners), 2)
-        self.assertAlmostEqual(xs[0], 0.0)
-        self.assertAlmostEqual(xs[1], 1000.0)
+        self.assertAlmostEqual(xs[0], -50.0)
+        self.assertAlmostEqual(xs[1], 950.0)
         for comp in runners:
             self.assertAlmostEqual(comp.transform.rotation[2], 0.0)
+
+    def test_axis_map_targets_explicit_face_when_signs_differ(self) -> None:
+        spec_text = dedent(
+            """
+            schema: pond-relationship-test
+            info:
+              option: sign-mapping
+            components:
+              - id: origin
+                kind: reference
+                size: [0, 0, 0]
+              - id: frame
+                kind: reference
+                size: [1000, 1000, 0]
+                relate:
+                  cxcy: { ref: origin }
+                  cz: { ref: origin }
+              - id: beam
+                class: IfcBeam
+                size: [100, 200, 50]
+                relate:
+                  +x: { ref: frame, pos: -x }
+                  cy: { ref: frame }
+                  cz: { ref: origin }
+                ifc:
+                  predefined_type: BEAM
+            """
+        )
+        with TemporaryDirectory() as tmp:
+            path = Path(tmp) / "sign.yaml"
+            path.write_text(spec_text, encoding="utf-8")
+            spec = load_relationship_spec(path)
+        solver = ConstraintSolver(spec)
+        result = solver.solve()
+        beam = next(comp for comp in result.components if comp.instance_id == "beam")
+        self.assertAlmostEqual(beam.transform.position[0], -550.0)
+        self.assertAlmostEqual(beam.primitive.size[0], 100.0)
+
+    def test_run_between_orients_to_span_direction(self) -> None:
+        spec_text = dedent(
+            """
+            schema: pond-relationship-test
+            info:
+              option: run-between-direction
+            components:
+              - id: origin
+                kind: reference
+                size: [0, 0, 0]
+              - id: start
+                kind: reference
+                size: [0, 0, 0]
+                relate:
+                  cy: { ref: origin, offset: 0 }
+              - id: end
+                kind: reference
+                size: [0, 0, 0]
+                relate:
+                  cy: { ref: origin, offset: 1000 }
+              - id: runner
+                class: IfcBeam
+                size: [100, 50, 10]
+                relate:
+                  cx: { ref: origin }
+                  cz: { ref: origin }
+                run_between:
+                  start:
+                    +y: { ref: start, pos: +y }
+                  end:
+                    +y: { ref: end, pos: +y }
+                  count: 1
+                  include_seed: true
+                  orient: along_run
+                ifc:
+                  predefined_type: BEAM
+            """
+        )
+        with TemporaryDirectory() as tmp:
+            path = Path(tmp) / "run_dir.yaml"
+            path.write_text(spec_text, encoding="utf-8")
+            spec = load_relationship_spec(path)
+        solver = ConstraintSolver(spec)
+        result = solver.solve()
+        runner = next(comp for comp in result.components if comp.component.id == "runner")
+        orient_x = runner.transform.orientation[0]
+        self.assertAlmostEqual(orient_x[0], 0.0, places=6)
+        self.assertAlmostEqual(orient_x[1], 1.0, places=6)
+        self.assertAlmostEqual(runner.transform.position[1], 475.0)
+
+    def test_run_between_axis_maps_infer_size_and_interpolate(self) -> None:
+        spec_text = dedent(
+            """
+            schema: pond-relationship-test
+            info:
+              option: run-between-size
+            components:
+              - id: start
+                kind: reference
+                size: [0, 0, 0]
+                relate:
+                  cx: { ref: origin, offset: 0 }
+              - id: end
+                kind: reference
+                size: [0, 0, 0]
+                relate:
+                  cx: { ref: origin, offset: 1000 }
+              - id: origin
+                kind: reference
+                size: [0, 0, 0]
+              - id: runner
+                class: IfcBeam
+                size: [null, 50, 10]
+                relate:
+                  cy: { ref: origin }
+                  cz: { ref: origin }
+                run_between:
+                  start:
+                    -x: { ref: start, pos: +x }
+                    +x: { ref: start, pos: +x, offset: 200 }
+                  end:
+                    -x: { ref: end, pos: +x }
+                    +x: { ref: end, pos: +x, offset: 200 }
+                  count: 2
+                  include_seed: true
+                  orient: along_run
+                ifc:
+                  predefined_type: BEAM
+            """
+        )
+        with TemporaryDirectory() as tmp:
+            path = Path(tmp) / "run_size.yaml"
+            path.write_text(spec_text, encoding="utf-8")
+            spec = load_relationship_spec(path)
+        solver = ConstraintSolver(spec)
+        result = solver.solve()
+        runners = [comp for comp in result.components if comp.component.id == "runner"]
+        xs = sorted([comp.transform.position[0] for comp in runners])
+        sizes = sorted([comp.primitive.size[0] for comp in runners])
+        self.assertEqual(len(runners), 2)
+        self.assertAlmostEqual(xs[0], 100.0)
+        self.assertAlmostEqual(xs[1], 1100.0)
+        self.assertAlmostEqual(sizes[0], 200.0)
+        self.assertAlmostEqual(sizes[1], 200.0)
 
     def test_boolean_operation_aggregates_clone_selectors(self) -> None:
         spec_text = dedent(

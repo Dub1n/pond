@@ -130,10 +130,12 @@ def _axis_coverage(component: RelationshipComponent) -> Set[str]:
             axes.add(axis)
     run_between = component.run_between
     if run_between:
-        for axis, _ in _axes_from_pos(run_between.start_pos):
-            axes.add(axis)
-        for axis, _ in _axes_from_pos(run_between.end_pos):
-            axes.add(axis)
+        for relation in run_between.start_relations:
+            for axis, _ in _axes_from_pos(relation.subject):
+                axes.add(axis)
+        for relation in run_between.end_relations:
+            for axis, _ in _axes_from_pos(relation.subject):
+                axes.add(axis)
     return axes
 
 
@@ -160,9 +162,20 @@ def _lint_run_between(
     datum_bundles: Set[str],
     errors: List[str],
 ) -> None:
-    for target in (run_between.from_ref, run_between.to_ref):
-        if not _ref_known(target.ref, component_ids, datum_points, datum_planes, datum_bundles):
-            errors.append(f"component '{component.id}' run_between references unknown target '{target.ref}'")
+    if not run_between.start_relations:
+        errors.append(f"component '{component.id}' run_between requires a start axis-map")
+    if (run_between.count and run_between.count > 1 or run_between.pitch) and not run_between.end_relations:
+        errors.append(f"component '{component.id}' run_between requires an end axis-map when using count/pitch")
+    for relation in tuple(run_between.start_relations) + tuple(run_between.end_relations):
+        _lint_axis_relation(
+            relation,
+            component_ids=component_ids,
+            datum_points=datum_points,
+            datum_planes=datum_planes,
+            datum_bundles=datum_bundles,
+            errors=errors,
+            context=f"component '{component.id}' run_between",
+        )
     if run_between.orient not in {"preserve_axes", "along_run"}:
         errors.append(f"component '{component.id}' run_between uses unsupported orient '{run_between.orient}'")
 

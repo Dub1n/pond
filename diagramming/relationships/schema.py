@@ -406,10 +406,8 @@ class AxisRelation:
 
 @dataclass(slots=True)
 class RunBetweenSpec:
-    start_pos: PosToken
-    end_pos: PosToken
-    from_ref: AxisMapTarget
-    to_ref: AxisMapTarget
+    start_relations: Tuple[AxisRelation, ...]
+    end_relations: Tuple[AxisRelation, ...] = ()
     orient: str = "preserve_axes"
     count: Optional[int] = None
     pitch: Optional[float] = None
@@ -691,7 +689,12 @@ def _parse_size(raw: Any, dimensions: DimensionResolver) -> Tuple[Optional[float
         return (None, None, None)
     if not isinstance(raw, Sequence) or isinstance(raw, (str, bytes)):
         raise SchemaError("size must be a list when provided")
-    values = [_resolve_number(item, dimensions) for item in raw]
+    values = []
+    for item in raw:
+        if item is None:
+            values.append(None)
+        else:
+            values.append(_resolve_number(item, dimensions))
     if len(values) == 2:
         return (values[0], values[1], None)
     if len(values) == 3:
@@ -896,26 +899,26 @@ def _parse_run_between(payload: Any, dimensions: DimensionResolver) -> Optional[
         return None
     if not isinstance(payload, Mapping):
         raise SchemaError("run_between must be a mapping")
-    start_pos = payload.get("start_pos")
-    if start_pos is None:
-        raise SchemaError("run_between requires start_pos")
-    end_pos = payload.get("end_pos", start_pos)
-    from_raw = payload.get("from")
-    to_raw = payload.get("to")
-    if from_raw is None or to_raw is None:
-        raise SchemaError("run_between requires 'from' and 'to'")
+    start_raw = payload.get("start")
+    end_raw = payload.get("end")
+    if start_raw is None:
+        raise SchemaError("run_between requires a start axis-map")
+    if not isinstance(start_raw, Mapping):
+        raise SchemaError("run_between.start must be a mapping")
+    if end_raw is not None and not isinstance(end_raw, Mapping):
+        raise SchemaError("run_between.end must be a mapping when provided")
     orient = str(payload.get("orient", "preserve_axes"))
     count = payload.get("count")
     pitch = payload.get("pitch")
+    if (count is not None or pitch is not None) and end_raw is None:
+        raise SchemaError("run_between with count/pitch requires an end axis-map")
     inset = payload.get("inset", {}) or {}
     inset_start = _resolve_optional_number(inset.get("start"), dimensions) if isinstance(inset, Mapping) else None
     inset_end = _resolve_optional_number(inset.get("end"), dimensions) if isinstance(inset, Mapping) else None
     include_seed = bool(payload.get("include_seed", False))
     return RunBetweenSpec(
-        start_pos=canonical_pos_token(start_pos),
-        end_pos=canonical_pos_token(end_pos),
-        from_ref=_parse_axis_target(from_raw, dimensions),
-        to_ref=_parse_axis_target(to_raw, dimensions),
+        start_relations=tuple(_parse_axis_map(start_raw, dimensions)),
+        end_relations=tuple(_parse_axis_map(end_raw, dimensions)) if end_raw is not None else tuple(),
         orient=orient,
         count=int(count) if count is not None else None,
         pitch=_resolve_optional_number(pitch, dimensions),

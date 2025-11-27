@@ -332,19 +332,16 @@ components:
             datum: datums.planes.joist_top
             pos: +z
       - run_between:
-          start_pos: +y
-          end_pos: -y
-          from:
-            ref: datums.bundles.pond_faces
-            pos: +y
-          to:
-            ref: datums.bundles.pond_faces
-            pos: -y
+          start:
+            +y:
+              ref: datums.bundles.pond_faces
+              pos: +y
+          end:
+            -y:
+              ref: datums.bundles.pond_faces
+              pos: -y
           count: 7
           include_seed: true
-          inset:
-            start: dimensions.structure.cantilever + dimensions.structure.joist_width / 2
-            end: dimensions.structure.cantilever + dimensions.structure.joist_width / 2
 
   - use: assembly.rotate_quadrants
     with:
@@ -608,19 +605,17 @@ components:
       predefined_type: JOIST
     relate:
       - run_between:
-          start_pos: -x+y
-          end_pos: -x+y
-          from:
-            ref: datums.bundles.deck_faces
-            pos: -x+y
-          to:
-            ref: datums.bundles.opening_faces
-            pos: -x+y
+          start:
+            -x+y:
+              ref: datums.bundles.deck_faces
+              pos: -x+y
+          end:
+            -x+y:
+              ref: datums.bundles.opening_faces
+              pos: -x+y
           count: 1
           include_seed: true
           orient: along_run
-          inset:
-            start: dimensions.structure.corner_diagonal_length / 2
       - contact:
           subject:
             component: corner_diagonal_nw
@@ -642,19 +637,17 @@ components:
       predefined_type: JOIST
     relate:
       - run_between:
-          start_pos: +x+y
-          end_pos: +x+y
-          from:
-            ref: datums.bundles.deck_faces
-            pos: +x+y
-          to:
-            ref: datums.bundles.opening_faces
-            pos: +x+y
+          start:
+            +x+y:
+              ref: datums.bundles.deck_faces
+              pos: +x+y
+          end:
+            +x+y:
+              ref: datums.bundles.opening_faces
+              pos: +x+y
           count: 1
           include_seed: true
           orient: along_run
-          inset:
-            start: dimensions.structure.corner_diagonal_length / 2
       - contact:
           subject:
             component: corner_diagonal_ne
@@ -676,19 +669,17 @@ components:
       predefined_type: JOIST
     relate:
       - run_between:
-          start_pos: +x-y
-          end_pos: +x-y
-          from:
-            ref: datums.bundles.deck_faces
-            pos: +x-y
-          to:
-            ref: datums.bundles.opening_faces
-            pos: +x-y
+          start:
+            +x-y:
+              ref: datums.bundles.deck_faces
+              pos: +x-y
+          end:
+            +x-y:
+              ref: datums.bundles.opening_faces
+              pos: +x-y
           count: 1
           include_seed: true
           orient: along_run
-          inset:
-            start: dimensions.structure.corner_diagonal_length / 2
       - contact:
           subject:
             component: corner_diagonal_se
@@ -710,19 +701,17 @@ components:
       predefined_type: JOIST
     relate:
       - run_between:
-          start_pos: -x-y
-          end_pos: -x-y
-          from:
-            ref: datums.bundles.deck_faces
-            pos: -x-y
-          to:
-            ref: datums.bundles.opening_faces
-            pos: -x-y
+          start:
+            -x-y:
+              ref: datums.bundles.deck_faces
+              pos: -x-y
+          end:
+            -x-y:
+              ref: datums.bundles.opening_faces
+              pos: -x-y
           count: 1
           include_seed: true
           orient: along_run
-          inset:
-            start: dimensions.structure.corner_diagonal_length / 2
       - contact:
           subject:
             component: corner_diagonal_sw

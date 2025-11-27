@@ -38,18 +38,18 @@ place:
     +y: { ref: joist_run#1, pos: +y, gap: pad_size/2 - joist_width/2 }
     +z: { ref: pad_top, pos: +z }
 ```
-- `run_between` lays out arrays along a span:
+- `run_between` lays out arrays along a span using axis-map `start`/`end` (same shape as `relate`; single axis is fine):
 ```yaml
 run_between:
-  start_pos: +y
-  end_pos: -y
-  from: { ref: frame, pos: +y }
-  to:   { ref: frame, pos: -y }
+  start:
+    +y: { ref: frame, pos: +y }
+  end:
+    -y: { ref: frame, pos: -y }
   count: 7
   include_seed: true
-  inset: { start: cantilever + joist_width/2, end: cantilever + joist_width/2 }
   orient: along_run
 ```
+- Axes only present on one side apply to all clones; missing axes fall back to the component’s `relate`. When start/end provide face pairs, sizes are inferred and interpolated along the span, so no manual insets are needed to land faces on references.
 
 ## Operations & Selectors
 - Typed operations: `rotate`, `mirror`, `translate`, `boolean`.

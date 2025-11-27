@@ -424,8 +424,8 @@ class ConstraintSolver:
             refs.append(relation.target.ref)
         run_between = plan.run_between
         if run_between:
-            refs.append(run_between.from_ref.ref)
-            refs.append(run_between.to_ref.ref)
+            for relation in tuple(run_between.start_relations) + tuple(run_between.end_relations):
+                refs.append(relation.target.ref)
         for ref in refs:
             if resolver.coords_for_ref(ref) is None and ref not in component_states:
                 return False
@@ -474,6 +474,10 @@ class ConstraintSolver:
                 )
 
             size = list(component.size)
+            overrides = instance.get("size_overrides") or {}
+            for axis, value in overrides.items():
+                if axis in AXIS_ORDER:
+                    size[AXIS_ORDER[axis]] = value
             final_center: Dict[str, float] = {}
 
             for axis in ("x", "y", "z"):
@@ -556,10 +560,13 @@ class ConstraintSolver:
             name = plan.id if idx == 0 else f"{plan.id}#{idx}"
             origin_kind = "original" if idx == 0 and run_between.include_seed else "clone"
             orientation = base_orientation
+            if run_between.orient == "along_run":
+                orientation = _orientation_from_direction(pos.get("direction", (1.0, 0.0, 0.0)), twist_deg=base_rotation)
             instances.append(
                 {
                     "id": name,
                     "preset_axes": pos["axis_values"],
+                    "size_overrides": pos.get("size_overrides", {}),
                     "orientation": orientation,
                     "origin": origin_kind,
                 }
@@ -598,6 +605,9 @@ class ConstraintSolver:
                     target_sign = subject_sign
                 elif 0 in target_axes[axis]:
                     target_sign = 0
+                else:
+                    # Fall back to the first explicit sign provided on the target
+                    target_sign = sorted(target_axes[axis])[0]
             coord = resolver.axis_coordinate(relation.target.ref, axis, target_sign)
             if coord is None:
                 diagnostics.add_error(
@@ -688,32 +698,54 @@ class ConstraintSolver:
         resolver: ReferenceResolver,
         diagnostics: SolveDiagnostics,
     ) -> List[Dict[str, Any]]:
-        start_axes = _axes_from_pos(clause.start_pos)
-        end_axes = _axes_from_pos(clause.end_pos)
-        axes_present = {axis for axis, _ in start_axes} | {axis for axis, _ in end_axes}
+        component = plan.component
+
+        def _resolved_axes(relations: Tuple[AxisRelation, ...], label: str) -> Tuple[Dict[str, float], Dict[str, float]]:
+            axis_states = {axis: AxisState() for axis in ("x", "y", "z")}
+            constrained: set[str] = set()
+            for relation in relations:
+                for axis, _ in _axes_from_pos(relation.subject):
+                    constrained.add(axis)
+                self._apply_axis_relation(
+                    component,
+                    axis_states,
+                    relation,
+                    resolver,
+                    diagnostics,
+                    instance_id=label,
+                )
+            centers: Dict[str, float] = {}
+            sizes: Dict[str, float] = {}
+            for axis in constrained:
+                explicit = component.size[AXIS_ORDER[axis]]
+                center_value, size_value = self._resolve_axis_state(
+                    component,
+                    axis,
+                    axis_states[axis],
+                    explicit,
+                    diagnostics,
+                    allow_default_zero=False,
+                    instance_id=label,
+                )
+                centers[axis] = center_value
+                sizes[axis] = size_value
+            return centers, sizes
+
+        start_centers, start_sizes = _resolved_axes(clause.start_relations, f"{plan.id}@start")
+        end_relations = clause.end_relations if clause.end_relations else clause.start_relations
+        end_centers, end_sizes = _resolved_axes(end_relations, f"{plan.id}@end")
+
+        axes_present = set(start_centers.keys()) | set(end_centers.keys())
         if not axes_present:
-            axes_present = {axis for axis, _ in start_axes} or {"x", "y", "z"}
+            axes_present = {"x", "y", "z"}
 
-        def point_for(target: AxisMapTarget, axes: List[Tuple[str, int]]) -> Dict[str, float]:
-            coords: Dict[str, float] = {"x": 0.0, "y": 0.0, "z": 0.0}
-            for axis, sign in axes:
-                value = resolver.axis_coordinate(target.ref, axis, sign)
-                if value is None:
-                    diagnostics.add_error(
-                        f"component '{plan.id}' run_between references unknown target '{target.ref}' on {axis}",
-                        subject=plan.id,
-                    )
-                    continue
-                coords[axis] = value
-            return coords
-
-        start_point = point_for(clause.from_ref, start_axes)
-        end_point = point_for(clause.to_ref, end_axes if end_axes else start_axes)
+        start_point = {axis: start_centers.get(axis, 0.0) for axis in ("x", "y", "z")}
+        end_point = {axis: end_centers.get(axis, start_point[axis]) for axis in ("x", "y", "z")}
 
         direction = (
-            end_point.get("x", 0.0) - start_point.get("x", 0.0),
-            end_point.get("y", 0.0) - start_point.get("y", 0.0),
-            end_point.get("z", 0.0) - start_point.get("z", 0.0),
+            end_point["x"] - start_point["x"],
+            end_point["y"] - start_point["y"],
+            end_point["z"] - start_point["z"],
         )
         length = math.sqrt(direction[0] ** 2 + direction[1] ** 2 + direction[2] ** 2)
         if length <= 1e-6:
@@ -729,7 +761,11 @@ class ConstraintSolver:
         effective_length = max(length - inset_start - inset_end, 0.0)
 
         positions: List[float] = []
-        if clause.count:
+        if clause.count == 1:
+            positions = [inset_start + effective_length / 2]
+            if not clause.include_seed:
+                positions = []
+        elif clause.count:
             total = max(clause.count, 1)
             step = effective_length / max(total - 1, 1)
             positions = [inset_start + step * i for i in range(total)]
@@ -754,14 +790,20 @@ class ConstraintSolver:
         instances: List[Dict[str, Any]] = []
         axis_order = {"x": 0, "y": 1, "z": 2}
         for offset in positions:
-            axis_values = {
-                axis: start_point.get(axis, 0.0) + unit[axis_order[axis]] * offset
-                for axis in axes_present
-            }
+            axis_values = {}
+            size_overrides: Dict[str, float] = {}
+            fraction = min(max(offset / length, 0.0), 1.0) if length > 1e-6 else 0.0
+            for axis in axes_present:
+                axis_values[axis] = start_point.get(axis, 0.0) + unit[axis_order[axis]] * offset
+                start_size = start_sizes.get(axis)
+                end_size = end_sizes.get(axis, start_size)
+                if start_size is not None and end_size is not None:
+                    size_overrides[axis] = start_size + (end_size - start_size) * fraction
             instances.append(
                 {
                     "axis_values": axis_values,
                     "direction": direction,
+                    "size_overrides": size_overrides,
                 }
             )
         return instances
