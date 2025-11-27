@@ -193,15 +193,8 @@ components:
     material: joist
     label: "Corner diagonal"
     relate:
-      +x+y-x-y:
-        ref: deck_frame
-        pos: -x+y-x-y
-      +x+y:
-        ref: opening_frame
-        pos: -x+y
-        offset:
-          +x: corner_diagonal_length / 2
-          +y: -corner_diagonal_length / 2
+      cx: { ref: opening_frame, pos: -x }  # anchor X to opening centerline
+      +y: { ref: deck_frame, pos: +y }    # anchor Y to deck edge
       +z: { ref: joist_top, pos: +z }
     ifc:
       predefined_type: JOIST
