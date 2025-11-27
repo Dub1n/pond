@@ -1,124 +1,73 @@
-# Pond Diagramming – Phase 1 Architecture Spec
+# Pond Diagramming – Relationship-First Architecture
 
 ## Overview
 
-Phase 1 delivers a deterministic 2D pipeline that converts declarative YAML specs into SVG (and optional PNG) diagrams. The goal is to minimise hand-tuned geometry while keeping the stack lightweight and easy to extend in later phases. A relationship-first loader/solver now exists in `diagramming/relationships` (feature-flagged via `DIAGRAM_RELATIONSHIPS=1`) to stage the next-generation schema; behind the flag it resolves neutral CadQuery-backed box primitives, projects plan/sections, and feeds the existing renderers, while the legacy planner remains the default for non-relationship specs.
+The stack now centres on a relationship-first schema and constraint solver that emit neutral CadQuery-backed primitives. Axis-map relations replace legacy anchor DSLs, making placement explicit and IFC-ready. Legacy specs still load, but relationship specs (schema prefix `pond-relationship*`, flag `DIAGRAM_RELATIONSHIPS=1`) are the canonical path forward.
 
-```diagram
-YAML spec ──> Schema loader ──> DiagramPlanner ──> GeometryBundle ──> SVG/PNG/GLB files
+```text
+YAML (relationship schema)
+    │
+    ▼
+Schema loader (axis-map parsing, size inference)
+    │
+    ▼
+Constraint solver (CadQuery solids + diagnostics)
+    │
+    ├─► Plan/section footprints (Shapely)
+    ├─► CadQuery solids (OCC)
+    └─► Metadata (IFC/glTF-ready)
+            │
+            ├─► Renderers (SVG/PNG)
+            ├─► glTF/GLB
+            ├─► IFC 4.3 Reference View
+            └─► STEP/OBJ (via OCC)
 ```
 
-- **Schema layer (`diagramming/schema/`)** parses and validates author input.
-- **Planner (`diagramming/planner/`)** resolves anchoring/repeats with Shapely geometries and emits reusable primitives (2D + 2.5D metadata).
-- **Renderer (`diagramming/renderers/`)** serialises primitives to SVG, with shared styles and legend rendering.
-- **CLI (`scripts/build_diagrams.py`)** orchestrates builds across specs/options and produces artefacts under `diagrams/output/` (SVG/PNG plus glTF/GLB models).
-- **Validation harness (`scripts/lint_specs.py` + `diagramming/relationships/validation.py`)** executes solver + IFC export, enforces IFC/unit constraints, detects collisions, and emits mesh checksums for regression gates.
+Core traits:
+- Axis-map relates with explicit `ref`/`pos`/`gap`/`offset`/`mode` (plane|edge|point), frame-aware (`world`/`local`/`component:<id>`).
+- Center tokens (`cx`, `cy`, `cz`, `~x`, etc.) in keys and targets.
+- Reference components (`kind: reference`) are geometry-less anchors with lenient defaults; components infer missing size axes from relation pairs, linting conflicts when explicit sizes disagree.
+- `run_between` spans accept components or references, center tokens in `start_pos`/`end_pos`, `orient: along_run` aligns local +X to the span.
+- `flush` sugar expands to axis-map entries (`faces: all` default, scalar or per-face inset).
+- `place` blocks embed per-placement axis-maps; no nested `relate`.
+- Aggregate selectors (`id`, `id.original`, `id.clones`) apply everywhere component lists are accepted, including typed `operations` (`rotate`, `mirror`, `translate`, `boolean`).
+- Deterministic GUIDs seeded from template/instance IDs; rotation id-maps remap numbered instances.
 
-## Schema Layer
+## Schema Loader
+- Resolves dimensions/expressions (`dimensions.*`) and registers unique leaf aliases.
+- Parses axis-map blocks for components, placements, and checks; supports `mode`, `gap`/`offset` as scalars or axis maps, center tokens, and frames.
+- Size inference: paired axes in relates fill missing `size`; conflicts lint unless equal.
+- Operations: typed blocks with selector support and id maps for rotations.
+- Validation hooks for missing axes (components only), bad selectors, frame targets, and inferred-size conflicts.
 
-### Responsibilities
+## Constraint Solver
+- Expands placements and selectors into explicit instances.
+- Applies axis-map relations with size inference, honoring center placements and per-axis gaps/offsets.
+- `run_between` generates spaced instances along spans; `orient: along_run` produces aligned orientations.
+- Typed operations clone transforms with deterministic IDs; boolean ops attach void references.
+- Emits neutral primitives: CadQuery solids (box/wedge/sweep) + metadata, deterministic GUIDs, stored footprints/meshes.
+- Collision detection via OCC intersections; severity set by `DIAGRAM_RELATIONSHIPS_COLLISIONS`.
+- Diagnostics: errors/warnings, DOF records, check results, constraint graph.
 
-- Parse YAML mappings into dataclasses (`RectangleComponent`, `PolylineComponent`, etc.).
-- Provide validation for required fields, anchor structure (including orphan detection), repeat spacing, and duplicate IDs.
-- Expose `DiagramSpec` with named options and view metadata.
-- Honour optional `scale` (pixels per unit) so render outputs can be resized without changing geometry, plus per-view overrides (`pad`, `scale`, `background`).
-- Views may declare a slicing plane (`plane.axis` + `plane.coordinate`) so sections are cut from the canonical 3D model instead of being hand-authored (`axis: x` slices along the Y direction, `axis: y` slices along the X direction).
-- Normalise anchoring aliases (`attach`, `attach_edge`, `attach_face`) plus the `placement.flush.edge` helper in XY and the new `vertical.flush.face` shorthand in Z so face-to-face snaps stay declarative and immune to width tweaks.
-- Extend repeat parsing to accept `direction` + `interval`/`span` combinations, letting authors derive spacing or counts from spans without hard-coding XY vectors.
-- Accept optional `metadata`, `traits`, and future `height` fields without affecting Phase 1 output, while evaluating numeric metadata expressions against option-level dimensions (e.g., `elevation: -pad_height`).
-- Accept optional `ifc` blocks (`predefined_type`, `psets`) on components and preserve them in feature/mesh metadata to prep IFC exports.
-- Support component-driven boolean cutouts via `boolean.subtract`, letting rectangles reference other component IDs (and their repeats/rotations) as subtraction masks.
+## Planner & Renderers
+- RelationshipPlanner projects plan footprints/section slices from solver primitives, deriving dimension polylines from solved extents.
+- GeometryBundle carries polygons/polylines, legend data, and the canonical `trimesh.Scene`.
+- SVG renderer consumes bundles; PNG snapshots via cairosvg when available. Styling stays shared across legacy/relationship paths.
 
-### Key types
+## Exporters
+- glTF/GLB via tessellated solids with metadata in `extras`.
+- IFC 4.3 Reference View: mm/deg units, Model/Axis/Body contexts, predefined types/material usages mapped from schema, openings via `IfcRelVoidsElement`, axis curves for linear members, deterministic GUIDs.
+- STEP/OBJ reuse CadQuery solids; OBJ remains a tessellated fallback.
 
-- `Anchor`: Declarative alignment (ref component, alignment key, optional offset).
-- `Repeat`: Linear replication metadata, including optional `rotate` (degrees) and `about` anchors for radial copies.
-- `OptionSpec`: Bundles components and per-view configuration.
-
-### Extensibility
-
-- New primitives are introduced by implementing `from_dict` constructors and updating `_parse_component`. Heavy validation is deferred to Phase 2 when schema tooling is added.
-
-## Planner Layer
-
-### Planner Responsibilities
-
-- Resolve component origins via explicit coordinates or anchor relationships.
-- Expand repeats, rotations, and cut-outs while keeping bounding boxes for downstream anchoring.
-- Apply rotate and mirror operations after components resolve so symmetry transforms reuse the same geometry without duplicate YAML.
-- Apply boolean subtraction when components declare `boolean.subtract`, unioning the referenced components’ geometry (including repeats and rotated clones) before removing it from the host component.
-- Build `GeometryBundle` with polygon/polyline features plus legend metadata and 3D traits (height, elevation, material). Each option caches a Shapely-/trimesh-backed scene reused by all views and exporters.
-- Slice section views directly from the cached scene: a `plane.axis` (`x` or `y`) plus `plane.coordinate` defines the cut, and only components that list the section in their `views` set are considered. Labels are de-duplicated to avoid repeated callouts for repeated geometry.
-- In relationship mode, annotate plan/section bundles with arrowed dimension polylines derived from solved extents so callouts stay aligned with solids.
-
-### Important classes
-
-- `DiagramPlanner`: Public entry point (`plan(option, view)` → `PlannedView`).
-- `ViewContext`: Tracks resolved components for anchor lookups.
-- `GeometryBundle`: Collects features, pad size, legend entries.
-
-### Behaviour notes
-
-- Coordinates are kept in millimetres; origin defaults to `(0, 0)` when no anchor is provided.
-- Components may declare `rotation` plus an optional `rotation_anchor`; the planner resolves the pivot via `Anchor` semantics and applies the transform with Shapely.
-- Option-level `operations` (currently `rotate`) run after base geometry resolves, cloning groups of components around an anchor so mirrored layouts do not require duplicated YAML.
-- `PolygonFeature` tracks Shapely polygons (with optional holes) and stores `height`/`elevation` so downstream exporters can extrude directly.
-- Vertical placement data (`component.vertical`) is resolved against recorded elevations so pads, beams, and even zero-height datums can align in Z without hard-coded offsets.
-- Legends are auto-built from unique `(label, label_id)` pairs.
-- STEP/IFC/OBJ exporters and wedge/sweep profiles now extend the CadQuery solids produced by the relationship path; see `roadmap.md` for the current implementation checkpoints before embedding heavier kernels elsewhere.
-
-## Rendering Layer
-
-### Rendering Responsibilities
-
-- Convert `GeometryBundle` into SVG paths and polylines.
-- Apply shared CSS (`diagramming/renderers/styles/base.css`).
-- Apply per-material styling (`diagramming/materials.py`) so SVG fills and glTF colours stay in sync.
-- Add accessible metadata (`aria-label`, optional `<title>`), enforce a configurable background fill, and size legend typography proportionally to diagram width for consistent readability.
-- Labels render for every resolved component (including repeats and rotated clones) so mirrored geometry carries its own tag; the legend still deduplicates entries.
-- Optional orthographic renderer (`render_orthographic_png`) reuses the canonical `trimesh.Scene`, pushing it through pyrender's off-screen pipeline to produce `orthographic.png` snapshots without touching the SVG stack.
-- Plan views execute a two-pass layering routine: first pass clips each polygon against the union of higher-elevation coverage so buried members drop their fill, then a dedicated hidden pass replays the full footprint with dashed strokes (beams are temporarily forced to green for debug sessions).
-- Dimension polylines render with arrow markers and labels when provided by the bundle (relationship mode), keeping annotations consistent with plan/section geometry.
-
-### PNG Support
-
-- PNG snapshots are produced via `cairosvg` when installed. The renderer itself is agnostic; the CLI handles conversion.
-
-## CLI Workflow
-
-1. Discover specs (default: every `*.yaml` in `diagrams/specs/`).
-2. For each option + view, call `DiagramPlanner.plan` and render SVG.
-3. Write SVG to `diagrams/output/<spec>/<option>/<view>.svg`.
-4. Unless `--no-png` is passed (or `cairosvg` is missing), emit matching PNG using the rendered SVG string.
-5. Unless `--no-gltf` is passed, extrude plan geometry via `trimesh` and write `model.glb` (or `.gltf`) alongside the option.
-6. When `DIAGRAM_RELATIONSHIPS=1` is set and a spec declares `schema: pond-relationship*`, load via `diagramming.relationships`, solve to neutral CadQuery-backed solids (box/wedge/sweep) with deterministic GUID seeds, detect collisions (severity tunable via `DIAGRAM_RELATIONSHIPS_COLLISIONS`), project plan/section footprints via `RelationshipPlanner`, and reuse the same SVG/PNG/glTF/IFC pipeline. IFC exports target IFC4X3 Reference View with Model/Axis/Body contexts, mm/deg units, swept solids where possible, material usages, openings, mapped items, and connection geometry. Assembly helpers such as `assembly.rotate_quadrants` and `assembly.linear_bracing` are expanded in-solver, `relate_from` clones constraint sets with overrides, and align/contact/flush clauses now honour `world`/`local`/`component:<id>` frames. Linear `run_between` clauses lay out arrays against datum/bundle faces (including 3D `orient: along_run`), relationship components supply explicit 3D `size` vectors, checks accept `on_fail: warn`, section slices flip Z internally to render upright, and lint/CI can compare OCC-derived SVG hashes against the legacy planner. Rotated clones keep alignment gaps stable when faces stay on the same axis, flip them only when a sign change crosses axes with opposing faces, and remap numbered-instance references (e.g. `foo#1`) to their rotated counterparts.
-
-### Command-Line Flags
-
-- `--spec`: repeatable, target specific specs.
-- `--option`: repeatable, limit to certain options (case-sensitive).
-- `--outdir`: override output root; defaults to `diagrams/output`.
-- `--no-png`: skip PNG generation.
-- `--no-gltf`: skip glTF/GLB export (produced by default).
-- `--gltf-format`: choose `glb` (default) or `gltf` container.
+## CLI & Tooling
+- `scripts/build_diagrams.py` orchestrates renders/exports; `--no-png`, `--no-gltf`, `--no-ifc`, `--gltf-format` flags apply to both pipelines.
+- `scripts/lint_specs.py` runs schema + solver + IFC validation (units, contexts, predefined types/material usages, RelVoids wiring, collisions) and emits mesh digests.
+- Baseline freshness: pair render scripts with `scripts/baseline_render_check.py --fresh-check`.
 
 ## Testing
+- Relationship tests cover axis-map parsing (center tokens, size inference), solver placements/operations/booleans, planner integration, and validation harness checksums.
+- Legacy tests remain for anchor DSL regressions. Run `python -m unittest discover` from an activated venv.
 
-`python3 -m unittest` exercises:
-
-- Schema loading (`diagramming/tests/test_schema.py`).
-- Planner geometry and anchoring (`diagramming/tests/test_planner.py`).
-- SVG renderer output (`diagramming/tests/test_renderer.py`).
-- Raster regression (`RendererTests.test_hidden_beam_overlay_visible_without_fill`) converts plan SVG to PNG to assert hidden overlays remain visible while structural fills are fully masked by decking.
-- CLI integration (`diagramming/tests/test_cli.py`).
-
-Fixtures currently rely on the `deck-framing` spec; future phases can add dedicated fixtures under `diagramming/tests/fixtures/`.
-
-## Phase 2 Hooks
-
-The following seams were left to simplify upgrades:
-
-- `GeometryBundle` already separates polygons and polylines for additional exporters (GeoJSON, glTF).
-- CLI wiring anticipates more exporters; guard rails for missing dependencies are in place.
-- Schema/primitives stored as dataclasses to support future `pydantic`/`jsonschema` validation upgrades.
-- `GeometryBundle.scene` exposes the canonical `trimesh.Scene` so new exporters (GeoJSON, IFC) can reuse the same geometry without re-running the planner; mesh digests and dual-render hashes are available for regression checks.
+## Migration Notes
+- Relationship schema supersedes legacy anchors/flush_bundle/align/contact; keep legacy path only for archived specs.
+- Specs adopting relationship mode should use axis-map relates, references, `place`, `run_between`, and typed `operations` for booleans/rotations instead of legacy helpers.

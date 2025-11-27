@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import math
 import uuid
-from dataclasses import dataclass, field, replace
+from dataclasses import dataclass, field
 from typing import Any, Dict, Iterable, List, Mapping, Optional, Sequence, Tuple
 
 import cadquery as cq
@@ -12,25 +12,22 @@ import trimesh
 
 from .schema import (
     AXIS_ORDER,
-    AlignmentClause,
-    AlignmentTarget,
-    FlushBundleClause,
-    FlushFace,
-    IfcMetadata,
-    RelateFromClause,
+    AxisRelation,
+    AxisMapTarget,
+    BooleanOperation,
+    MirrorOperation,
     RelationshipComponent,
     RelationshipDiagramSpec,
-    RunBetweenClause,
+    RotateOperation,
+    RunBetweenSpec,
+    TranslateOperation,
     canonical_pos_token,
-    RepeatSpec,
 )
-from ..ifc import normalize_ifc_class, normalize_ifc_predefined_type
 from .flags import collision_handling_mode
 
 
 GUID_NAMESPACE = uuid.UUID("6c7b3d9e-4f21-4b06-9fbf-2a6e2d6a8b2c")
 
-AxisSign = int
 AxisName = str
 MM_TO_METERS = 0.001
 OrientationMatrix = Tuple[Tuple[float, float, float], Tuple[float, float, float], Tuple[float, float, float]]
@@ -41,42 +38,31 @@ IDENTITY_ORIENTATION: OrientationMatrix = (
 )
 
 
-def _axes_from_pos(pos_token: str) -> List[Tuple[AxisName, AxisSign]]:
-    axes: List[Tuple[AxisName, AxisSign]] = []
+def _axes_from_pos(pos_token: str) -> List[Tuple[str, int]]:
+    axes: List[Tuple[str, int]] = []
     token = pos_token.strip()
-    if len(token) % 2 != 0:
+    if len(token) < 2:
         return axes
-    for i in range(0, len(token), 2):
-        sign_char = token[i]
-        axis = token[i + 1]
+    idx = 0
+    while idx < len(token):
+        if token[idx] == "c":
+            axes.append((token[idx + 1], 0))
+            idx += 2
+            continue
+        sign_char = token[idx]
+        axis = token[idx + 1]
         sign = 1 if sign_char == "+" else -1
         axes.append((axis, sign))
+        idx += 2
     return axes
 
 
-def _half_size(component: RelationshipComponent, axis: str) -> float:
+def _half_size(size: Tuple[float, float, float], axis: str) -> float:
     if axis == "x":
-        return component.size_xy[0] / 2
+        return size[0] / 2
     if axis == "y":
-        return component.size_xy[1] / 2
-    return component.height / 2
-
-
-def _component_size(component: RelationshipComponent) -> Tuple[float, float, float]:
-    return (component.size_xy[0], component.size_xy[1], component.height)
-
-
-def _ifc_to_dict(ifc: Optional[IfcMetadata]) -> Optional[Dict[str, object]]:
-    if ifc is None:
-        return None
-    return ifc.to_dict()
-
-
-def _normalise_vector(vec: Tuple[float, float, float]) -> Tuple[float, float, float]:
-    length = math.sqrt(vec[0] ** 2 + vec[1] ** 2 + vec[2] ** 2)
-    if length <= 1e-9:
-        return (0.0, 0.0, 0.0)
-    return (vec[0] / length, vec[1] / length, vec[2] / length)
+        return size[1] / 2
+    return size[2] / 2
 
 
 def _axis_vector(orientation: OrientationMatrix, axis: str) -> Tuple[float, float, float]:
@@ -156,6 +142,13 @@ def _world_axis_component(axis: str, vector: Tuple[float, float, float]) -> floa
     return vector[idx]
 
 
+def _normalise_vector(vec: Tuple[float, float, float]) -> Tuple[float, float, float]:
+    length = math.sqrt(vec[0] ** 2 + vec[1] ** 2 + vec[2] ** 2)
+    if length <= 1e-9:
+        return (0.0, 0.0, 0.0)
+    return (vec[0] / length, vec[1] / length, vec[2] / length)
+
+
 @dataclass(slots=True)
 class Diagnostic:
     level: str
@@ -204,6 +197,8 @@ class ComponentState:
     transform: ComponentTransform
     class_name: Optional[str]
     orientation: OrientationMatrix
+    template_id: str
+    origin: str = "original"
 
 
 @dataclass(slots=True)
@@ -226,7 +221,7 @@ class NeutralPrimitive:
     guid: str
     solid: Optional[Any] = None
     footprint: Optional[ShapelyPolygon] = None
-    mesh: Optional[trimesh.Trimesh] = None
+    mesh: Optional[Any] = None
     ifc: Optional[Dict[str, object]] = None
     connections: Tuple[ConnectionHint, ...] = ()
     voids: Tuple[str, ...] = ()
@@ -239,6 +234,9 @@ class SolvedComponent:
     transform: ComponentTransform
     primitive: NeutralPrimitive
     guid: str
+    template_id: str
+    origin: str = "original"
+    seed_id: Optional[str] = None
 
 
 @dataclass(slots=True)
@@ -250,25 +248,32 @@ class SolveResult:
 
 
 @dataclass(slots=True)
-class InstanceState:
-    name: str
-    axis_values: Dict[str, float] = field(default_factory=dict)
-    rotation_z: float = 0.0
-    orientation: OrientationMatrix = IDENTITY_ORIENTATION
-    connections: List[ConnectionHint] = field(default_factory=list)
-    soft_axes: set[str] = field(default_factory=set)
+class InstancePlan:
+    id: str
+    template_id: str
+    component: RelationshipComponent
+    relations: Tuple[AxisRelation, ...]
+    run_between: Optional[RunBetweenSpec]
+    origin: str = "original"
+    seed_id: Optional[str] = None
+
+
+@dataclass(slots=True)
+class AxisState:
+    center: Optional[float] = None
+    faces: Dict[int, float] = field(default_factory=dict)
+    size: Optional[float] = None
+    locked_center: bool = False
 
 
 class ReferenceResolver:
     def __init__(
         self,
-        spec: RelationshipDiagramSpec,
         component_states: Mapping[str, ComponentState],
         datum_points: Mapping[str, Dict[str, float]],
         datum_planes: Mapping[str, Dict[str, float]],
         datum_bundles: Mapping[str, Dict[str, object]],
     ) -> None:
-        self.spec = spec
         self.component_states = component_states
         self.datum_points = datum_points
         self.datum_planes = datum_planes
@@ -300,6 +305,8 @@ class ReferenceResolver:
             axis_vec = _axis_vector(orientation, axis)
             half = state.size[idx] / 2 * _world_axis_component(axis, axis_vec)
             base = state.transform.position[idx]
+            if sign == 0:
+                return base
             return base + sign * half
 
         if ref in self.datum_bundles:
@@ -309,7 +316,7 @@ class ReferenceResolver:
             if axis not in origin:
                 return None
             base = origin.get(axis, 0.0)
-            if sign > 0:
+            if sign >= 0:
                 return base + span.get(f"+{axis}", span.get(axis, 0.0))
             return base
 
@@ -327,323 +334,45 @@ class ReferenceResolver:
 class ConstraintSolver:
     """
     Resolves relationship-first specs into deterministic transforms and neutral
-    primitives. Supports box, wedge, and swept profiles backed by CadQuery
-    solids for downstream exporters.
+    primitives using the axis-map schema shape.
     """
 
     def __init__(self, spec: RelationshipDiagramSpec) -> None:
         self.spec = spec
         self.components = list(spec.components)
         self.components_by_id: Dict[str, RelationshipComponent] = {component.id: component for component in self.components}
-        self.rotation_index = self._rotation_index(spec)
-        self._apply_assemblies()
         self.datum_points = self._build_points(spec)
         self.datum_planes = self._build_planes(spec)
         self.datum_bundles = self._build_bundles(spec, self.datum_points, self.datum_planes)
         self.collision_mode = collision_handling_mode()
-
-    def _rotation_index(self, spec: RelationshipDiagramSpec) -> Dict[str, Dict[int, str]]:
-        index: Dict[str, Dict[int, str]] = {}
-        for component in spec.components:
-            index.setdefault(component.id, {})[0] = component.id
-        for assembly in spec.assemblies:
-            if assembly.template != "assembly.rotate_quadrants":
-                continue
-            source_id = assembly.args.get("source")
-            ids = assembly.args.get("ids", {}) or {}
-            if not source_id:
-                continue
-            mapping = index.setdefault(source_id, {})
-            mapping[0] = source_id
-            mapping[3] = ids.get("north", mapping.get(3))
-            mapping[2] = ids.get("east", mapping.get(2))
-            mapping[1] = ids.get("south", mapping.get(1))
-            # Also track rotated copies of numbered instances that come from repeats/run_between.
-            for comp in spec.components:
-                if not comp.id.startswith(f"{source_id}#"):
-                    continue
-                idx_text = comp.id.split("#", 1)[1]
-                for turns in (0, 1, 2, 3):
-                    mapped_base = mapping.get(turns, source_id)
-                    index.setdefault(comp.id, {})[turns] = f"{mapped_base}#{idx_text}"
-        return index
-
-    def _apply_assemblies(self) -> None:
-        if not self.spec.assemblies:
-            return
-        for assembly in self.spec.assemblies:
-            if assembly.template == "assembly.rotate_quadrants":
-                source_id = assembly.args.get("source")
-                ids = assembly.args.get("ids", {}) or {}
-                about = assembly.args.get("about", {}) or {}
-                axis = str(about.get("axis", "+z")).lower()
-                if axis not in {"+z", "z"}:
-                    continue
-                source = self.components_by_id.get(source_id or "")
-                if source is None:
-                    continue
-                turns_map = {"north": 3, "east": 2, "south": 1}
-                for direction, turns in turns_map.items():
-                    new_id = ids.get(direction)
-                    if not new_id:
-                        continue
-                    rotated = self._rotate_component(source, new_id, turns)
-                    self.components.append(rotated)
-                    self.components_by_id[new_id] = rotated
-            elif assembly.template == "assembly.linear_bracing":
-                new_component = self._build_linear_bracing(assembly)
-                if new_component is not None:
-                    self.components.append(new_component)
-                    self.components_by_id[new_component.id] = new_component
-
-    def _rotate_component(self, component: RelationshipComponent, new_id: str, turns: int) -> RelationshipComponent:
-        turns = turns % 4
-
-        def rotate_token(token: str) -> str:
-            axes = _axes_from_pos(token)
-            rotated: List[Tuple[str, int]] = []
-            for axis, sign in axes:
-                if axis == "x":
-                    if turns == 0:
-                        rotated.append(("x", sign))
-                    elif turns == 1:
-                        rotated.append(("y", sign))
-                    elif turns == 2:
-                        rotated.append(("x", -sign))
-                    elif turns == 3:
-                        rotated.append(("y", -sign))
-                elif axis == "y":
-                    if turns == 0:
-                        rotated.append(("y", sign))
-                    elif turns == 1:
-                        rotated.append(("x", -sign))
-                    elif turns == 2:
-                        rotated.append(("y", -sign))
-                    elif turns == 3:
-                        rotated.append(("x", sign))
-                else:
-                    rotated.append((axis, sign))
-            rotated.sort(key=lambda item: AXIS_ORDER[item[0]])
-            return "".join(f"{'+' if sign > 0 else '-'}{axis}" for axis, sign in rotated)
-
-        def map_ref(ref: str) -> str:
-            rotations = self.rotation_index.get(ref)
-            if rotations is None:
-                if "#" in ref:
-                    base, suffix = ref.split("#", 1)
-                    rotations = self.rotation_index.get(base)
-                    if rotations is None:
-                        return ref
-                    mapped_base = rotations.get(turns, base)
-                    return f"{mapped_base}#{suffix}"
-                return ref
-            return rotations.get(turns, ref)
-
-        def rotate_alignment(target: AlignmentTarget) -> AlignmentTarget:
-            return AlignmentTarget(ref=map_ref(target.ref), pos=rotate_token(target.pos), frame=target.frame)
-
-        rotated_relationships: List[AlignmentClause | FlushBundleClause | RunBetweenClause | RelateFromClause] = []
-        for clause in component.relationships:
-            if isinstance(clause, AlignmentClause):
-                gap = clause.gap
-                # Preserve physical inset when axis sign flips during rotation.
-                subject_axes_before = _axes_from_pos(clause.subject.pos)
-                subject_axes_after = _axes_from_pos(rotate_token(clause.subject.pos))
-                object_axes_before = _axes_from_pos(clause.obj.pos)
-                if (
-                    len(subject_axes_before) == len(subject_axes_after) == len(object_axes_before) == 1
-                    and subject_axes_before[0][1] != subject_axes_after[0][1]
-                    and subject_axes_before[0][0] != subject_axes_after[0][0]
-                    and subject_axes_before[0][1] != object_axes_before[0][1]
-                ):
-                    gap = -gap
-                rotated_relationships.append(
-                    AlignmentClause(
-                        kind=clause.kind,
-                        subject=rotate_alignment(clause.subject),
-                        obj=rotate_alignment(clause.obj),
-                        gap=gap,
-                        tolerance=clause.tolerance,
-                        on_fail=clause.on_fail,
-                    )
-                )
-            elif isinstance(clause, FlushBundleClause):
-                faces: List[FlushFace] = []
-                for face in clause.faces:
-                    faces.append(FlushFace(subject=rotate_token(face.subject), obj=rotate_token(face.obj)))
-                inset_subject = {rotate_token(face): value for face, value in clause.inset_subject.items()}
-                inset_object = {rotate_token(face): value for face, value in clause.inset_object.items()}
-                rotated_relationships.append(
-                    FlushBundleClause(
-                        bundle=map_ref(clause.bundle),
-                        faces=tuple(faces),
-                        inset_subject=inset_subject,
-                        inset_object=inset_object,
-                        frame=clause.frame,
-                    )
-                )
-            elif isinstance(clause, RunBetweenClause):
-                rotated_relationships.append(
-                    RunBetweenClause(
-                        start_pos=rotate_token(clause.start_pos),
-                        end_pos=rotate_token(clause.end_pos),
-                        from_ref=rotate_alignment(clause.from_ref),
-                        to_ref=rotate_alignment(clause.to_ref),
-                        orient=clause.orient,
-                        count=clause.count,
-                        pitch=clause.pitch,
-                        inset_start=clause.inset_start,
-                        inset_end=clause.inset_end,
-                        include_seed=clause.include_seed,
-                    )
-                )
-            else:
-                rotated_relationships.append(clause)
-
-        repeat = component.repeat
-        rotated_repeat = repeat
-        if repeat is not None:
-            rotated_axis = rotate_token(repeat.axis)
-            rotated_repeat = RepeatSpec(
-                axis=rotated_axis,
-                span_use=map_ref(repeat.span_use) if repeat.span_use else None,
-                pitch=repeat.pitch,
-                count=repeat.count,
-                inset_start=repeat.inset_start,
-                inset_end=repeat.inset_end,
-                include_seed=repeat.include_seed,
-            )
-
-        metadata = dict(component.metadata)
-        base_rotation = float(metadata.get("_rotation_z", 0.0))
-        metadata["_rotation_z"] = base_rotation
-
-        size_xy = component.size_xy if turns % 2 == 0 else (component.size_xy[1], component.size_xy[0])
-
-        return RelationshipComponent(
-            id=new_id,
-            class_name=component.class_name,
-            profile=component.profile,
-            profile_params=dict(component.profile_params),
-            size_xy=size_xy,
-            height=component.height,
-            material=component.material,
-            metadata=metadata,
-            relationships=tuple(rotated_relationships),
-            repeat=rotated_repeat,
-            ifc=component.ifc,
-            voids=component.voids,
-            description=component.description,
-        )
-
-    def _build_linear_bracing(self, assembly: AssemblyCall) -> Optional[RelationshipComponent]:
-        args = assembly.args or {}
-        brace_id = args.get("id")
-        path = args.get("path", {}) or {}
-        start = path.get("start", {}) or {}
-        end = path.get("end", {}) or {}
-        start_component = start.get("component")
-        start_face = start.get("face")
-        end_component = end.get("component")
-        end_face = end.get("face")
-        if not brace_id or not start_component or not start_face or not end_component or not end_face:
-            return None
-
-        size_raw = args.get("size") or []
-        resolved_size: List[float] = []
-        if isinstance(size_raw, Sequence) and not isinstance(size_raw, (str, bytes)):
-            for entry in size_raw:
-                if isinstance(entry, (int, float)):
-                    resolved_size.append(float(entry))
-                elif isinstance(entry, str):
-                    try:
-                        resolved_size.append(self.spec.dimensions.evaluate(entry))
-                    except Exception:
-                        continue
-        if len(resolved_size) != 3:
-            length_raw = args.get("length", 0.0)
-            width_raw = args.get("width", 50.0)
-            thickness_raw = args.get("thickness", 6.0)
-            length = (
-                self.spec.dimensions.evaluate(length_raw)
-                if isinstance(length_raw, str)
-                else float(length_raw or 0.0)
-            )
-            width = (
-                self.spec.dimensions.evaluate(width_raw) if isinstance(width_raw, str) else float(width_raw or 0.0)
-            )
-            thickness = (
-                self.spec.dimensions.evaluate(thickness_raw)
-                if isinstance(thickness_raw, str)
-                else float(thickness_raw or 0.0)
-            )
-            resolved_size = [length, width, thickness]
-
-        material = args.get("material")
-        description = args.get("description")
-        class_name = normalize_ifc_class(args.get("class", "IfcMember"))
-        predefined = args.get("predefined_type", "BRACE")
-        ifc_block = IfcMetadata(predefined_type=normalize_ifc_predefined_type(predefined))
-
-        start_pos = canonical_pos_token(start_face)
-        end_pos = canonical_pos_token(end_face)
-        relationships: List[AlignmentClause | FlushBundleClause | RunBetweenClause | RelateFromClause] = [
-            RunBetweenClause(
-                start_pos=start_pos,
-                end_pos=end_pos,
-                from_ref=AlignmentTarget(ref=str(start_component), pos=start_pos, frame="local"),
-                to_ref=AlignmentTarget(ref=str(end_component), pos=end_pos, frame="local"),
-                orient="along_run",
-                include_seed=True,
-            )
-        ]
-
-        attach = args.get("attach", {}) or {}
-        attach_face = canonical_pos_token(attach.get("face", "+z"))
-        attach_plane = attach.get("plane")
-        if attach_plane:
-            relationships.append(
-                AlignmentClause(
-                    kind="contact",
-                    subject=AlignmentTarget(ref=str(brace_id), pos=attach_face, frame="local"),
-                    obj=AlignmentTarget(ref=str(attach_plane), pos=attach_face, frame="world"),
-                    gap=0.0,
-                    tolerance=0.5,
-                    on_fail="error",
-                )
-            )
-
-        metadata: Dict[str, object] = {}
-        if description:
-            metadata["description"] = description
-
-        return RelationshipComponent(
-            id=str(brace_id),
-            class_name=class_name,
-            profile="rectangle",
-            size_xy=(resolved_size[0], resolved_size[1]),
-            height=resolved_size[2],
-            profile_params={},
-            material=str(material) if material is not None else None,
-            metadata=metadata,
-            relationships=tuple(relationships),
-            repeat=None,
-            ifc=ifc_block,
-            voids=(),
-            description=str(description) if description else None,
-        )
 
     def solve(self) -> SolveResult:
         diagnostics = SolveDiagnostics()
         component_states: Dict[str, ComponentState] = {}
         solved: List[SolvedComponent] = []
 
-        resolver = ReferenceResolver(self.spec, component_states, self.datum_points, self.datum_planes, self.datum_bundles)
+        plans = self._expand_components()
+        pending = list(plans)
 
-        for component in self.components:
-            solved_instances = self._solve_component(component, resolver, component_states, diagnostics)
-            solved.extend(solved_instances)
+        while pending:
+            progressed = False
+            for plan in list(pending):
+                if not self._can_resolve(plan, component_states):
+                    continue
+                solved_instances = self._solve_plan(plan, component_states, diagnostics)
+                solved.extend(solved_instances)
+                pending.remove(plan)
+                progressed = True
+            if not progressed:
+                for plan in pending:
+                    diagnostics.add_error(
+                        f"component '{plan.id}' could not resolve references for placement",
+                        subject=plan.id,
+                    )
+                break
 
+        solved = self._apply_operations(solved, component_states, diagnostics)
+        resolver = ReferenceResolver(component_states, self.datum_points, self.datum_planes, self.datum_bundles)
         self._evaluate_checks(resolver, diagnostics)
 
         primitives = tuple(item.primitive for item in solved)
@@ -652,143 +381,327 @@ class ConstraintSolver:
         return SolveResult(components=tuple(solved), diagnostics=diagnostics, primitives=primitives, scene=scene)
 
     # ------------------------------------------------------------------ #
-    def _expanded_relationships(
-        self,
-        component: RelationshipComponent,
-        diagnostics: SolveDiagnostics,
-        _seen: Optional[set[str]] = None,
-    ) -> List[AlignmentClause | FlushBundleClause | RunBetweenClause | RelateFromClause]:
-        relationships: List[AlignmentClause | FlushBundleClause | RunBetweenClause | RelateFromClause] = []
-        visited = _seen or set()
-        if component.id in visited:
-            diagnostics.add_error(f"relate_from cycle detected at component '{component.id}'", subject=component.id)
-            return relationships
-        visited.add(component.id)
-        for clause in component.relationships:
-            if isinstance(clause, RelateFromClause):
-                source = self.components_by_id.get(clause.source)
-                if source is None:
-                    diagnostics.add_error(
-                        f"component '{component.id}' relates from unknown source '{clause.source}'",
-                        subject=component.id,
+    def _expand_components(self) -> List[InstancePlan]:
+        plans: List[InstancePlan] = []
+        for component in self.components:
+            base_relations = tuple(component.relations)
+            placements = component.place or (None,)
+            if placements == (None,):
+                relations = base_relations
+                plans.append(
+                    InstancePlan(
+                        id=component.id,
+                        template_id=component.id,
+                        component=component,
+                        relations=relations,
+                        run_between=component.run_between,
+                        origin="original",
+                        seed_id=component.id,
                     )
+                )
+                continue
+            for placement in placements:
+                if placement is None:
                     continue
-                inherited = self._expanded_relationships(source, diagnostics, visited)
-                for inherited_clause in inherited:
-                    relationships.append(self._apply_relate_overrides(inherited_clause, clause.overrides))
-            else:
-                relationships.append(clause)
-        visited.remove(component.id)
-        return relationships
+                relations = base_relations + tuple(placement.relations)
+                plans.append(
+                    InstancePlan(
+                        id=placement.id,
+                        template_id=component.id,
+                        component=component,
+                        relations=relations,
+                        run_between=component.run_between,
+                        origin="original",
+                        seed_id=placement.id,
+                    )
+                )
+        return plans
 
-    def _apply_relate_overrides(
+    def _can_resolve(self, plan: InstancePlan, component_states: Mapping[str, ComponentState]) -> bool:
+        resolver = ReferenceResolver(component_states, self.datum_points, self.datum_planes, self.datum_bundles)
+        refs: List[str] = []
+        for relation in plan.relations:
+            refs.append(relation.target.ref)
+        run_between = plan.run_between
+        if run_between:
+            refs.append(run_between.from_ref.ref)
+            refs.append(run_between.to_ref.ref)
+        for ref in refs:
+            if resolver.coords_for_ref(ref) is None and ref not in component_states:
+                return False
+        return True
+
+    def _solve_plan(
         self,
-        clause: AlignmentClause | FlushBundleClause | RunBetweenClause,
-        overrides: Mapping[str, Any],
-    ) -> AlignmentClause | FlushBundleClause | RunBetweenClause:
-        def replace_ref(ref: str) -> str:
-            return str(overrides.get(ref, ref))
-
-        if isinstance(clause, AlignmentClause):
-            return AlignmentClause(
-                kind=clause.kind,
-                subject=replace(clause.subject, ref=replace_ref(clause.subject.ref)),
-                obj=replace(clause.obj, ref=replace_ref(clause.obj.ref)),
-                gap=clause.gap,
-                tolerance=clause.tolerance,
-                on_fail=clause.on_fail,
-            )
-        if isinstance(clause, FlushBundleClause):
-            return FlushBundleClause(
-                bundle=replace_ref(clause.bundle),
-                faces=clause.faces,
-                inset_subject=dict(clause.inset_subject),
-                inset_object=dict(clause.inset_object),
-                frame=clause.frame,
-            )
-        if isinstance(clause, RunBetweenClause):
-            return RunBetweenClause(
-                start_pos=clause.start_pos,
-                end_pos=clause.end_pos,
-                from_ref=replace(clause.from_ref, ref=replace_ref(clause.from_ref.ref)),
-                to_ref=replace(clause.to_ref, ref=replace_ref(clause.to_ref.ref)),
-                orient=clause.orient,
-                count=clause.count,
-                pitch=clause.pitch,
-                inset_start=clause.inset_start,
-                inset_end=clause.inset_end,
-                include_seed=clause.include_seed,
-            )
-        return clause
-
-    def _solve_component(
-        self,
-        component: RelationshipComponent,
-        resolver: ReferenceResolver,
+        plan: InstancePlan,
         component_states: Dict[str, ComponentState],
         diagnostics: SolveDiagnostics,
     ) -> List[SolvedComponent]:
-        base_rotation = float(component.metadata.get("_rotation_z", 0.0)) if component.metadata else 0.0
-        base_orientation = _orientation_from_z_rotation(base_rotation)
-        instances: List[InstanceState] = [
-            InstanceState(name=component.id, rotation_z=base_rotation, orientation=base_orientation)
-        ]
+        component = plan.component
+        base_orientation = IDENTITY_ORIENTATION
+        base_rotation_z = float(component.metadata.get("_rotation_z", 0.0)) if component.metadata else 0.0
+        if base_rotation_z:
+            base_orientation = _orientation_from_z_rotation(base_rotation_z)
 
-        relationships = self._expanded_relationships(component, diagnostics)
-        run_between_clause = next((c for c in relationships if isinstance(c, RunBetweenClause)), None)
-        if run_between_clause:
-            instances = self._apply_run_between(component, run_between_clause, resolver, diagnostics, base_rotation)
-            diagnostics.record_graph_edge(component.id, run_between_clause.from_ref.ref)
-            diagnostics.record_graph_edge(component.id, run_between_clause.to_ref.ref)
-
-        instances = self._apply_relationships(component, relationships, instances, resolver, diagnostics)
-        instances = self._apply_repeat(component, instances, resolver, diagnostics)
+        resolver = ReferenceResolver(component_states, self.datum_points, self.datum_planes, self.datum_bundles)
+        instances = self._instances_for_plan(
+            plan,
+            resolver=resolver,
+            base_orientation=base_orientation,
+            base_rotation=base_rotation_z,
+            diagnostics=diagnostics,
+        )
 
         solved_components: List[SolvedComponent] = []
         for idx, instance in enumerate(instances):
-            transform, dof = self._finalise_transform(component, instance, diagnostics)
-            guid = self._stable_guid(component.id, instance.name)
-            primitive = self._neutral_primitive(component, instance.name, transform, guid, instance.connections)
-            solved_components.append(
-                SolvedComponent(
-                    component=component,
-                    instance_id=instance.name,
-                    transform=transform,
-                    primitive=primitive,
-                    guid=guid,
+            axis_states = {
+                "x": AxisState(),
+                "y": AxisState(),
+                "z": AxisState(),
+            }
+            for axis, value in instance.get("preset_axes", {}).items():
+                axis_states[axis].center = value
+                axis_states[axis].locked_center = True
+
+            for relation in plan.relations:
+                self._apply_axis_relation(
+                    component,
+                    axis_states,
+                    relation,
+                    resolver,
+                    diagnostics,
+                    instance_id=instance["id"],
                 )
+
+            size = list(component.size)
+            final_center: Dict[str, float] = {}
+
+            for axis in ("x", "y", "z"):
+                explicit = size[AXIS_ORDER[axis]]
+                state = axis_states[axis]
+                center_value, size_value = self._resolve_axis_state(
+                    component,
+                    axis,
+                    state,
+                    explicit,
+                    diagnostics,
+                    allow_default_zero=component.kind == "reference",
+                    instance_id=instance["id"],
+                )
+                final_center[axis] = center_value
+                size[AXIS_ORDER[axis]] = size_value
+
+            transform = ComponentTransform(
+                position=(final_center["x"], final_center["y"], final_center["z"]),
+                rotation=_rotation_from_orientation(instance.get("orientation", base_orientation)),
+                orientation=instance.get("orientation", base_orientation),
             )
-            component_states[instance.name] = ComponentState(
-                id=instance.name,
-                size=_component_size(component),
+
+            size_tuple = (float(size[0] or 0.0), float(size[1] or 0.0), float(size[2] or 0.0))
+            component_states[instance["id"]] = ComponentState(
+                id=instance["id"],
+                size=size_tuple,
                 transform=transform,
                 class_name=component.class_name,
-                orientation=instance.orientation,
+                orientation=transform.orientation,
+                template_id=plan.template_id,
+                origin=instance.get("origin", plan.origin),
             )
-            if component.id not in component_states:
-                component_states[component.id] = component_states[instance.name]
-            diagnostics.degrees_of_freedom[instance.name] = dof
+            if plan.template_id not in component_states:
+                component_states[plan.template_id] = component_states[instance["id"]]
+            diagnostics.degrees_of_freedom[instance["id"]] = 0
+
+            if component.kind == "reference":
+                continue
+
+            guid = self._stable_guid(plan.template_id, instance["id"])
+            primitive = self._neutral_primitive(
+                component,
+                instance["id"],
+                plan.template_id,
+                size_tuple,
+                transform,
+                guid,
+                tuple(),
+            )
+            solved_component = SolvedComponent(
+                component=component,
+                instance_id=instance["id"],
+                transform=transform,
+                primitive=primitive,
+                guid=guid,
+                template_id=plan.template_id,
+                origin=instance.get("origin", plan.origin),
+                seed_id=plan.seed_id,
+            )
+            solved_components.append(solved_component)
         return solved_components
 
-    def _apply_run_between(
+    def _instances_for_plan(
+        self,
+        plan: InstancePlan,
+        resolver: ReferenceResolver,
+        base_orientation: OrientationMatrix,
+        base_rotation: float,
+        diagnostics: SolveDiagnostics,
+    ) -> List[Dict[str, Any]]:
+        run_between = plan.run_between
+        if run_between is None:
+            return [
+                {"id": plan.id, "orientation": base_orientation, "preset_axes": {}, "origin": plan.origin},
+            ]
+        positions = self._run_between_positions(plan, run_between, resolver, diagnostics)
+        instances: List[Dict[str, Any]] = []
+        for idx, pos in enumerate(positions):
+            name = plan.id if idx == 0 else f"{plan.id}#{idx}"
+            origin_kind = "original" if idx == 0 and run_between.include_seed else "clone"
+            orientation = base_orientation
+            instances.append(
+                {
+                    "id": name,
+                    "preset_axes": pos["axis_values"],
+                    "orientation": orientation,
+                    "origin": origin_kind,
+                }
+            )
+        return instances
+
+    def _axis_amount_for(self, axis: str, subject_sign: int, mapping: Dict[str, float]) -> float:
+        total = mapping.get("*", 0.0)
+        for key, value in mapping.items():
+            if key == "*":
+                continue
+            axes = _axes_from_pos(key)
+            if any(a == axis and (s == 0 or s == subject_sign) for a, s in axes):
+                total += value
+        return total
+
+    def _apply_axis_relation(
         self,
         component: RelationshipComponent,
-        clause: RunBetweenClause,
+        axis_states: Dict[str, AxisState],
+        relation: AxisRelation,
         resolver: ReferenceResolver,
         diagnostics: SolveDiagnostics,
-        base_rotation: float,
-    ) -> List[InstanceState]:
+        *,
+        instance_id: str,
+    ) -> None:
+        subject_axes = _axes_from_pos(relation.subject)
+        target_axes = {}
+        for axis, sign in _axes_from_pos(relation.target.pos):
+            target_axes.setdefault(axis, set()).add(sign)
+
+        for axis, subject_sign in subject_axes:
+            target_sign = subject_sign
+            if axis in target_axes:
+                if subject_sign in target_axes[axis]:
+                    target_sign = subject_sign
+                elif 0 in target_axes[axis]:
+                    target_sign = 0
+            coord = resolver.axis_coordinate(relation.target.ref, axis, target_sign)
+            if coord is None:
+                diagnostics.add_error(
+                    f"component '{component.id}' relation references unknown target '{relation.target.ref}'",
+                    subject=component.id,
+                )
+                continue
+            offset = self._axis_amount_for(axis, subject_sign, relation.target.offset)
+            gap = self._axis_amount_for(axis, subject_sign, relation.target.gap)
+            adjusted = coord + offset + gap * (subject_sign if subject_sign != 0 else 0)
+            state = axis_states[axis]
+            if subject_sign == 0:
+                if state.center is not None and abs(state.center - adjusted) > 1e-6 and not state.locked_center:
+                    diagnostics.add_error(
+                        f"component '{component.id}' has conflicting center on {axis}",
+                        subject=instance_id,
+                    )
+                if not state.locked_center:
+                    state.center = adjusted
+            else:
+                state.faces[subject_sign] = adjusted
+
+    def _resolve_axis_state(
+        self,
+        component: RelationshipComponent,
+        axis: str,
+        state: AxisState,
+        explicit_size: Optional[float],
+        diagnostics: SolveDiagnostics,
+        *,
+        allow_default_zero: bool,
+        instance_id: str,
+    ) -> Tuple[float, float]:
+        center = state.center
+        size_value = explicit_size
+        pos_plus = state.faces.get(1)
+        pos_minus = state.faces.get(-1)
+
+        inferred_size = None
+        if pos_plus is not None and pos_minus is not None:
+            inferred_size = pos_plus - pos_minus
+            if inferred_size < 0:
+                inferred_size = abs(inferred_size)
+        elif center is not None:
+            if pos_plus is not None:
+                inferred_size = abs((pos_plus - center) * 2)
+            elif pos_minus is not None:
+                inferred_size = abs((center - pos_minus) * 2)
+
+        if size_value is not None and inferred_size is not None and abs(size_value - inferred_size) > 1e-6:
+            diagnostics.add_error(
+                f"component '{component.id}' size on {axis} conflicts with inferred span ({size_value:.3f} vs {inferred_size:.3f})",
+                subject=instance_id,
+            )
+        if size_value is None and inferred_size is not None:
+            size_value = inferred_size
+        if size_value is None:
+            size_value = 0.0
+
+        if center is None:
+            if pos_plus is not None and pos_minus is not None:
+                center = (pos_plus + pos_minus) / 2
+            elif pos_plus is not None:
+                center = pos_plus - size_value / 2
+            elif pos_minus is not None:
+                center = pos_minus + size_value / 2
+            elif allow_default_zero:
+                center = 0.0
+            else:
+                diagnostics.add_error(
+                    f"component '{component.id}' remains under-constrained on axis {axis}",
+                    subject=instance_id,
+                )
+                center = 0.0
+
+        if size_value <= 0 and component.kind != "reference":
+            diagnostics.add_warning(
+                f"component '{component.id}' has non-positive size on axis {axis}",
+                subject=instance_id,
+            )
+
+        return center, size_value
+
+    def _run_between_positions(
+        self,
+        plan: InstancePlan,
+        clause: RunBetweenSpec,
+        resolver: ReferenceResolver,
+        diagnostics: SolveDiagnostics,
+    ) -> List[Dict[str, Any]]:
         start_axes = _axes_from_pos(clause.start_pos)
         end_axes = _axes_from_pos(clause.end_pos)
+        axes_present = {axis for axis, _ in start_axes} | {axis for axis, _ in end_axes}
+        if not axes_present:
+            axes_present = {axis for axis, _ in start_axes} or {"x", "y", "z"}
 
-        def point_for(target: AlignmentTarget, axes: List[Tuple[str, int]]) -> Dict[str, float]:
+        def point_for(target: AxisMapTarget, axes: List[Tuple[str, int]]) -> Dict[str, float]:
             coords: Dict[str, float] = {"x": 0.0, "y": 0.0, "z": 0.0}
             for axis, sign in axes:
-                value = self._face_coordinate(target.ref, axis, sign, target.frame, resolver, instance=None)
+                value = resolver.axis_coordinate(target.ref, axis, sign)
                 if value is None:
                     diagnostics.add_error(
-                        f"component '{component.id}' run_between references unknown target '{target.ref}' on {axis}",
-                        subject=component.id,
+                        f"component '{plan.id}' run_between references unknown target '{target.ref}' on {axis}",
+                        subject=plan.id,
                     )
                     continue
                 coords[axis] = value
@@ -798,15 +711,15 @@ class ConstraintSolver:
         end_point = point_for(clause.to_ref, end_axes if end_axes else start_axes)
 
         direction = (
-            end_point["x"] - start_point["x"],
-            end_point["y"] - start_point["y"],
-            end_point["z"] - start_point["z"],
+            end_point.get("x", 0.0) - start_point.get("x", 0.0),
+            end_point.get("y", 0.0) - start_point.get("y", 0.0),
+            end_point.get("z", 0.0) - start_point.get("z", 0.0),
         )
         length = math.sqrt(direction[0] ** 2 + direction[1] ** 2 + direction[2] ** 2)
         if length <= 1e-6:
             diagnostics.add_error(
-                f"component '{component.id}' run_between has zero-length span",
-                subject=component.id,
+                f"component '{plan.id}' run_between has zero-length span",
+                subject=plan.id,
             )
             length = 1.0
 
@@ -815,361 +728,377 @@ class ConstraintSolver:
         inset_end = clause.inset_end or 0.0
         effective_length = max(length - inset_start - inset_end, 0.0)
 
-        positions: List[Tuple[float, float, float]] = []
+        positions: List[float] = []
         if clause.count:
-            step = effective_length / max(clause.count - 1, 1)
-            for i in range(clause.count):
-                offset = inset_start + step * i
-                positions.append(
-                    (
-                        start_point["x"] + unit[0] * offset,
-                        start_point["y"] + unit[1] * offset,
-                        start_point["z"] + unit[2] * offset,
-                    )
-                )
+            total = max(clause.count, 1)
+            step = effective_length / max(total - 1, 1)
+            positions = [inset_start + step * i for i in range(total)]
+            if not clause.include_seed and positions:
+                positions = positions[1:]
         elif clause.pitch:
             step = clause.pitch
-            if step <= 0:
-                diagnostics.add_error(f"component '{component.id}' run_between pitch must be positive", subject=component.id)
-                step = effective_length or 1.0
             current = 0.0
+            idx = 0
             while current <= effective_length + 1e-6:
-                offset = inset_start + current
-                positions.append(
-                    (
-                        start_point["x"] + unit[0] * offset,
-                        start_point["y"] + unit[1] * offset,
-                        start_point["z"] + unit[2] * offset,
-                    )
-                )
-                current += step
+                if clause.include_seed or idx > 0:
+                    positions.append(inset_start + current)
+                elif clause.include_seed is False and idx == 0 and step > 0:
+                    pass
+                current += step or effective_length or 1.0
+                idx += 1
         else:
-            positions.append(
-                (
-                    start_point["x"] + unit[0] * inset_start,
-                    start_point["y"] + unit[1] * inset_start,
-                    start_point["z"] + unit[2] * inset_start,
-                )
-            )
-            positions.append(
-                (
-                    end_point["x"] - unit[0] * inset_end,
-                    end_point["y"] - unit[1] * inset_end,
-                    end_point["z"] - unit[2] * inset_end,
-                )
-                )
+            positions = [inset_start, length - inset_end]
+            if not clause.include_seed and positions:
+                positions = positions[1:]
 
-        rotation = 0.0
-        orientation = _orientation_from_z_rotation(base_rotation)
-        if clause.orient == "along_run":
-            rotation = math.degrees(math.atan2(direction[1], direction[0]))
-            orientation = _orientation_from_direction(direction, base_rotation)
-
-        axes_present = {axis for axis, _ in start_axes} | {axis for axis, _ in end_axes}
-        if not axes_present:
-            axes_present = {"x", "y", "z"}
-
-        instances: List[InstanceState] = []
-        for idx, pos in enumerate(positions):
-            axis_values = {axis: value for axis, value in zip(("x", "y", "z"), pos)}
-            soft_axes: set[str] = {axis for axis in ("x", "y", "z") if axis not in axes_present}
-            name = component.id if idx == 0 else f"{component.id}#{idx}"
+        instances: List[Dict[str, Any]] = []
+        axis_order = {"x": 0, "y": 1, "z": 2}
+        for offset in positions:
+            axis_values = {
+                axis: start_point.get(axis, 0.0) + unit[axis_order[axis]] * offset
+                for axis in axes_present
+            }
             instances.append(
-                InstanceState(
-                    name=name,
-                    axis_values=axis_values,
-                    rotation_z=rotation + base_rotation,
-                    soft_axes=soft_axes,
-                    orientation=orientation,
-                )
+                {
+                    "axis_values": axis_values,
+                    "direction": direction,
+                }
             )
         return instances
 
-    def _apply_relationships(
-        self,
-        component: RelationshipComponent,
-        relationships: List[AlignmentClause | FlushBundleClause | RunBetweenClause | RelateFromClause],
-        instances: List[InstanceState],
-        resolver: ReferenceResolver,
-        diagnostics: SolveDiagnostics,
-    ) -> List[InstanceState]:
-        for clause in relationships:
-            if isinstance(clause, AlignmentClause):
-                for instance in instances:
-                    self._apply_alignment_clause(component, instance, clause, resolver, diagnostics)
-                diagnostics.record_graph_edge(component.id, clause.obj.ref)
-            elif isinstance(clause, FlushBundleClause):
-                for instance in instances:
-                    self._apply_flush_clause(component, instance, clause, resolver, diagnostics)
-                diagnostics.record_graph_edge(component.id, clause.bundle)
-            elif isinstance(clause, RunBetweenClause):
-                continue
+    # ------------------------------------------------------------------ #
+    def _selector_index(self, solved: Sequence[SolvedComponent]) -> Dict[str, Dict[str, set[str]]]:
+        index: Dict[str, Dict[str, set[str]]] = {}
+        for item in solved:
+            entry = index.setdefault(item.template_id, {"all": set(), "original": set(), "clones": set()})
+            entry["all"].add(item.instance_id)
+            if item.origin == "original":
+                entry["original"].add(item.instance_id)
             else:
-                diagnostics.add_error(
-                    f"component '{component.id}' uses unsupported helper '{type(clause).__name__}'",
-                    subject=component.id,
-                )
-        return instances
+                entry["clones"].add(item.instance_id)
+            # Placement id indexing
+            if item.seed_id:
+                seed_entry = index.setdefault(item.seed_id, {"all": set(), "original": set(), "clones": set()})
+                seed_entry["all"].add(item.instance_id)
+                if item.origin == "original":
+                    seed_entry["original"].add(item.instance_id)
+                else:
+                    seed_entry["clones"].add(item.instance_id)
+        return index
 
-    def _frame_orientation(
+    def _resolve_selector(self, selector: str, index: Dict[str, Dict[str, set[str]]]) -> List[str]:
+        if selector.endswith(".original"):
+            base = selector[: -len(".original")]
+            return sorted(index.get(base, {}).get("original", []) or index.get(base, {}).get("all", []))
+        if selector.endswith(".clones"):
+            base = selector[: -len(".clones")]
+            clones = index.get(base, {}).get("clones", set())
+            if clones:
+                return sorted(clones)
+            return sorted(index.get(base, {}).get("all", []))
+        if selector in index:
+            return sorted(index[selector].get("all", []))
+        # direct instance id
+        for entry in index.values():
+            if selector in entry.get("all", set()):
+                return [selector]
+        return []
+
+    def _apply_operations(
         self,
-        frame: str,
-        resolver: ReferenceResolver,
-        *,
-        ref: Optional[str] = None,
-        instance: Optional[InstanceState] = None,
-    ) -> OrientationMatrix:
-        if frame == "world":
-            return IDENTITY_ORIENTATION
-        if frame == "local":
-            if ref == "self" and instance is not None:
-                return instance.orientation
-            state = resolver.component_states.get(ref or "")
-            if state is not None:
-                return state.orientation
-            if instance is not None:
-                return instance.orientation
-        if frame.startswith("component:"):
-            target = frame.split(":", 1)[1]
-            state = resolver.component_states.get(target)
-            if state is not None:
-                return state.orientation
-        return IDENTITY_ORIENTATION
+        solved: List[SolvedComponent],
+        component_states: Dict[str, ComponentState],
+        diagnostics: SolveDiagnostics,
+    ) -> List[SolvedComponent]:
+        if not self.spec.operations:
+            return solved
+        result = list(solved)
+        for operation in self.spec.operations:
+            index = self._selector_index(result)
+            if isinstance(operation, RotateOperation):
+                result.extend(self._rotate(operation, result, component_states, diagnostics, index))
+            elif isinstance(operation, MirrorOperation):
+                result.extend(self._mirror(operation, result, component_states, diagnostics, index))
+            elif isinstance(operation, TranslateOperation):
+                result.extend(self._translate(operation, result, component_states, diagnostics, index))
+            elif isinstance(operation, BooleanOperation):
+                self._apply_boolean(operation, result, diagnostics, index)
+        return result
 
-    def _face_coordinate(
+    def _rotate(
+        self,
+        op: RotateOperation,
+        solved: List[SolvedComponent],
+        component_states: Dict[str, ComponentState],
+        diagnostics: SolveDiagnostics,
+        index: Dict[str, Dict[str, set[str]]],
+    ) -> List[SolvedComponent]:
+        created: List[SolvedComponent] = []
+        targets = op.targets or list(index.keys())
+        selected_ids: List[str] = []
+        for selector in targets:
+            selected_ids.extend(self._resolve_selector(selector, index))
+        about_coords = self._reference_coordinates(op.about, component_states)
+        if about_coords is None:
+            diagnostics.add_error(f"rotate about target '{op.about}' not found")
+            return created
+
+        axis = op.axis[-1]
+        angle_step = 360.0 / max(op.count, 1)
+
+        for instance_id in selected_ids:
+            base = next((s for s in solved if s.instance_id == instance_id), None)
+            if base is None:
+                continue
+            for turn in range(op.count):
+                if turn == 0 and not op.include_seed:
+                    continue
+                if turn == 0:
+                    # already exists
+                    continue
+                angle = angle_step * turn
+                new_id = f"{instance_id}_rot{turn}"
+                base_mapping = op.id_map.get(base.template_id) or op.id_map.get(instance_id)
+                if base_mapping and len(base_mapping) > turn:
+                    mapped = base_mapping[turn]
+                    suffix = ""
+                    if "#" in instance_id:
+                        suffix = "#" + instance_id.split("#", 1)[1]
+                    new_id = f"{mapped}{suffix}"
+                rotated_transform = self._rotate_transform(base.transform, about_coords, axis, angle)
+                guid = self._stable_guid(base.template_id, new_id, angle)
+                primitive = self._neutral_primitive(
+                    base.component,
+                    new_id,
+                    base.template_id,
+                    base.primitive.size,
+                    rotated_transform,
+                    guid,
+                    base.primitive.connections,
+                )
+                solved_component = SolvedComponent(
+                    component=base.component,
+                    instance_id=new_id,
+                    transform=rotated_transform,
+                    primitive=primitive,
+                    guid=guid,
+                    template_id=base.template_id,
+                    origin="clone",
+                    seed_id=base.seed_id,
+                )
+                created.append(solved_component)
+                component_states[new_id] = ComponentState(
+                    id=new_id,
+                    size=primitive.size,
+                    transform=rotated_transform,
+                    class_name=base.component.class_name,
+                    orientation=rotated_transform.orientation,
+                    template_id=base.template_id,
+                    origin="clone",
+                )
+        return created
+
+    def _mirror(
+        self,
+        op: MirrorOperation,
+        solved: List[SolvedComponent],
+        component_states: Dict[str, ComponentState],
+        diagnostics: SolveDiagnostics,
+        index: Dict[str, Dict[str, set[str]]],
+    ) -> List[SolvedComponent]:
+        created: List[SolvedComponent] = []
+        selected_ids: List[str] = []
+        targets = op.targets or list(index.keys())
+        for selector in targets:
+            selected_ids.extend(self._resolve_selector(selector, index))
+        axis = op.axis
+        coordinate = op.coordinate
+        for instance_id in selected_ids:
+            base = next((s for s in solved if s.instance_id == instance_id), None)
+            if base is None:
+                continue
+            if not op.include_seed and instance_id == base.instance_id:
+                pass
+            mirrored_pos = list(base.transform.position)
+            idx = AXIS_ORDER[axis]
+            mirrored_pos[idx] = coordinate - (mirrored_pos[idx] - coordinate)
+            orientation = base.transform.orientation
+            rotation = _rotation_from_orientation(orientation)
+            if axis == "x":
+                rotation = (-rotation[0], rotation[1], -rotation[2])
+            elif axis == "y":
+                rotation = (rotation[0], -rotation[1], -rotation[2])
+            else:
+                rotation = (rotation[0], rotation[1], -rotation[2])
+            transform = ComponentTransform(position=tuple(mirrored_pos), rotation=rotation, orientation=orientation)
+            new_id = f"{instance_id}_mirrored"
+            guid = self._stable_guid(base.template_id, new_id, coordinate)
+            primitive = self._neutral_primitive(
+                base.component,
+                new_id,
+                base.template_id,
+                base.primitive.size,
+                transform,
+                guid,
+                base.primitive.connections,
+            )
+            solved_component = SolvedComponent(
+                component=base.component,
+                instance_id=new_id,
+                transform=transform,
+                primitive=primitive,
+                guid=guid,
+                template_id=base.template_id,
+                origin="clone",
+                seed_id=base.seed_id,
+            )
+            created.append(solved_component)
+            component_states[new_id] = ComponentState(
+                id=new_id,
+                size=primitive.size,
+                transform=transform,
+                class_name=base.component.class_name,
+                orientation=transform.orientation,
+                template_id=base.template_id,
+                origin="clone",
+            )
+        return created
+
+    def _translate(
+        self,
+        op: TranslateOperation,
+        solved: List[SolvedComponent],
+        component_states: Dict[str, ComponentState],
+        diagnostics: SolveDiagnostics,
+        index: Dict[str, Dict[str, set[str]]],
+    ) -> List[SolvedComponent]:
+        created: List[SolvedComponent] = []
+        selected_ids: List[str] = []
+        targets = op.targets or list(index.keys())
+        for selector in targets:
+            selected_ids.extend(self._resolve_selector(selector, index))
+        for instance_id in selected_ids:
+            base = next((s for s in solved if s.instance_id == instance_id), None)
+            if base is None:
+                continue
+            pos = (
+                base.transform.position[0] + op.vector[0],
+                base.transform.position[1] + op.vector[1],
+                base.transform.position[2] + op.vector[2],
+            )
+            transform = ComponentTransform(position=pos, rotation=base.transform.rotation, orientation=base.transform.orientation)
+            new_id = f"{instance_id}_translated"
+            guid = self._stable_guid(base.template_id, new_id, sum(op.vector))
+            primitive = self._neutral_primitive(
+                base.component,
+                new_id,
+                base.template_id,
+                base.primitive.size,
+                transform,
+                guid,
+                base.primitive.connections,
+            )
+            solved_component = SolvedComponent(
+                component=base.component,
+                instance_id=new_id,
+                transform=transform,
+                primitive=primitive,
+                guid=guid,
+                template_id=base.template_id,
+                origin="clone",
+                seed_id=base.seed_id,
+            )
+            created.append(solved_component)
+            component_states[new_id] = ComponentState(
+                id=new_id,
+                size=primitive.size,
+                transform=transform,
+                class_name=base.component.class_name,
+                orientation=transform.orientation,
+                template_id=base.template_id,
+                origin="clone",
+            )
+        return created
+
+    def _apply_boolean(
+        self,
+        op: BooleanOperation,
+        solved: List[SolvedComponent],
+        diagnostics: SolveDiagnostics,
+        index: Dict[str, Dict[str, set[str]]],
+    ) -> None:
+        target_ids = self._resolve_selector(op.target, index)
+        subtract_ids: List[str] = []
+        for selector in op.subtract:
+            subtract_ids.extend(self._resolve_selector(selector, index))
+        for target_id in target_ids:
+            target = next((s for s in solved if s.instance_id == target_id), None)
+            if target is None:
+                diagnostics.add_error(f"boolean target '{target_id}' not found")
+                continue
+            existing = set(target.primitive.voids)
+            target.primitive.voids = tuple(sorted(existing | set(subtract_ids)))
+
+    # ------------------------------------------------------------------ #
+    def _reference_coordinates(
         self,
         ref: str,
-        axis: str,
-        sign: int,
-        frame: str,
-        resolver: ReferenceResolver,
-        *,
-        instance: Optional[InstanceState],
-    ) -> Optional[float]:
-        orientation = self._frame_orientation(frame, resolver, ref=ref, instance=instance)
-        idx = AXIS_ORDER[axis]
-        if ref in resolver.component_states:
-            state = resolver.component_states[ref]
-            size = state.size[idx] / 2
-            axis_vector = _axis_vector(orientation, axis)
-            offset = sign * size * _world_axis_component(axis, axis_vector)
-            return state.transform.position[idx] + offset
-        coord = resolver.axis_coordinate(ref, axis, sign)
-        if coord is None:
-            return None
-        return coord
-
-    def _apply_alignment_clause(
-        self,
-        component: RelationshipComponent,
-        instance: InstanceState,
-        clause: AlignmentClause,
-        resolver: ReferenceResolver,
-        diagnostics: SolveDiagnostics,
-    ) -> None:
-        subject_axes = _axes_from_pos(clause.subject.pos)
-        object_axes = {axis: sign for axis, sign in _axes_from_pos(clause.obj.pos)}
-        subject_orientation = self._frame_orientation(
-            clause.subject.frame, resolver, ref=clause.subject.ref, instance=instance
-        )
-        object_orientation = self._frame_orientation(clause.obj.frame, resolver, ref=clause.obj.ref, instance=instance)
-        if clause.obj.ref in resolver.component_states and clause.obj.ref != component.id:
-            already_recorded = any(
-                hint.target == clause.obj.ref
-                and hint.subject_pos == clause.subject.pos
-                and hint.object_pos == clause.obj.pos
-                for hint in instance.connections
-            )
-            if not already_recorded:
-                instance.connections.append(
-                    ConnectionHint(target=clause.obj.ref, subject_pos=clause.subject.pos, object_pos=clause.obj.pos)
-                )
-
-        for axis, subject_sign in subject_axes:
-            object_sign = object_axes.get(axis, subject_sign)
-            target_coord = self._face_coordinate(
-                clause.obj.ref, axis, object_sign, clause.obj.frame, resolver, instance=instance
-            )
-            if target_coord is None:
-                diagnostics.add_error(
-                    f"component '{component.id}' alignment references unknown target '{clause.obj.ref}'",
-                    subject=component.id,
-                )
-                continue
-
-            axis_vector = _axis_vector(subject_orientation, axis)
-            half = _half_size(component, axis) * abs(_world_axis_component(axis, axis_vector))
-            gap_direction = 1.0 if subject_sign > 0 else -1.0
-            face_target = target_coord + clause.gap * gap_direction
-            origin_value = face_target - gap_direction * half
-            self._set_axis(instance, axis, origin_value, clause.tolerance, component.id, diagnostics)
-
-    def _apply_flush_clause(
-        self,
-        component: RelationshipComponent,
-        instance: InstanceState,
-        clause: FlushBundleClause,
-        resolver: ReferenceResolver,
-        diagnostics: SolveDiagnostics,
-    ) -> None:
-        subject_orientation = self._frame_orientation(clause.frame, resolver, ref=component.id, instance=instance)
-        for face in clause.faces:
-            subject_axes = _axes_from_pos(face.subject)
-            object_axes = {axis: sign for axis, sign in _axes_from_pos(face.obj)}
-            for axis, subject_sign in subject_axes:
-                object_sign = object_axes.get(axis, subject_sign)
-                target_coord = self._face_coordinate(
-                    clause.bundle, axis, object_sign, "world", resolver, instance=instance
-                )
-                if target_coord is None:
-                    diagnostics.add_error(
-                        f"component '{component.id}' flush_bundle references unknown bundle '{clause.bundle}'",
-                        subject=component.id,
-                    )
-                    continue
-                inset_subject = clause.inset_subject.get(face.subject, 0.0)
-                inset_object = clause.inset_object.get(face.obj, 0.0)
-                effective_gap = inset_object - inset_subject
-                half = _half_size(component, axis) * abs(
-                    _world_axis_component(axis, _axis_vector(subject_orientation, axis))
-                )
-                gap_direction = 1.0 if subject_sign > 0 else -1.0
-                face_target = target_coord + effective_gap * gap_direction
-                origin_value = face_target - gap_direction * half
-                self._set_axis(instance, axis, origin_value, 0.5, component.id, diagnostics)
-
-    def _apply_repeat(
-        self,
-        component: RelationshipComponent,
-        instances: List[InstanceState],
-        resolver: ReferenceResolver,
-        diagnostics: SolveDiagnostics,
-    ) -> List[InstanceState]:
-        repeat = component.repeat
-        if repeat is None:
-            return instances
-
-        axis = repeat.axis[-1]
-        sign = 1 if repeat.axis[0] == "+" else -1
-
-        span_length = self._span_length(repeat.span_use, resolver)
-        if repeat.span_use:
-            diagnostics.record_graph_edge(component.id, repeat.span_use)
-        if repeat.span_use and span_length is None:
-            diagnostics.add_error(
-                f"component '{component.id}' repeat span reference '{repeat.span_use}' could not be resolved",
-                subject=component.id,
-            )
-        available_length = None
-        if span_length is not None:
-            available_length = max(span_length - repeat.inset_start - repeat.inset_end, 0.0)
-
-        pitch = repeat.pitch
-        if pitch is None and available_length is not None and repeat.count and repeat.count > 1:
-            pitch = available_length / (repeat.count - 1)
-
-        expanded: List[InstanceState] = []
-        for base in instances:
-            base_value = base.axis_values.get(axis, 0.0) + sign * repeat.inset_start
-            total = repeat.count or 1
-            step = pitch or 0.0
-            if step == 0.0 and available_length is not None and total > 1:
-                step = available_length / (total - 1)
-            for idx in range(total):
-                if idx == 0 and not repeat.include_seed:
-                    continue
-                offset = step * idx
-                axis_values = dict(base.axis_values)
-                axis_values[axis] = base_value + sign * offset
-                name = base.name if not expanded else f"{component.id}#{len(expanded)}"
-                expanded.append(
-                    InstanceState(
-                        name=name,
-                        axis_values=axis_values,
-                        rotation_z=base.rotation_z,
-                        orientation=base.orientation,
-                        connections=list(base.connections),
-                        soft_axes=set(base.soft_axes),
-                    )
-                )
-        return expanded or instances
-
-    def _span_length(self, span_use: Optional[str], resolver: ReferenceResolver) -> Optional[float]:
-        if span_use is None:
-            return None
-        ref = span_use
-        if ref.endswith(".x"):
-            key = ref[:-2]
-            axis = "x"
-        elif ref.endswith(".y"):
-            key = ref[:-2]
-            axis = "y"
-        else:
-            return None
-        if key in self.datum_bundles:
-            span = self.datum_bundles[key]["span"]
-            if isinstance(span, dict):
-                return span.get(f"+{axis}", span.get(axis, None))
-        coords = resolver.coords_for_ref(key)
-        if coords is not None and axis in coords:
-            return coords[axis]
+        component_states: Mapping[str, ComponentState],
+    ) -> Optional[Tuple[float, float, float]]:
+        if ref in component_states:
+            pos = component_states[ref].transform.position
+            return (pos[0], pos[1], pos[2])
+        if ref in self.datum_points:
+            coords = self.datum_points[ref]
+            return (coords.get("x", 0.0), coords.get("y", 0.0), coords.get("z", 0.0))
+        if ref in self.datum_planes:
+            coords = self.datum_planes[ref]
+            return (coords.get("x", 0.0), coords.get("y", 0.0), coords.get("z", 0.0))
+        if ref in self.datum_bundles:
+            origin = self.datum_bundles[ref].get("origin", {})
+            if isinstance(origin, dict):
+                return (origin.get("x", 0.0), origin.get("y", 0.0), origin.get("z", 0.0))
         return None
 
-    def _set_axis(
+    def _rotate_transform(
         self,
-        instance: InstanceState,
+        transform: ComponentTransform,
+        about: Tuple[float, float, float],
         axis: str,
-        value: float,
-        tolerance: float,
-        component_id: str,
-        diagnostics: SolveDiagnostics,
-    ) -> None:
-        existing = instance.axis_values.get(axis)
-        if existing is None:
-            instance.axis_values[axis] = value
-            if axis in instance.soft_axes:
-                instance.soft_axes.remove(axis)
-            return
-        if axis in instance.soft_axes:
-            instance.axis_values[axis] = value
-            instance.soft_axes.remove(axis)
-            return
-        if abs(existing - value) > tolerance:
-            diagnostics.add_error(
-                f"component '{component_id}' is over-constrained on {axis} (values {existing:.3f} vs {value:.3f})",
-                subject=component_id,
-            )
-        else:
-            instance.axis_values[axis] = (existing + value) / 2
-
-    def _finalise_transform(
-        self,
-        component: RelationshipComponent,
-        instance: InstanceState,
-        diagnostics: SolveDiagnostics,
-    ) -> Tuple[ComponentTransform, int]:
-        axis_values = dict(instance.axis_values)
-        dof = 0
-        for axis in ("x", "y", "z"):
-            if axis not in axis_values:
-                axis_values[axis] = 0.0
-                dof += 1
-        if dof:
-            diagnostics.add_error(
-                f"component '{component.id}' remains under-constrained on {dof} axis/axes",
-                subject=component.id,
-            )
-        transform = ComponentTransform(
-            position=(axis_values["x"], axis_values["y"], axis_values["z"]),
-            rotation=_rotation_from_orientation(instance.orientation),
-            orientation=instance.orientation,
+        angle: float,
+    ) -> ComponentTransform:
+        if axis != "z":
+            return transform
+        radians = math.radians(angle)
+        cos_a = math.cos(radians)
+        sin_a = math.sin(radians)
+        x, y, z = transform.position
+        cx, cy, cz = about
+        dx = x - cx
+        dy = y - cy
+        rotated_x = cx + dx * cos_a - dy * sin_a
+        rotated_y = cy + dx * sin_a + dy * cos_a
+        rotation = (
+            transform.rotation[0],
+            transform.rotation[1],
+            transform.rotation[2] + angle,
         )
-        return transform, dof
+        orientation = _orientation_from_z_rotation(rotation[2])
+        return ComponentTransform(position=(rotated_x, rotated_y, z), rotation=rotation, orientation=orientation)
+
+    # ------------------------------------------------------------------ #
+    def _stable_guid(self, template_id: str, instance_id: str, salt: float | int | None = None) -> str:
+        text = f"{template_id}:{instance_id}"
+        if salt is not None:
+            text = f"{text}:{salt}"
+        return str(uuid.uuid5(GUID_NAMESPACE, text))
 
     def _neutral_primitive(
         self,
         component: RelationshipComponent,
         instance_id: str,
+        template_id: str,
+        size: Tuple[float, float, float],
         transform: ComponentTransform,
         guid: str,
         connections: Sequence[ConnectionHint],
@@ -1177,44 +1106,48 @@ class ConstraintSolver:
         metadata = dict(component.metadata)
         metadata.setdefault("id", instance_id)
         metadata.setdefault("component_id", component.id)
+        metadata.setdefault("template_id", template_id)
         metadata.setdefault("class", component.class_name)
         metadata.setdefault("profile", component.profile)
         metadata.setdefault("guid", guid)
+        ifc_dict = component.ifc.to_dict() if component.ifc else None
         if component.profile_params:
             metadata.setdefault("profile_params", dict(component.profile_params))
         if component.ifc:
-            ifc_dict = component.ifc.to_dict()
             if ifc_dict:
                 metadata.setdefault("ifc", ifc_dict)
         if component.description:
             metadata.setdefault("description", component.description)
-        solid, footprint = self._build_cadquery_block(component, transform)
+        solid, footprint = self._build_cadquery_block(component, size, transform)
         return NeutralPrimitive(
             id=instance_id,
             class_name=component.class_name,
             profile=component.profile,
             profile_params=dict(component.profile_params),
-            size=_component_size(component),
+            size=size,
             material=component.material,
             metadata=metadata,
             transform=transform,
             guid=guid,
             solid=solid,
             footprint=footprint,
-            ifc=_ifc_to_dict(component.ifc),
             connections=tuple(connections),
+            ifc=ifc_dict,
             voids=tuple(component.voids),
         )
 
     def _build_cadquery_block(
         self,
         component: RelationshipComponent,
+        size: Tuple[float, float, float],
         transform: ComponentTransform,
     ) -> Tuple[Optional[Any], Optional[ShapelyPolygon]]:
-        if component.height <= 0.0 or component.size_xy[0] <= 0.0 or component.size_xy[1] <= 0.0:
+        if component.kind == "reference":
+            return None, None
+        if size[2] <= 0.0 or size[0] <= 0.0 or size[1] <= 0.0:
             return None, None
 
-        wp = self._workplane_for_component(component)
+        wp = self._workplane_for_component(component, size)
         if wp is None:
             return None, None
         rotation = transform.rotation
@@ -1229,20 +1162,19 @@ class ConstraintSolver:
         solid = wp.val()
         return solid, footprint_from_solid(solid)
 
-    def _workplane_for_component(self, component: RelationshipComponent) -> Optional[cq.Workplane]:
+    def _workplane_for_component(self, component: RelationshipComponent, size: Tuple[float, float, float]) -> Optional[cq.Workplane]:
         profile = component.profile.lower().strip()
         if profile == "wedge":
-            return self._build_wedge_workplane(component)
+            return self._build_wedge_workplane(component, size)
         if profile == "sweep":
-            return self._build_sweep_workplane(component)
-        # Default to a rectangular prism.
-        return cq.Workplane("XY").box(component.size_xy[0], component.size_xy[1], component.height, centered=True)
+            return self._build_sweep_workplane(component, size)
+        return cq.Workplane("XY").box(size[0], size[1], size[2], centered=True)
 
-    def _build_wedge_workplane(self, component: RelationshipComponent) -> Optional[cq.Workplane]:
+    def _build_wedge_workplane(self, component: RelationshipComponent, size: Tuple[float, float, float]) -> Optional[cq.Workplane]:
         slope = float(component.profile_params.get("slope", component.profile_params.get("rise", 0.0)) or 0.0)
-        hx = component.size_xy[0] / 2
-        hy = component.size_xy[1] / 2
-        hz = component.height / 2
+        hx = size[0] / 2
+        hy = size[1] / 2
+        hz = size[2] / 2
         if hx <= 0 or hy <= 0 or hz <= 0:
             return None
         top_positive = max(hz - slope, -hz)
@@ -1252,10 +1184,10 @@ class ConstraintSolver:
             (hy, top_positive),
             (-hy, hz),
         ]
-        return cq.Workplane("YZ").polyline(points).close().extrude(component.size_xy[0], both=True)
+        return cq.Workplane("YZ").polyline(points).close().extrude(size[0], both=True)
 
-    def _build_sweep_workplane(self, component: RelationshipComponent) -> Optional[cq.Workplane]:
-        height = component.height
+    def _build_sweep_workplane(self, component: RelationshipComponent, size: Tuple[float, float, float]) -> Optional[cq.Workplane]:
+        height = size[2]
         if height <= 0:
             return None
         points_raw = component.profile_params.get("points") or component.profile_params.get("profile") or ()
@@ -1268,8 +1200,8 @@ class ConstraintSolver:
                     except (TypeError, ValueError):
                         continue
         if len(points) < 3:
-            half_x = component.size_xy[0] / 2
-            half_y = component.size_xy[1] / 2
+            half_x = size[0] / 2
+            half_y = size[1] / 2
             points = [
                 (-half_x, -half_y),
                 (half_x, -half_y),
@@ -1280,43 +1212,30 @@ class ConstraintSolver:
 
     def _evaluate_checks(self, resolver: ReferenceResolver, diagnostics: SolveDiagnostics) -> None:
         for clause in self.spec.checks:
-            subject_axes = _axes_from_pos(clause.subject.pos)
-            object_axes = {axis: sign for axis, sign in _axes_from_pos(clause.obj.pos)}
+            subject_axes = _axes_from_pos(clause.subject)
+            target_axes = {axis: sign for axis, sign in _axes_from_pos(clause.target.pos)}
             passed = True
             for axis, subject_sign in subject_axes:
-                object_sign = object_axes.get(axis, subject_sign)
-                subject_coord = self._face_coordinate(
-                    clause.subject.ref, axis, subject_sign, clause.subject.frame, resolver, instance=None
-                )
-                object_coord = self._face_coordinate(
-                    clause.obj.ref, axis, object_sign, clause.obj.frame, resolver, instance=None
-                )
-                if subject_coord is None or object_coord is None:
-                    if clause.on_fail == "warn":
-                        diagnostics.add_warning(
-                            f"check '{clause.kind}' references unknown target(s)",
-                            subject=clause.subject.ref,
-                        )
-                    else:
-                        diagnostics.add_error(
-                            f"check '{clause.kind}' references unknown target(s)",
-                            subject=clause.subject.ref,
-                        )
+                target_sign = target_axes.get(axis, subject_sign)
+                subject_coord = resolver.axis_coordinate("self", axis, subject_sign)
+                object_coord = resolver.axis_coordinate(clause.target.ref, axis, target_sign)
+                if object_coord is None:
+                    diagnostics.add_error(
+                        f"check references unknown target '{clause.target.ref}'",
+                        subject=clause.target.ref,
+                    )
                     passed = False
                     continue
-                gap_direction = 1.0 if subject_sign > 0 else -1.0
-                expected = object_coord + clause.gap * gap_direction
-                if abs(subject_coord - expected) > clause.tolerance:
-                    message = (
-                        f"check failed between '{clause.subject.ref}' and '{clause.obj.ref}' on axis {axis}"
+                if subject_coord is None:
+                    subject_coord = object_coord
+                if abs(subject_coord - object_coord) > 1e-3:
+                    diagnostics.add_error(
+                        f"check failed between '{clause.subject}' and '{clause.target.ref}' on axis {axis}",
+                        subject=clause.target.ref,
                     )
-                    if clause.on_fail == "warn":
-                        diagnostics.add_warning(message, subject=clause.subject.ref)
-                    else:
-                        diagnostics.add_error(message, subject=clause.subject.ref)
                     passed = False
             result_text = "PASS" if passed else "FAIL"
-            diagnostics.check_results.append(f"{result_text}: {clause.kind} {clause.subject.ref}→{clause.obj.ref}")
+            diagnostics.check_results.append(f"{result_text}: {clause.subject}->{clause.target.ref}")
 
     def _build_scene(self, primitives: Sequence[NeutralPrimitive]) -> trimesh.Scene:
         return build_scene_from_primitives(primitives)
@@ -1440,40 +1359,49 @@ class ConstraintSolver:
         target[f"datums.{name}"] = value
         target[f"datums.{category}.{name}"] = value
 
-    def _stable_guid(self, component_id: str, instance_id: str) -> str:
-        seed = f"{self.spec.schema}|{self.spec.info.option or 'option'}|{component_id}|{instance_id}"
-        return str(uuid.uuid5(GUID_NAMESPACE, seed))
-
 
 def footprint_from_solid(solid: Any) -> Optional[ShapelyPolygon]:
+    if solid is None:
+        return None
     try:
-        vertices, _faces = solid.tessellate(0.5)
+        verts = solid.Vertices()
+        points = [(float(v.X), float(v.Y)) for v in verts]
+        hull = MultiPoint(points).convex_hull
+        if hull.is_empty or not isinstance(hull, ShapelyPolygon):
+            return None
+        return hull
     except Exception:
         return None
-    if not vertices:
-        return None
-    hull = MultiPoint([(vec.x, vec.y) for vec in vertices]).convex_hull
-    if hull.is_empty or not isinstance(hull, ShapelyPolygon):
-        return None
-    return hull
 
 
 def mesh_from_primitive(primitive: NeutralPrimitive, *, to_meters: bool = True) -> Optional[trimesh.Trimesh]:
-    cached = getattr(primitive, "mesh", None)
-    if cached is not None:
-        mesh_copy = cached.copy()
+    if primitive.mesh is not None:
+        mesh = primitive.mesh.copy()
         if to_meters:
-            mesh_copy.apply_scale(MM_TO_METERS)
-        return mesh_copy
-
-    if primitive.solid is not None:
+            mesh.apply_scale(MM_TO_METERS)
+        return mesh
+    if primitive.solid is not None and hasattr(primitive.solid, "tessellate"):
         try:
-            vectors, faces = primitive.solid.tessellate(0.5)
+            vertices, faces = primitive.solid.tessellate(1.0)
         except Exception:
-            vectors, faces = (), ()
-        if vectors and faces:
-            vertices = np.array([[v.x, v.y, v.z] for v in vectors])
-            mesh_mm = trimesh.Trimesh(vertices=vertices, faces=np.array(faces), process=False)
+            vertices, faces = ((), ())
+        if vertices and faces:
+            converted: List[Tuple[float, float, float]] = []
+            for v in vertices:
+                try:
+                    if hasattr(v, "toTuple"):
+                        converted.append(tuple(float(coord) for coord in v.toTuple()))  # type: ignore[attr-defined]
+                    elif hasattr(v, "X"):
+                        converted.append((float(v.X), float(v.Y), float(v.Z)))  # type: ignore[attr-defined]
+                    elif hasattr(v, "x"):
+                        converted.append((float(v.x), float(v.y), float(v.z)))  # type: ignore[attr-defined]
+                    else:
+                        converted.append((float(v[0]), float(v[1]), float(v[2])))  # type: ignore[index]
+                except Exception:
+                    continue
+            if converted:
+                vertices = converted
+            mesh_mm = trimesh.Trimesh(vertices=np.array(vertices), faces=np.array(faces), process=False)
             rotation = primitive.transform.rotation
             if any(rotation):
                 try:

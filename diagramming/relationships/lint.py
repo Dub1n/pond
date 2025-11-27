@@ -1,14 +1,18 @@
 from __future__ import annotations
 
-from typing import Iterable, List, Set
+from typing import List, Set
 
 from .schema import (
-    AlignmentClause,
-    FlushBundleClause,
+    AxisRelation,
+    BooleanOperation,
+    MirrorOperation,
     RelationshipComponent,
     RelationshipDiagramSpec,
-    RunBetweenClause,
+    RotateOperation,
+    RunBetweenSpec,
+    TranslateOperation,
 )
+from .solver import ConstraintSolver
 
 
 IFC_REQUIREMENTS = {
@@ -27,77 +31,88 @@ def lint_relationship_spec(spec: RelationshipDiagramSpec) -> List[str]:
 
     errors: List[str] = []
     component_ids = {component.id for component in spec.components}
+    placement_ids = {
+        placement.id for component in spec.components for placement in component.place
+    }
+    known_ids = component_ids | placement_ids
     datum_points = set(spec.datums.keys())
     datum_planes = set(spec.planes.keys())
     datum_bundles = set(spec.bundles.keys())
 
     for check in spec.checks:
-        _lint_check(
+        _lint_axis_relation(
             check,
+            component_ids=known_ids,
             datum_points=datum_points,
             datum_planes=datum_planes,
             datum_bundles=datum_bundles,
-            component_ids=component_ids,
             errors=errors,
+            context="checks",
         )
 
     for component in spec.components:
         _lint_component(
             component,
-            component_ids=component_ids,
+            known_ids=known_ids,
             datum_points=datum_points,
             datum_planes=datum_planes,
             datum_bundles=datum_bundles,
             errors=errors,
         )
 
+    for operation in spec.operations:
+        _lint_operation(
+            operation,
+            known_ids=known_ids,
+            errors=errors,
+        )
+
+    # Use the solver to surface inferred size conflicts and under-constrained axes.
+    try:
+        solver = ConstraintSolver(spec)
+        result = solver.solve()
+        errors.extend([err.message for err in result.diagnostics.errors])
+    except Exception as exc:  # pragma: no cover - guardrail for missing deps
+        errors.append(f"lint solver failed: {exc}")
+
     return errors
-
-
-def _lint_frame(frame: str, component_ids: Set[str], errors: List[str], *, context: str) -> None:
-    if not frame.startswith("component:"):
-        return
-    target = frame.split(":", 1)[1]
-    if target and target not in component_ids:
-        errors.append(f"{context} frame references unknown component '{target}'")
 
 
 def _lint_component(
     component: RelationshipComponent,
     *,
-    component_ids: Set[str],
+    known_ids: Set[str],
     datum_points: Set[str],
     datum_planes: Set[str],
     datum_bundles: Set[str],
     errors: List[str],
 ) -> None:
-    class_lower = component.class_name.lower()
-    for clause in component.relationships:
-        if isinstance(clause, AlignmentClause):
-            _lint_ref(clause.subject.ref, component, component_ids, datum_points, datum_planes, datum_bundles, errors)
-            _lint_ref(clause.obj.ref, component, component_ids, datum_points, datum_planes, datum_bundles, errors)
-            _lint_frame(clause.subject.frame, component_ids, errors, context=f"component '{component.id}'")
-            _lint_frame(clause.obj.frame, component_ids, errors, context=f"component '{component.id}'")
-        elif isinstance(clause, FlushBundleClause):
-            _lint_ref(clause.bundle, component, component_ids, datum_points, datum_planes, datum_bundles, errors)
-            _lint_frame(clause.frame, component_ids, errors, context=f"component '{component.id}' flush_bundle")
-        elif isinstance(clause, RunBetweenClause):
-            _lint_ref(clause.from_ref.ref, component, component_ids, datum_points, datum_planes, datum_bundles, errors)
-            _lint_ref(clause.to_ref.ref, component, component_ids, datum_points, datum_planes, datum_bundles, errors)
-            _lint_frame(clause.from_ref.frame, component_ids, errors, context=f"component '{component.id}' run_between")
-            _lint_frame(clause.to_ref.frame, component_ids, errors, context=f"component '{component.id}' run_between")
-            if clause.orient not in {"preserve_axes", "along_run"}:
-                errors.append(f"component '{component.id}' run_between uses unsupported orient '{clause.orient}'")
+    class_lower = (component.class_name or "").lower()
+    for relation in component.relations:
+        _lint_axis_relation(
+            relation,
+            component_ids=known_ids,
+            datum_points=datum_points,
+            datum_planes=datum_planes,
+            datum_bundles=datum_bundles,
+            errors=errors,
+            context=f"component '{component.id}'",
+        )
+
+    run_between = component.run_between
+    if run_between:
+        _lint_run_between(run_between, component, known_ids, datum_points, datum_planes, datum_bundles, errors)
 
     for void in component.voids:
-        if void not in component_ids:
+        if void not in known_ids:
             errors.append(f"component '{component.id}' void references unknown component '{void}'")
 
-    repeat = component.repeat
-    if repeat and repeat.span_use:
-        _lint_ref(repeat.span_use, component, component_ids, datum_points, datum_planes, datum_bundles, errors)
-    if class_lower.startswith("ifc") and component.ifc is None:
-        errors.append(f"component '{component.id}' uses IFC class '{component.class_name}' without an ifc block")
+    axes_present = _axis_coverage(component)
+    if component.kind != "reference":
+        for axis in ("x", "y", "z"):
+            if axis not in axes_present:
+                errors.append(f"component '{component.id}' is missing placement on axis {axis}")
+
     requirements = IFC_REQUIREMENTS.get(class_lower)
     if requirements:
         if requirements.get("predefined") and (component.ifc is None or component.ifc.predefined_type is None):
@@ -108,8 +123,36 @@ def _lint_component(
             errors.append(f"component '{component.id}' ({component.class_name}) must declare a material")
 
 
-def _lint_ref(
-    ref: str,
+def _axis_coverage(component: RelationshipComponent) -> Set[str]:
+    axes: Set[str] = set()
+    for relation in component.relations:
+        for axis, _ in _axes_from_pos(relation.subject):
+            axes.add(axis)
+    run_between = component.run_between
+    if run_between:
+        for axis, _ in _axes_from_pos(run_between.start_pos):
+            axes.add(axis)
+        for axis, _ in _axes_from_pos(run_between.end_pos):
+            axes.add(axis)
+    return axes
+
+
+def _lint_axis_relation(
+    relation: AxisRelation,
+    *,
+    component_ids: Set[str],
+    datum_points: Set[str],
+    datum_planes: Set[str],
+    datum_bundles: Set[str],
+    errors: List[str],
+    context: str,
+) -> None:
+    if not _ref_known(relation.target.ref, component_ids, datum_points, datum_planes, datum_bundles):
+        errors.append(f"{context} references unknown target '{relation.target.ref}'")
+
+
+def _lint_run_between(
+    run_between: RunBetweenSpec,
     component: RelationshipComponent,
     component_ids: Set[str],
     datum_points: Set[str],
@@ -117,52 +160,69 @@ def _lint_ref(
     datum_bundles: Set[str],
     errors: List[str],
 ) -> None:
+    for target in (run_between.from_ref, run_between.to_ref):
+        if not _ref_known(target.ref, component_ids, datum_points, datum_planes, datum_bundles):
+            errors.append(f"component '{component.id}' run_between references unknown target '{target.ref}'")
+    if run_between.orient not in {"preserve_axes", "along_run"}:
+        errors.append(f"component '{component.id}' run_between uses unsupported orient '{run_between.orient}'")
+
+
+def _lint_operation(operation: object, *, known_ids: Set[str], errors: List[str]) -> None:
+    selectors: List[str] = []
+    if isinstance(operation, RotateOperation):
+        selectors.extend(operation.targets)
+        selectors.extend(operation.id_map.keys())
+    elif isinstance(operation, (MirrorOperation, TranslateOperation)):
+        selectors.extend(operation.targets)
+    elif isinstance(operation, BooleanOperation):
+        selectors.append(operation.target)
+        selectors.extend(operation.subtract)
+
+    for selector in selectors:
+        base = selector.split(".", 1)[0]
+        if base and base not in known_ids:
+            errors.append(f"operation references unknown selector '{selector}'")
+
+
+def _axes_from_pos(pos_token: str) -> List[tuple[str, int]]:
+    axes: List[tuple[str, int]] = []
+    token = pos_token.strip()
+    if len(token) < 2:
+        return axes
+    idx = 0
+    while idx < len(token):
+        if token[idx] == "c":
+            axes.append((token[idx + 1], 0))
+            idx += 2
+            continue
+        sign_char = token[idx]
+        axis = token[idx + 1]
+        sign = 1 if sign_char == "+" else -1
+        axes.append((axis, sign))
+        idx += 2
+    return axes
+
+
+def _ref_known(ref: str, component_ids: Set[str], datum_points: Set[str], datum_planes: Set[str], datum_bundles: Set[str]) -> bool:
     if ref == "self":
-        return
+        return True
     if ref in component_ids or ref in datum_points or ref in datum_planes or ref in datum_bundles:
-        return
+        return True
     if ref.startswith("datums."):
         segments = ref.split(".")
         if len(segments) == 2:
             name = segments[1]
-            if name in datum_points or name in datum_planes or name in datum_bundles:
-                return
-        elif len(segments) >= 3:
+            return name in datum_points or name in datum_planes or name in datum_bundles
+        if len(segments) >= 3:
             category = segments[1]
             name = ".".join(segments[2:])
-            if category == "planes" and name in datum_planes:
-                return
+            if category == "planes":
+                return name in datum_planes
             if category == "bundles":
-                if name in datum_bundles:
-                    return
-                base = name.split(".")[0]
-                if base in datum_bundles:
-                    return
-            if category in {"points", "point"} and name in datum_points:
-                return
-    errors.append(f"component '{component.id}' references unknown target '{ref}'")
-
-
-def _lint_check(
-    clause: AlignmentClause,
-    *,
-    datum_points: Set[str],
-    datum_planes: Set[str],
-    datum_bundles: Set[str],
-    component_ids: Set[str],
-    errors: List[str],
-) -> None:
-    dummy_component = RelationshipComponent(
-        id="__checks__",
-        class_name="",
-        profile="rectangle",
-        size_xy=(0.0, 0.0),
-        height=0.0,
-    )
-    _lint_ref(clause.subject.ref, dummy_component, component_ids, datum_points, datum_planes, datum_bundles, errors)
-    _lint_ref(clause.obj.ref, dummy_component, component_ids, datum_points, datum_planes, datum_bundles, errors)
-    _lint_frame(clause.subject.frame, component_ids, errors, context="checks.subject")
-    _lint_frame(clause.obj.frame, component_ids, errors, context="checks.object")
+                return name in datum_bundles or name.split(".")[0] in datum_bundles
+            if category in {"points", "point"}:
+                return name in datum_points
+    return False
 
 
 __all__ = ["lint_relationship_spec"]

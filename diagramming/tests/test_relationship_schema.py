@@ -1,151 +1,89 @@
 from __future__ import annotations
 
-import dataclasses
 from pathlib import Path
-import unittest
 from tempfile import TemporaryDirectory
 from textwrap import dedent
+import unittest
 
 from diagramming.relationships import canonical_pos_token, lint_relationship_spec, load_relationship_spec
 
 
-FIXTURE_DIR = Path(__file__).parent / "fixtures"
+class RelationshipSchemaTests(unittest.TestCase):
+    def test_canonical_pos_token_orders_and_accepts_centers(self) -> None:
+        token = canonical_pos_token("cy+z-cx")
+        self.assertEqual(token, "cxcy+z")
 
-
-class Phase4SchemaTests(unittest.TestCase):
-    def test_canonical_pos_token_orders_axes(self) -> None:
-        token = canonical_pos_token(["-y", "+z", "+x"])
-        self.assertEqual(token, "+x-y+z")
-
-    def test_loads_relationship_spec_and_lints(self) -> None:
-        spec_path = FIXTURE_DIR / "relationship_minimal.yaml"
-        spec = load_relationship_spec(spec_path)
-        self.assertEqual(len(spec.components), 1)
-        self.assertIn("frame", spec.bundles)
-        errors = lint_relationship_spec(spec)
-        self.assertEqual(errors, [])
-
-    def test_lint_catches_unknown_reference(self) -> None:
-        spec_path = FIXTURE_DIR / "relationship_minimal.yaml"
-        spec = load_relationship_spec(spec_path)
-        component = spec.components[0]
-        bad_repeat = dataclasses.replace(component.repeat, span_use="datums.bundles.missing.x")  # type: ignore[arg-type]
-        bad_component = dataclasses.replace(component, repeat=bad_repeat)
-        bad_spec = dataclasses.replace(spec, components=(bad_component,))
-        errors = lint_relationship_spec(bad_spec)
-        self.assertTrue(errors)
-        self.assertIn("unknown target", errors[0])
-
-    def test_checks_block_validates_references(self) -> None:
+    def test_lint_flags_missing_axis_on_component(self) -> None:
         spec_text = dedent(
             """
             schema: pond-relationship-test
             info:
-              option: lint-check
-            datums:
-              origin:
-                type: point
-                coordinates:
-                  +x: 0
-                  +y: 0
-                  +z: 0
+              option: lint-missing
             components:
+              - id: origin
+                kind: reference
+                size: [0, 0, 0]
               - id: beam
                 class: IfcBeam
-                size: [100, 50]
-            checks:
-              - align:
-                  subject:
-                    component: beam
-                    pos: +x
-                  object:
-                    component: missing
-                    pos: -x
-            """
-        )
-        with TemporaryDirectory() as tmp:
-            path = Path(tmp) / "checks.yaml"
-            path.write_text(spec_text, encoding="utf-8")
-            spec = load_relationship_spec(path)
-        errors = lint_relationship_spec(spec)
-        self.assertTrue(errors)
-        self.assertIn("unknown target", errors[0])
-
-    def test_run_between_orient_is_validated(self) -> None:
-        spec_text = dedent(
-            """
-            schema: pond-relationship-test
-            info:
-              option: lint-run
-            datums:
-              start:
-                type: point
-                coordinates:
-                  +x: 0
-                  +y: 0
-              end:
-                type: point
-                coordinates:
-                  +x: 1000
-                  +y: 0
-            components:
-              - id: runner
-                class: IfcBeam
-                size: [100, 50]
+                size: [100, 50, 20]
                 relate:
-                  - run_between:
-                      start_pos: +x
-                      end_pos: +x
-                      from:
-                        datum: datums.start
-                        pos: +x
-                      to:
-                        datum: datums.end
-                        pos: +x
-                      orient: spin
+                  +x: { ref: origin, pos: +x }
+                  +y: { ref: origin, pos: +y }
             """
         )
         with TemporaryDirectory() as tmp:
-            path = Path(tmp) / "run.yaml"
+            path = Path(tmp) / "missing.yaml"
             path.write_text(spec_text, encoding="utf-8")
             spec = load_relationship_spec(path)
         errors = lint_relationship_spec(spec)
-        self.assertTrue(errors)
-        self.assertIn("orient", errors[0])
+        self.assertTrue(any("missing placement on axis z" in err for err in errors))
 
-    def test_frame_reference_must_point_to_known_component(self) -> None:
+    def test_reference_allows_missing_axes(self) -> None:
         spec_text = dedent(
             """
             schema: pond-relationship-test
             info:
-              option: frame
-            datums:
-              origin:
-                type: point
-                coordinates:
-                  +x: 0
-                  +y: 0
+              option: lint-reference
             components:
+              - id: origin
+                kind: reference
+                size: [0, 0, 0]
+            """
+        )
+        with TemporaryDirectory() as tmp:
+            path = Path(tmp) / "reference.yaml"
+            path.write_text(spec_text, encoding="utf-8")
+            spec = load_relationship_spec(path)
+        errors = lint_relationship_spec(spec)
+        self.assertFalse(errors)
+
+    def test_lint_catches_unknown_operation_selector(self) -> None:
+        spec_text = dedent(
+            """
+            schema: pond-relationship-test
+            info:
+              option: lint-op
+            components:
+              - id: origin
+                kind: reference
+                size: [0, 0, 0]
               - id: slab
                 class: IfcSlab
-                size: [1000, 500]
+                size: [100, 100, 10]
                 relate:
-                  - align:
-                      subject:
-                        component: slab
-                        pos: +x
-                        frame: component:missing
-                      object:
-                        datum: datums.origin
-                        pos: +x
+                  +x-y+z: { ref: origin, pos: +x-y+z }
+            operations:
+              - type: boolean
+                target: missing_component
+                subtract: [slab]
             """
         )
         with TemporaryDirectory() as tmp:
-            path = Path(tmp) / "frame.yaml"
+            path = Path(tmp) / "op.yaml"
             path.write_text(spec_text, encoding="utf-8")
             spec = load_relationship_spec(path)
         errors = lint_relationship_spec(spec)
-        self.assertTrue(any("frame" in err for err in errors))
+        self.assertTrue(any("unknown selector" in err for err in errors))
 
 
 if __name__ == "__main__":  # pragma: no cover

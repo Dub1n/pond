@@ -11,13 +11,17 @@ from .flags import is_relationship_schema, relationship_mode_enabled
 from .lint import lint_relationship_spec
 from .solver import ComponentTransform, ConstraintSolver, NeutralPrimitive, SolveDiagnostics, SolveResult, SolvedComponent
 from .schema import (
-    AlignmentClause,
+    AxisRelation,
+    AxisMapTarget,
+    BooleanOperation,
     DimensionResolver,
-    FlushBundleClause,
+    MirrorOperation,
+    RotateOperation,
+    TranslateOperation,
     canonical_pos_token,
     RelationshipComponent,
     RelationshipDiagramSpec,
-    RunBetweenClause,
+    RunBetweenSpec,
     SchemaError,
     load_relationship_spec,
 )
@@ -32,18 +36,22 @@ from .validation import (
 )
 
 __all__ = [
-    "AlignmentClause",
+    "AxisRelation",
+    "AxisMapTarget",
+    "BooleanOperation",
     "DualRenderDiff",
     "canonical_pos_token",
     "DimensionResolver",
-    "FlushBundleClause",
+    "MirrorOperation",
+    "RotateOperation",
+    "TranslateOperation",
     "ComponentTransform",
     "ConstraintSolver",
     "lint_relationship_spec",
     "NeutralPrimitive",
     "RelationshipComponent",
     "RelationshipDiagramSpec",
-    "RunBetweenClause",
+    "RunBetweenSpec",
     "SchemaError",
     "SolveDiagnostics",
     "SolveResult",

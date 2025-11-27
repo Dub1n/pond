@@ -17,6 +17,7 @@ FrameToken = str
 
 AXIS_ORDER = {"x": 0, "y": 1, "z": 2}
 VALID_FRAMES = {"world", "local"}
+CENTER_PREFIXES = {"c", "~"}
 
 
 class SchemaError(ValueError):
@@ -210,32 +211,64 @@ def _canonical_axis(token: Any) -> AxisToken:
     return f"{sign}{axis}"
 
 
+def _normalise_pos_token(token: str) -> Tuple[str, str]:
+    text = token.strip().lower()
+    if not text:
+        raise SchemaError("position token cannot be empty")
+    text = text.replace("centre_", "c").replace("center_", "c")
+    text = text.replace("centre", "c").replace("center", "c")
+    text = text.replace("~", "c")
+    sign = "+"
+    if text[0] in {"+", "-"}:
+        sign = text[0]
+        text = text[1:]
+    pos_type = "center" if text and text[0] in CENTER_PREFIXES else "face"
+    if pos_type == "center":
+        text = text[1:]
+    if not text or text not in {"x", "y", "z"}:
+        raise SchemaError("position token must reference x, y, or z")
+    return sign, text if pos_type == "face" else f"c{text}"
+
+
 def canonical_pos_token(raw: Any) -> PosToken:
-    tokens: List[Tuple[str, str]] = []
+    tokens: List[Tuple[str, int]] = []
     if isinstance(raw, str):
-        text = raw.replace(" ", "")
-        matches = re.findall(r"[+-][xyz]", text)
+        cleaned = raw.replace(" ", "")
+        matches = re.findall(r"[+\-~]?c?[xyz]|c[xyz]", cleaned, flags=re.IGNORECASE)
         if not matches:
-            raise SchemaError(f"position token '{raw}' must include at least one signed axis")
-        for item in matches:
-            tokens.append((item[1], item[0]))
-    elif isinstance(raw, Sequence):
+            raise SchemaError(f"position token '{raw}' must include at least one axis")
+        for match in matches:
+            sign, axis = _normalise_pos_token(match)
+            tokens.append((axis, 0 if axis.startswith("c") else (1 if sign == "+" else -1)))
+    elif isinstance(raw, Sequence) and not isinstance(raw, (str, bytes)):
         for item in raw:
-            axis_token = _canonical_axis(item)
-            tokens.append((axis_token[1], axis_token[0]))
+            sign, axis = _normalise_pos_token(str(item))
+            tokens.append((axis, 0 if axis.startswith("c") else (1 if sign == "+" else -1)))
     else:
         raise SchemaError("position token must be a string or list of axes")
 
-    seen: set[str] = set()
-    unique: List[Tuple[str, str]] = []
+    seen: set[Tuple[str, int]] = set()
+    unique: List[Tuple[str, int]] = []
     for axis, sign in tokens:
-        if axis in seen:
-            raise SchemaError(f"position token '{raw}' repeats axis '{axis}'")
-        seen.add(axis)
+        key = (axis[-1], sign)
+        if key in seen:
+            continue
+        seen.add(key)
         unique.append((axis, sign))
 
-    unique.sort(key=lambda item: AXIS_ORDER[item[0]])
-    return "".join(f"{sign}{axis}" for axis, sign in unique)
+    def _sort_key(item: Tuple[str, int]) -> Tuple[int, int]:
+        axis, sign = item
+        order = { -1: 0, 0: 1, 1: 2 }.get(sign, 1)
+        return (AXIS_ORDER[axis[-1]], order)
+
+    unique.sort(key=_sort_key)
+    canonical: List[str] = []
+    for axis, sign in unique:
+        if sign == 0 or axis.startswith("c"):
+            canonical.append(f"c{axis[-1]}")
+        else:
+            canonical.append(f"{'+' if sign > 0 else '-'}{axis[-1]}")
+    return "".join(canonical)
 
 
 def _parse_frame(raw: Any) -> FrameToken:
@@ -312,6 +345,16 @@ def _resolve_profile_params(value: Any, dimensions: DimensionResolver) -> Dict[s
     return {str(key): resolve(raw) for key, raw in value.items()}
 
 
+def _parse_axis_amount(value: Any, dimensions: DimensionResolver) -> Dict[PosToken, float]:
+    if value is None:
+        return {}
+    if isinstance(value, Mapping):
+        return {canonical_pos_token(k): _resolve_number(v, dimensions) for k, v in value.items()}
+    if isinstance(value, Sequence) and not isinstance(value, (str, bytes)):
+        raise SchemaError("gap/offset must be a scalar or mapping, not a list")
+    return {"*": _resolve_number(value, dimensions)}
+
+
 # --------------------------------------------------------------------------- #
 # Data classes
 
@@ -346,65 +389,32 @@ class DatumBundle:
 
 
 @dataclass(slots=True)
-class AlignmentTarget:
+class AxisMapTarget:
     ref: str
     pos: PosToken
+    gap: Dict[PosToken, float] = field(default_factory=dict)
+    offset: Dict[PosToken, float] = field(default_factory=dict)
+    mode: str = "point"
     frame: FrameToken = "world"
 
 
 @dataclass(slots=True)
-class AlignmentClause:
-    kind: str
-    subject: AlignmentTarget
-    obj: AlignmentTarget
-    gap: float = 0.0
-    tolerance: float = 0.5
-    on_fail: str = "error"
-
-
-@dataclass(slots=True)
-class FlushFace:
+class AxisRelation:
     subject: PosToken
-    obj: PosToken
+    target: AxisMapTarget
 
 
 @dataclass(slots=True)
-class FlushBundleClause:
-    bundle: str
-    faces: Tuple[FlushFace, ...]
-    inset_subject: Dict[PosToken, float] = field(default_factory=dict)
-    inset_object: Dict[PosToken, float] = field(default_factory=dict)
-    frame: FrameToken = "world"
-
-
-@dataclass(slots=True)
-class RunBetweenClause:
+class RunBetweenSpec:
     start_pos: PosToken
     end_pos: PosToken
-    from_ref: AlignmentTarget
-    to_ref: AlignmentTarget
+    from_ref: AxisMapTarget
+    to_ref: AxisMapTarget
     orient: str = "preserve_axes"
     count: Optional[int] = None
     pitch: Optional[float] = None
     inset_start: Optional[float] = None
     inset_end: Optional[float] = None
-    include_seed: bool = False
-
-
-@dataclass(slots=True)
-class RelateFromClause:
-    source: str
-    overrides: Dict[str, Any] = field(default_factory=dict)
-
-
-@dataclass(slots=True)
-class RepeatSpec:
-    axis: AxisToken
-    span_use: Optional[str] = None
-    pitch: Optional[float] = None
-    count: Optional[int] = None
-    inset_start: float = 0.0
-    inset_end: float = 0.0
     include_seed: bool = False
 
 
@@ -429,20 +439,63 @@ class IfcMetadata:
 
 
 @dataclass(slots=True)
+class Placement:
+    id: str
+    relations: Tuple[AxisRelation, ...]
+
+
+@dataclass(slots=True)
 class RelationshipComponent:
     id: str
-    class_name: str
+    kind: str
+    class_name: Optional[str]
     profile: str
-    size_xy: Tuple[float, float]
-    height: float
+    size: Tuple[Optional[float], Optional[float], Optional[float]]
     profile_params: Dict[str, Any] = field(default_factory=dict)
     material: Optional[str] = None
     metadata: Dict[str, Any] = field(default_factory=dict)
-    relationships: Tuple[AlignmentClause | FlushBundleClause | RunBetweenClause | RelateFromClause, ...] = ()
-    repeat: Optional[RepeatSpec] = None
+    relations: Tuple[AxisRelation, ...] = ()
+    run_between: Optional[RunBetweenSpec] = None
+    place: Tuple[Placement, ...] = ()
     ifc: Optional[IfcMetadata] = None
     voids: Tuple[str, ...] = ()
     description: Optional[str] = None
+
+
+@dataclass(slots=True)
+class Operation:
+    type: str
+
+
+@dataclass(slots=True)
+class RotateOperation(Operation):
+    targets: Tuple[str, ...]
+    about: str
+    axis: str
+    count: int = 1
+    include_seed: bool = False
+    id_map: Dict[str, Tuple[str, ...]] = field(default_factory=dict)
+
+
+@dataclass(slots=True)
+class MirrorOperation(Operation):
+    targets: Tuple[str, ...]
+    axis: str
+    coordinate: float = 0.0
+    include_seed: bool = False
+
+
+@dataclass(slots=True)
+class TranslateOperation(Operation):
+    targets: Tuple[str, ...]
+    vector: Tuple[float, float, float]
+    include_seed: bool = False
+
+
+@dataclass(slots=True)
+class BooleanOperation(Operation):
+    target: str
+    subtract: Tuple[str, ...]
 
 
 @dataclass(slots=True)
@@ -481,7 +534,8 @@ class RelationshipDiagramSpec:
     components: Tuple[RelationshipComponent, ...]
     assemblies: Tuple[AssemblyCall, ...]
     views: Dict[str, ViewConfig]
-    checks: Tuple[AlignmentClause, ...] = ()
+    checks: Tuple[AxisRelation, ...] = ()
+    operations: Tuple[Operation, ...] = ()
 
 
 # --------------------------------------------------------------------------- #
@@ -504,9 +558,10 @@ def _parse_spec(data: MutableMapping[str, Any], *, source: Path) -> Relationship
     info = _parse_info(data.get("info", {}))
     dimensions = DimensionResolver.from_mapping(data.get("dimensions"))
     datums, planes, bundles = _parse_datums(data.get("datums", {}), dimensions)
-    checks = tuple(_parse_checks(data.get("checks", ()), dimensions))
+    checks = tuple(_parse_axis_map(data.get("checks", {}), dimensions))
     components, assemblies = _parse_components(data.get("components", []), dimensions)
     views = _parse_views(data.get("views", {}), dimensions)
+    operations = tuple(_parse_operations(data.get("operations", ()), dimensions))
     return RelationshipDiagramSpec(
         schema=schema_field,
         info=info,
@@ -518,6 +573,7 @@ def _parse_spec(data: MutableMapping[str, Any], *, source: Path) -> Relationship
         assemblies=assemblies,
         views=views,
         checks=checks,
+        operations=operations,
     )
 
 
@@ -630,6 +686,19 @@ def _parse_bundle_block(data: Any, dimensions: DimensionResolver) -> Dict[str, D
     return bundles
 
 
+def _parse_size(raw: Any, dimensions: DimensionResolver) -> Tuple[Optional[float], Optional[float], Optional[float]]:
+    if raw is None:
+        return (None, None, None)
+    if not isinstance(raw, Sequence) or isinstance(raw, (str, bytes)):
+        raise SchemaError("size must be a list when provided")
+    values = [_resolve_number(item, dimensions) for item in raw]
+    if len(values) == 2:
+        return (values[0], values[1], None)
+    if len(values) == 3:
+        return (values[0], values[1], values[2])
+    raise SchemaError("size must have 2 or 3 entries")
+
+
 def _parse_components(
     data: Sequence[Any],
     dimensions: DimensionResolver,
@@ -652,23 +721,13 @@ def _parse_components(
 def _parse_component(data: Mapping[str, Any], dimensions: DimensionResolver) -> RelationshipComponent:
     if "id" not in data:
         raise SchemaError("component requires an id")
-    if "class" not in data:
-        raise SchemaError(f"component '{data['id']}' requires a class")
-    if "size" not in data:
-        raise SchemaError(f"component '{data['id']}' requires size")
     comp_id = str(data["id"])
-    class_name = normalize_ifc_class(data["class"])
+    kind = str(data.get("kind", "component")).lower()
+    class_raw = data.get("class")
+    class_name = normalize_ifc_class(class_raw) if class_raw else None
     profile = str(data.get("profile", "rectangle"))
     profile_params = _resolve_profile_params(data.get("profile_params"), dimensions)
-
-    size_raw = data["size"]
-    if not isinstance(size_raw, Sequence):
-        raise SchemaError(f"component '{comp_id}' size must be a sequence")
-    resolved_size = [_resolve_number(item, dimensions) for item in size_raw]
-    if len(resolved_size) not in (2, 3):
-        raise SchemaError(f"component '{comp_id}' size must have 2 or 3 entries")
-    size_xy = (resolved_size[0], resolved_size[1])
-    height = resolved_size[2] if len(resolved_size) == 3 else _resolve_number(data.get("height", 0.0), dimensions)
+    size = _parse_size(data.get("size"), dimensions)
 
     metadata = _resolve_metadata(data.get("metadata"), dimensions)
     label = data.get("label")
@@ -697,25 +756,26 @@ def _parse_component(data: Mapping[str, Any], dimensions: DimensionResolver) -> 
                 voids.append(str(ref))
             else:
                 voids.append(str(entry))
-    voids_tuple = tuple(voids)
-    repeat = _parse_repeat(data.get("repeat"), dimensions)
-    relationships = tuple(_parse_relationships(data.get("relate", ()), dimensions))
+    relations = tuple(_parse_axis_map(data.get("relate", {}), dimensions))
+    run_between = _parse_run_between(data.get("run_between"), dimensions)
+    place = tuple(_parse_place(data.get("place", ()), dimensions))
     description = str(data["description"]) if "description" in data else None
     material = str(data["material"]) if data.get("material") is not None else None
 
     return RelationshipComponent(
         id=comp_id,
+        kind=kind,
         class_name=class_name,
         profile=profile,
         profile_params=profile_params,
-        size_xy=size_xy,
-        height=height,
+        size=size,
         material=material,
         metadata=metadata,
-        relationships=relationships,
-        repeat=repeat,
+        relations=relations,
+        run_between=run_between,
+        place=place,
         ifc=ifc_block,
-        voids=voids_tuple,
+        voids=tuple(voids),
         description=description,
     )
 
@@ -744,121 +804,96 @@ def _parse_ifc_block(data: Any) -> Optional[IfcMetadata]:
     return IfcMetadata(predefined_type=predefined_norm, psets=tuple(psets))
 
 
-def _parse_relationships(data: Any, dimensions: DimensionResolver) -> List[Any]:
+def _parse_axis_map(data: Any, dimensions: DimensionResolver) -> List[AxisRelation]:
     if data is None:
         return []
-    if not isinstance(data, Sequence):
-        raise SchemaError("relate block must be a list when provided")
-    clauses: List[Any] = []
-    for entry in data:
-        if not isinstance(entry, Mapping) or len(entry) != 1:
-            raise SchemaError("each relate entry must be a single-key mapping")
-        key = next(iter(entry.keys()))
-        payload = entry[key]
-        if key in {"align", "contact"}:
-            clauses.append(_parse_align_clause(key, payload, dimensions))
-        elif key == "flush_bundle":
-            clauses.append(_parse_flush_bundle(payload, dimensions))
-        elif key == "run_between":
-            clauses.append(_parse_run_between(payload, dimensions))
-        elif key == "relate_from":
-            clauses.append(_parse_relate_from(payload))
-        elif key == "touch_planes":
-            clauses.extend(_parse_touch_planes(payload, dimensions))
-        elif key == "touch_components":
-            clauses.extend(_parse_touch_components(payload, dimensions))
-        else:
-            raise SchemaError(f"unsupported relate helper '{key}'")
-    return clauses
+    items: List[Tuple[Any, Any]] = []
+    if isinstance(data, Mapping):
+        items = list(data.items())
+    elif isinstance(data, Sequence):
+        for entry in data:
+            if not isinstance(entry, Mapping) or len(entry) != 1:
+                raise SchemaError("axis-map entries must be single-key mappings")
+            key = next(iter(entry.keys()))
+            items.append((key, entry[key]))
+    else:
+        raise SchemaError("axis-map must be a mapping or list when provided")
 
-
-def _parse_align_clause(kind: str, payload: Any, dimensions: DimensionResolver) -> AlignmentClause:
-    if not isinstance(payload, Mapping):
-        raise SchemaError(f"{kind} clause must be a mapping")
-    subject_raw = payload.get("subject")
-    object_raw = payload.get("object")
-    if subject_raw is None or object_raw is None:
-        raise SchemaError(f"{kind} clause requires 'subject' and 'object'")
-    subject = _parse_alignment_target(subject_raw, dimensions)
-    obj = _parse_alignment_target(object_raw, dimensions)
-    gap = _resolve_number(payload.get("gap", 0.0), dimensions)
-    tolerance = _resolve_number(payload.get("tolerance", 0.5), dimensions)
-    on_fail = str(payload.get("on_fail", "error"))
-    if kind == "contact":
-        gap = 0.0
-    return AlignmentClause(kind=kind, subject=subject, obj=obj, gap=gap, tolerance=tolerance, on_fail=on_fail)
-
-
-def _parse_alignment_target(data: Any, dimensions: DimensionResolver) -> AlignmentTarget:
-    if not isinstance(data, Mapping):
-        raise SchemaError("alignment target must be a mapping")
-    pos_raw = data.get("pos") or data.get("face")
-    if pos_raw is None:
-        raise SchemaError("alignment target requires 'pos'")
-    ref = (
-        data.get("component")
-        or data.get("bundle")
-        or data.get("datum")
-        or data.get("ref")
-        or data.get("object")
-    )
-    if ref is None:
-        raise SchemaError("alignment target requires a reference (component/datum/bundle)")
-    frame = _parse_frame(data.get("frame"))
-    return AlignmentTarget(ref=str(ref), pos=canonical_pos_token(pos_raw), frame=frame)
-
-
-def _parse_flush_bundle(payload: Any, dimensions: DimensionResolver) -> FlushBundleClause:
-    if not isinstance(payload, Mapping):
-        raise SchemaError("flush_bundle must be a mapping")
-    bundle = payload.get("bundle")
-    if bundle is None:
-        raise SchemaError("flush_bundle requires 'bundle'")
-    faces_raw = payload.get("faces")
-    if faces_raw is None:
-        raise SchemaError("flush_bundle requires 'faces'")
-    faces: List[FlushFace] = []
-    if not isinstance(faces_raw, Sequence):
-        raise SchemaError("flush_bundle.faces must be a list")
-    for face_entry in faces_raw:
-        if isinstance(face_entry, Mapping):
-            subject_pos = face_entry.get("subject") or face_entry.get("face")
-            object_pos = face_entry.get("object") or face_entry.get("bundle") or face_entry.get("target") or subject_pos
-        else:
-            subject_pos = face_entry
-            object_pos = face_entry
-        if subject_pos is None or object_pos is None:
-            raise SchemaError("flush_bundle face entries require subject/object faces")
-        faces.append(
-            FlushFace(subject=canonical_pos_token(subject_pos), obj=canonical_pos_token(object_pos))
+    relations: List[AxisRelation] = []
+    for raw_subject, payload in items:
+        if raw_subject == "flush":
+            relations.extend(_parse_flush(payload, dimensions))
+            continue
+        subject = canonical_pos_token(raw_subject)
+        if not isinstance(payload, Mapping):
+            raise SchemaError("axis-map entry must be a mapping")
+        ref_raw = payload.get("ref") or payload.get("component") or payload.get("to")
+        if ref_raw is None:
+            raise SchemaError(f"axis-map entry '{subject}' requires a ref/component/to field")
+        pos_raw = payload.get("pos", subject)
+        gap = _parse_axis_amount(payload.get("gap"), dimensions)
+        offset = _parse_axis_amount(payload.get("offset"), dimensions)
+        mode = str(payload.get("mode", "point"))
+        frame = _parse_frame(payload.get("frame"))
+        relations.append(
+            AxisRelation(
+                subject=subject,
+                target=AxisMapTarget(
+                    ref=str(ref_raw),
+                    pos=canonical_pos_token(pos_raw),
+                    gap=gap,
+                    offset=offset,
+                    mode=mode,
+                    frame=frame,
+                ),
+            )
         )
-
-    inset_raw = payload.get("inset", {}) or {}
-    inset_subject: Dict[PosToken, float] = {}
-    inset_object: Dict[PosToken, float] = {}
-    if inset_raw:
-        if not isinstance(inset_raw, Mapping):
-            raise SchemaError("flush_bundle.inset must be a mapping when provided")
-        subject_map = inset_raw.get("subject", inset_raw)
-        object_map = inset_raw.get("object", {})
-        if subject_map:
-            for face, raw in subject_map.items():
-                inset_subject[canonical_pos_token(face)] = _resolve_number(raw, dimensions)
-        if object_map:
-            for face, raw in object_map.items():
-                inset_object[canonical_pos_token(face)] = _resolve_number(raw, dimensions)
-
-    frame = _parse_frame(payload.get("frame"))
-    return FlushBundleClause(
-        bundle=str(bundle),
-        faces=tuple(faces),
-        inset_subject=inset_subject,
-        inset_object=inset_object,
-        frame=frame,
-    )
+    return relations
 
 
-def _parse_run_between(payload: Any, dimensions: DimensionResolver) -> RunBetweenClause:
+def _parse_flush(payload: Any, dimensions: DimensionResolver) -> List[AxisRelation]:
+    if not isinstance(payload, Mapping):
+        raise SchemaError("flush must be a mapping")
+    ref_raw = payload.get("ref") or payload.get("component") or payload.get("to")
+    if ref_raw is None:
+        raise SchemaError("flush requires a ref/component/to field")
+    faces_raw = payload.get("faces") or ("+x", "-x", "+y", "-y", "+z", "-z")
+    if isinstance(faces_raw, str):
+        faces = [faces_raw]
+    elif isinstance(faces_raw, Sequence):
+        faces = list(faces_raw)
+    else:
+        raise SchemaError("flush.faces must be a list or string")
+
+    inset_raw = payload.get("inset", 0.0)
+    inset_map: Dict[PosToken, float] = {}
+    if isinstance(inset_raw, Mapping):
+        inset_map = {canonical_pos_token(k): _resolve_number(v, dimensions) for k, v in inset_raw.items()}
+    else:
+        inset_value = _resolve_number(inset_raw, dimensions)
+        inset_map = {"*": inset_value}
+
+    relations: List[AxisRelation] = []
+    for face in faces:
+        subject = canonical_pos_token(face)
+        gap = inset_map.copy()
+        relations.append(
+            AxisRelation(
+                subject=subject,
+                target=AxisMapTarget(
+                    ref=str(ref_raw),
+                    pos=subject,
+                    gap=gap,
+                    mode="plane",
+                ),
+            )
+        )
+    return relations
+
+
+def _parse_run_between(payload: Any, dimensions: DimensionResolver) -> Optional[RunBetweenSpec]:
+    if payload is None:
+        return None
     if not isinstance(payload, Mapping):
         raise SchemaError("run_between must be a mapping")
     start_pos = payload.get("start_pos")
@@ -876,11 +911,11 @@ def _parse_run_between(payload: Any, dimensions: DimensionResolver) -> RunBetwee
     inset_start = _resolve_optional_number(inset.get("start"), dimensions) if isinstance(inset, Mapping) else None
     inset_end = _resolve_optional_number(inset.get("end"), dimensions) if isinstance(inset, Mapping) else None
     include_seed = bool(payload.get("include_seed", False))
-    return RunBetweenClause(
+    return RunBetweenSpec(
         start_pos=canonical_pos_token(start_pos),
         end_pos=canonical_pos_token(end_pos),
-        from_ref=_parse_alignment_target(from_raw, dimensions),
-        to_ref=_parse_alignment_target(to_raw, dimensions),
+        from_ref=_parse_axis_target(from_raw, dimensions),
+        to_ref=_parse_axis_target(to_raw, dimensions),
         orient=orient,
         count=int(count) if count is not None else None,
         pitch=_resolve_optional_number(pitch, dimensions),
@@ -890,119 +925,42 @@ def _parse_run_between(payload: Any, dimensions: DimensionResolver) -> RunBetwee
     )
 
 
-def _parse_relate_from(payload: Any) -> RelateFromClause:
-    if not isinstance(payload, Mapping):
-        raise SchemaError("relate_from must be a mapping")
-    source = payload.get("source")
-    if source is None:
-        raise SchemaError("relate_from requires 'source'")
-    overrides_raw = payload.get("overrides", {})
-    if overrides_raw and not isinstance(overrides_raw, Mapping):
-        raise SchemaError("relate_from.overrides must be a mapping")
-    return RelateFromClause(source=str(source), overrides=dict(overrides_raw or {}))
-
-
-def _parse_touch_planes(payload: Any, dimensions: DimensionResolver) -> List[AlignmentClause]:
-    if not isinstance(payload, Mapping):
-        raise SchemaError("touch_planes must be a mapping")
-    object_ref = payload.get("object")
-    faces_raw = payload.get("faces")
-    if object_ref is None or faces_raw is None:
-        raise SchemaError("touch_planes requires 'object' and 'faces'")
-    if not isinstance(faces_raw, Sequence):
-        raise SchemaError("touch_planes.faces must be a list")
-    clauses: List[AlignmentClause] = []
-    for face in faces_raw:
-        subject = AlignmentTarget(ref="self", pos=canonical_pos_token(face), frame="local")
-        obj = AlignmentTarget(ref=str(object_ref), pos=canonical_pos_token(face), frame="world")
-        clauses.append(
-            AlignmentClause(kind="contact", subject=subject, obj=obj, gap=0.0, tolerance=0.5, on_fail="error")
-        )
-    return clauses
-
-
-def _parse_touch_components(payload: Any, dimensions: DimensionResolver) -> List[AlignmentClause]:
-    if not isinstance(payload, Mapping):
-        raise SchemaError("touch_components must be a mapping")
-    pairs_raw = payload.get("pairs")
-    if not isinstance(pairs_raw, Sequence):
-        raise SchemaError("touch_components requires a list of pairs")
-    clauses: List[AlignmentClause] = []
-    offsets_raw = payload.get("offsets", {})
-    default_gap = _resolve_number(offsets_raw.get("gap", 0.0) if isinstance(offsets_raw, Mapping) else 0.0, dimensions)
-    for pair in pairs_raw:
-        if not isinstance(pair, Mapping):
-            raise SchemaError("touch_components pairs must be mappings")
-        subject_face = pair.get("subject_face")
-        object_face = pair.get("object_face")
-        object_component = pair.get("object_component")
-        if subject_face is None or object_face is None or object_component is None:
-            raise SchemaError("touch_components pairs require subject_face, object_face, object_component")
-        subject = AlignmentTarget(ref="self", pos=canonical_pos_token(subject_face), frame="local")
-        obj = AlignmentTarget(ref=str(object_component), pos=canonical_pos_token(object_face), frame="world")
-        gap_value = pair.get("gap", default_gap)
-        clauses.append(
-            AlignmentClause(
-                kind="contact",
-                subject=subject,
-                obj=obj,
-                gap=_resolve_number(gap_value, dimensions),
-                tolerance=0.5,
-                on_fail="error",
-            )
-        )
-    return clauses
-
-
-def _parse_repeat(data: Any, dimensions: DimensionResolver) -> Optional[RepeatSpec]:
-    if data is None:
-        return None
+def _parse_axis_target(data: Mapping[str, Any], dimensions: DimensionResolver) -> AxisMapTarget:
     if not isinstance(data, Mapping):
-        raise SchemaError("repeat must be a mapping when provided")
-    axis_raw = data.get("axis")
-    if axis_raw is None:
-        raise SchemaError("repeat requires 'axis'")
-    axis = _canonical_axis(axis_raw)
-    span_raw = data.get("span") or {}
-    span_use = None
-    inset_start = 0.0
-    inset_end = 0.0
-    if isinstance(span_raw, Mapping) and "use" in span_raw:
-        span_use = str(span_raw["use"])
-        inset_raw = span_raw.get("inset", {}) or {}
-        if not isinstance(inset_raw, Mapping):
-            raise SchemaError("repeat.span.inset must be a mapping")
-        inset_start = _resolve_number(inset_raw.get("start", 0.0), dimensions)
-        inset_end = _resolve_number(inset_raw.get("end", 0.0), dimensions)
-    pitch = _resolve_optional_number(data.get("pitch"), dimensions)
-    count_raw = data.get("count")
-    count = int(count_raw) if count_raw is not None else None
-    include_seed = bool(data.get("include_seed", False))
-    return RepeatSpec(
-        axis=axis,
-        span_use=span_use,
-        pitch=pitch,
-        count=count,
-        inset_start=inset_start,
-        inset_end=inset_end,
-        include_seed=include_seed,
+        raise SchemaError("axis target must be a mapping")
+    ref_raw = data.get("ref") or data.get("component") or data.get("bundle") or data.get("datum") or data.get("object")
+    if ref_raw is None:
+        raise SchemaError("axis target requires a reference")
+    pos_raw = data.get("pos") or data.get("face")
+    if pos_raw is None:
+        raise SchemaError("axis target requires 'pos'")
+    frame = _parse_frame(data.get("frame"))
+    return AxisMapTarget(
+        ref=str(ref_raw),
+        pos=canonical_pos_token(pos_raw),
+        gap=_parse_axis_amount(data.get("gap"), dimensions),
+        offset=_parse_axis_amount(data.get("offset"), dimensions),
+        mode=str(data.get("mode", "point")),
+        frame=frame,
     )
 
 
-def _parse_checks(data: Any, dimensions: DimensionResolver) -> List[AlignmentClause]:
+def _parse_place(data: Any, dimensions: DimensionResolver) -> List[Placement]:
     if data is None:
         return []
     if not isinstance(data, Sequence):
-        raise SchemaError("checks block must be a list when provided")
-    clauses: List[AlignmentClause] = []
+        raise SchemaError("place must be a list when provided")
+    placements: List[Placement] = []
     for entry in data:
-        if not isinstance(entry, Mapping) or len(entry) != 1:
-            raise SchemaError("checks entries must be single-key mappings")
-        key = next(iter(entry.keys()))
-        if key not in {"align", "contact"}:
-            raise SchemaError(f"unsupported check type '{key}'")
-        clauses.append(_parse_align_clause(key, entry[key], dimensions))
-    return clauses
+        if not isinstance(entry, Mapping):
+            raise SchemaError("place entries must be mappings")
+        place_id = entry.get("id")
+        if not place_id:
+            raise SchemaError("place entries require an id")
+        axis_map_payload = {k: v for k, v in entry.items() if k != "id"}
+        relations = tuple(_parse_axis_map(axis_map_payload, dimensions))
+        placements.append(Placement(id=str(place_id), relations=relations))
+    return placements
 
 
 def _parse_assembly(data: Mapping[str, Any]) -> AssemblyCall:
@@ -1021,6 +979,106 @@ def _ensure_unique_ids(components: Sequence[RelationshipComponent]) -> None:
         if component.id in seen:
             raise SchemaError(f"duplicate component id '{component.id}'")
         seen.add(component.id)
+
+
+def _parse_operations(data: Any, dimensions: DimensionResolver) -> List[Operation]:
+    if data is None:
+        return []
+    if not isinstance(data, Sequence):
+        raise SchemaError("operations must be a list when provided")
+    operations: List[Operation] = []
+    for entry in data:
+        if not isinstance(entry, Mapping):
+            raise SchemaError("operation entries must be mappings")
+        op_type = str(entry.get("type", "")).lower()
+        if op_type == "rotate":
+            operations.append(_parse_rotate_operation(entry, dimensions))
+        elif op_type == "mirror":
+            operations.append(_parse_mirror_operation(entry, dimensions))
+        elif op_type == "translate":
+            operations.append(_parse_translate_operation(entry, dimensions))
+        elif op_type == "boolean":
+            operations.append(_parse_boolean_operation(entry))
+        else:
+            raise SchemaError(f"unsupported operation type '{op_type}'")
+    return operations
+
+
+def _parse_targets(entry: Mapping[str, Any]) -> Tuple[str, ...]:
+    targets_raw = entry.get("targets") or entry.get("components") or entry.get("ids")
+    if targets_raw is None:
+        return ()
+    if not isinstance(targets_raw, Sequence) or isinstance(targets_raw, (str, bytes)):
+        raise SchemaError("operation targets must be a list when provided")
+    return tuple(str(t) for t in targets_raw)
+
+
+def _parse_rotate_operation(entry: Mapping[str, Any], dimensions: DimensionResolver) -> RotateOperation:
+    about_raw = entry.get("about") or {}
+    if not isinstance(about_raw, Mapping) or "ref" not in about_raw:
+        raise SchemaError("rotate operation requires about.ref")
+    axis_raw = about_raw.get("axis", "+z")
+    axis_token = _canonical_axis(axis_raw)
+    count_raw = entry.get("count", 1)
+    count = int(count_raw) if count_raw is not None else 1
+    include_seed = bool(entry.get("include_seed", False))
+    id_map_raw = entry.get("id_map", {}) or {}
+    if not isinstance(id_map_raw, Mapping):
+        raise SchemaError("rotate.id_map must be a mapping when provided")
+    id_map: Dict[str, Tuple[str, ...]] = {}
+    for base, mapped in id_map_raw.items():
+        if not isinstance(mapped, Sequence) or isinstance(mapped, (str, bytes)):
+            raise SchemaError("rotate.id_map values must be lists")
+        id_map[str(base)] = tuple(str(item) for item in mapped)
+    targets = _parse_targets(entry)
+    if not targets and id_map:
+        targets = tuple(id_map.keys())
+    return RotateOperation(
+        type="rotate",
+        targets=targets,
+        about=str(about_raw["ref"]),
+        axis=axis_token,
+        count=count,
+        include_seed=include_seed,
+        id_map=id_map,
+    )
+
+
+def _parse_mirror_operation(entry: Mapping[str, Any], dimensions: DimensionResolver) -> MirrorOperation:
+    plane_raw = entry.get("plane") or {}
+    if not isinstance(plane_raw, Mapping):
+        raise SchemaError("mirror.plane must be a mapping")
+    axis_raw = plane_raw.get("axis", "x")
+    axis_token = _canonical_axis(axis_raw)[-1]
+    coordinate = _resolve_number(plane_raw.get("coordinate", 0.0), dimensions)
+    targets = _parse_targets(entry)
+    include_seed = bool(entry.get("include_seed", False))
+    return MirrorOperation(type="mirror", targets=targets, axis=axis_token, coordinate=coordinate, include_seed=include_seed)
+
+
+def _parse_translate_operation(entry: Mapping[str, Any], dimensions: DimensionResolver) -> TranslateOperation:
+    vector_raw = entry.get("vector") or entry.get("offset") or {}
+    if not isinstance(vector_raw, Mapping):
+        raise SchemaError("translate.vector must be a mapping")
+    vector = (
+        _resolve_number(vector_raw.get("x", 0.0), dimensions),
+        _resolve_number(vector_raw.get("y", 0.0), dimensions),
+        _resolve_number(vector_raw.get("z", 0.0), dimensions),
+    )
+    targets = _parse_targets(entry)
+    include_seed = bool(entry.get("include_seed", False))
+    return TranslateOperation(type="translate", targets=targets, vector=vector, include_seed=include_seed)
+
+
+def _parse_boolean_operation(entry: Mapping[str, Any]) -> BooleanOperation:
+    target = entry.get("target")
+    subtract_raw = entry.get("subtract") or ()
+    if target is None:
+        raise SchemaError("boolean operation requires a target")
+    if not isinstance(subtract_raw, Sequence) or isinstance(subtract_raw, (str, bytes)):
+        raise SchemaError("boolean.subtract must be a list")
+    subtract = tuple(str(item) for item in subtract_raw)
+    return BooleanOperation(type="boolean", target=str(target), subtract=subtract)
 
 
 def _parse_views(data: Any, dimensions: DimensionResolver) -> Dict[str, ViewConfig]:
@@ -1069,19 +1127,24 @@ def _parse_views(data: Any, dimensions: DimensionResolver) -> Dict[str, ViewConf
 
 
 __all__ = [
-    "AlignmentClause",
-    "AssemblyCall",
+    "AxisMapTarget",
+    "AxisRelation",
+    "BooleanOperation",
     "DatumBundle",
     "DatumPlane",
     "DatumPoint",
     "DimensionResolver",
-    "FlushBundleClause",
+    "IfcMetadata",
     "InfoBlock",
+    "MirrorOperation",
+    "Placement",
     "PosToken",
     "RelationshipComponent",
     "RelationshipDiagramSpec",
-    "RunBetweenClause",
+    "RotateOperation",
+    "RunBetweenSpec",
     "SchemaError",
+    "TranslateOperation",
     "canonical_pos_token",
     "load_relationship_spec",
 ]
