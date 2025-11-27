@@ -1,0 +1,319 @@
+schema: pond-relationship-final-sketch
+info:
+  option: C
+  title: "Option C — compact relationship-first sketch"
+  description: "Minimal text → unambiguous scene using the proposed axis-map relate shape and reference components."
+
+dimensions:
+  structure:
+    deck_span: 5000
+    pond_span: 3000
+    backspan: 1000
+    cantilever: 250
+    joist_spacing: 400
+    joist_width: 47
+    joist_depth: 150
+    beam_width: 47
+    beam_height: 150
+  finishes:
+    deck_thickness: 28
+  site:
+    water_depth: 900
+    pad_size: 300
+    pad_height: 100
+
+components:
+  # Reference components (geometry-less frames/planes)
+  - id: origin
+    kind: reference
+    size: [0, 0, 0]
+
+  - id: deck_frame
+    kind: reference
+    size: [deck_span, deck_span, 0]
+
+  - id: pond_frame
+    kind: reference
+    size: [pond_span, pond_span, 0]
+
+  - id: opening_frame
+    kind: reference
+    size:
+      - pond_span - 2 * cantilever
+      - pond_span - 2 * cantilever
+      - 0
+    relate:  # optional; omitted axes default to origin for references
+      cxcy: { ref: pond_frame }  # tie to pond_frame center; size + relate both define X/Y
+
+  - id: water_surface
+    kind: reference
+    size: [1, 1, 0]
+    relate:  # only Z matters; X/Y default to origin for references
+      cz: { ref: origin }
+
+  - id: water_bottom
+    kind: reference
+    size: [1, 1, 0]
+    relate:
+      cz: { ref: water_surface, offset: -water_depth }
+
+  - id: pad_top
+    kind: reference
+    size: [1, 1, 0]
+    relate:  # only Z matters; X/Y default to origin for references
+      cz: { ref: water_surface }
+
+  - id: joist_top
+    kind: reference
+    size: [1, 1, 0]
+    relate:  # only Z matters; X/Y default to origin for references
+      cz: { ref: water_surface, offset: joist_depth }
+
+  - id: deck_surface_plane
+    kind: reference
+    size: [1, 1, 0]
+    relate:  # only Z matters; X/Y default to origin for references
+      cz: { ref: joist_top, offset: deck_thickness }
+
+  - id: soil_frame
+    kind: reference
+    size: [deck_span + pad_size, deck_span + pad_size, 0]
+    relate:
+      cxcy: { ref: origin }
+
+  # Components
+  - id: pond_water
+    class: IfcBuildingElementProxy
+    size: [pond_span, pond_span, water_depth]
+    material: water
+    label: "Pond water"
+    # Relate anchors all three axes; no implicit centering needed
+    relate:
+      +x+y-x-y: { ref: pond_frame, pos: +x+y-x-y }  # symmetric faces bound together
+      +z:   { ref: water_surface, pos: +z }
+      -z:   { ref: water_bottom, pos: +z }
+    ifc:
+      predefined_type: ELEMENT
+
+  - id: pond_opening
+    class: IfcOpeningElement
+    size:
+      - pond_span - 2 * cantilever
+      - pond_span - 2 * cantilever
+      - deck_thickness
+    # Size repeats the relate span; if they ever diverge lint should flag it
+    relate:
+      +x-x+y-y:
+        ref: pond_frame
+        pos: +x-x+y-y
+        offset:
+          +x+y: -cantilever
+          -x-y: cantilever
+      +z: { ref: deck_surface_plane, pos: +z }
+      -z: { ref: joist_top, pos: +z }
+    metadata:
+      views: [section]
+    ifc:
+      predefined_type: OPENING
+
+  - id: deck_surface
+    class: IfcSlab
+    size: [deck_span, deck_span, deck_thickness]
+    material: decking
+    label: "Deck surface (1.0 m backspan + 0.25 m overhang)"
+    # Size repeats the X/Y defined by relate; lint can catch drift if they ever differ
+    relate:
+      +x+y-x-y: { ref: deck_frame, pos: +x+y-x-y }
+      -z:   { ref: joist_top, pos: +z }
+      +z:   { ref: deck_surface_plane, pos: +z }
+    voids:
+      - ref: pond_opening
+    ifc:
+      predefined_type: FLOOR
+
+  - id: outer_beam_west
+    class: IfcBeam
+    size: [beam_width, deck_span, beam_height]
+    material: timber
+    label: "Support beam at outer rim"
+    # Axis-map relate replaces multiple align/contact clauses
+    relate:
+      +x+y-y: { ref: deck_frame, pos: -x+y-y }
+      +z: { ref: joist_top, pos: +z }
+      -z: { ref: pad_top, pos: +z }
+    ifc:
+      predefined_type: BEAM
+
+  - id: inner_beam_west
+    class: IfcBeam
+    size: [beam_width, deck_span, beam_height]
+    material: timber
+    label: "Inner beam (saddle hanger rebate)"
+    # Axis-map relate sets X/Y/Z with one block
+    relate:
+      +x: { ref: pond_frame, pos: -x }
+      +y-y: { ref: deck_frame, pos: +y-y }
+      +z: { ref: joist_top, pos: +z }
+      -z: { ref: pad_top, pos: +z }
+    ifc:
+      predefined_type: BEAM
+
+  - id: joist_run_west
+    class: IfcBeam
+    size:
+      - backspan + cantilever - beam_width
+      - joist_width
+      - joist_depth
+    material: timber
+    label: "Joist (1.0 m backspan + 0.25 m cantilever)"
+    # X set by -x align, Y centered via cy token, Z by joist_top
+    relate:
+      -x: { ref: outer_beam_west, pos: +x }
+      cy: { ref: pond_frame }
+      +z: { ref: joist_top, pos: +z }
+    run_between:
+      start_pos: +y
+      end_pos: -y
+      from: { ref: pond_frame, pos: +y }
+      to:   { ref: pond_frame, pos: -y }
+      count: 7
+      include_seed: true
+      inset:
+        start: cantilever + joist_width / 2
+      end: cantilever + joist_width / 2
+      orient: along_run
+    ifc:
+      predefined_type: JOIST
+
+  - id: corner_diagonal_nw
+    class: IfcBeam
+    size: [corner_diagonal_length, joist_width, joist_depth]
+    material: joist
+    label: "Corner diagonal"
+    relate:
+      +x+y-x-y:
+        ref: deck_frame
+        pos: -x+y-x-y
+      +x+y:
+        ref: opening_frame
+        pos: -x+y
+        offset:
+          +x: corner_diagonal_length / 2
+          +y: -corner_diagonal_length / 2
+      +z: { ref: joist_top, pos: +z }
+    ifc:
+      predefined_type: JOIST
+
+  - id: corner_tie_horizontal_nw
+    class: IfcBeam
+    size: [corner_tie_spacing, joist_width, joist_depth]
+    material: joist
+    label: "Corner tie horizontal"
+    relate:
+      +x:
+        ref: deck_frame
+        pos: -x
+      +y:
+        ref: deck_frame
+        pos: +y
+        offset: -corner_tie_spacing + joist_width / 2
+      +z: { ref: joist_top, pos: +z }
+    ifc:
+      predefined_type: JOIST
+
+  - id: corner_tie_vertical_nw
+    class: IfcBeam
+    size: [joist_width, corner_tie_spacing, joist_depth]
+    material: joist
+    label: "Corner tie vertical"
+    relate:
+      +x:
+        ref: deck_frame
+        pos: -x
+        offset: -corner_tie_spacing + joist_width / 2
+      +y:
+        ref: deck_frame
+        pos: +y
+      +z: { ref: joist_top, pos: +z }
+    ifc:
+      predefined_type: JOIST
+
+  - id: soil_fill
+    class: IfcSlab
+    size: [deck_span + pad_size, deck_span + pad_size, water_depth]
+    material: soil
+    label: "Soil fill"
+    relate:
+      +x+y-x-y: { ref: soil_frame, pos: +x+y-x-y }
+      +z: { ref: water_surface, pos: +z }
+      -z: { ref: water_bottom, pos: +z }
+    ifc:
+      predefined_type: FLOOR
+
+  - id: pad_template_west
+    class: IfcFooting
+    size: [pad_size, pad_size, pad_height]
+    material: pad
+    label: "Pad foundation"
+    ifc:
+      predefined_type: PAD_FOOTING
+    place:
+      - id: pad_corner_west
+        +x+y:
+          ref: deck_frame
+          pos: -x+y
+          offset: -(pad_size / 2 - joist_width / 2)
+        +z: { ref: pad_top, pos: +z }
+      - id: pad_run2_west
+        +x:
+          ref: deck_frame
+          pos: -x
+          offset: -(pad_size / 2 - joist_width / 2)
+        +y:
+          ref: joist_run_west#1
+          pos: +y
+          gap: pad_size / 2 - joist_width / 2
+        +z: { ref: pad_top, pos: +z }
+      - id: pad_run6_west
+        +x:
+          ref: deck_frame
+          pos: -x
+          offset: -(pad_size / 2 - joist_width / 2)
+        -y:
+          ref: joist_run_west#5
+          pos: -y
+          gap: pad_size / 2 - joist_width / 2
+        +z: { ref: pad_top, pos: +z }
+
+operations:
+  - type: rotate
+    about: { ref: origin, axis: +z }
+    count: 4
+    include_seed: true
+    id_map:
+      outer_beam_west: [outer_beam_west, outer_beam_south, outer_beam_east, outer_beam_north]
+      inner_beam_west: [inner_beam_west, inner_beam_south, inner_beam_east, inner_beam_north]
+      joist_run_west: [joist_run_west, joist_run_south, joist_run_east, joist_run_north]
+      pad_corner_west: [pad_corner_west, pad_corner_south, pad_corner_east, pad_corner_north]
+      pad_run2_west: [pad_run2_west, pad_run2_south, pad_run2_east, pad_run2_north]
+      pad_run6_west: [pad_run6_west, pad_run6_south, pad_run6_east, pad_run6_north]
+      corner_diagonal_nw: [corner_diagonal_nw, corner_diagonal_sw, corner_diagonal_se, corner_diagonal_ne]
+      corner_tie_horizontal_nw: [corner_tie_horizontal_nw, corner_tie_horizontal_sw, corner_tie_horizontal_se, corner_tie_horizontal_ne]
+      corner_tie_vertical_nw: [corner_tie_vertical_nw, corner_tie_vertical_sw, corner_tie_vertical_se, corner_tie_vertical_ne]
+
+  - type: boolean
+    target: soil_fill
+    subtract:
+      - pond_water
+      - pad_corner_west  # id selector: all placements/clones under this template
+
+views:
+  plan:
+    title: "Plan — compact relationship schema sketch"
+    scale_hint: 0.18
+    renders: [svg, png]
+  section:
+    title: "Section — compact relationship schema sketch"
+    plane:
+      axis: y
+      coordinate: pond_span / 2
