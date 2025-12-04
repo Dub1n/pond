@@ -44,7 +44,7 @@ Engineered options (not required for spans/supports here):
 Framing bottom line:
 
 - Use “C24 47×150 UC4 incised pine” for all joists, both beams, and blocking per design-C. Keep tops perfectly flush for saddle/face hangers.
-- Where length is short, splice directly over supports; add solid blocking tight either side; maintain hanger seat alignment.
+- Where length is short, splice directly over supports; add solid blocking tig  ht either side; maintain hanger seat alignment.
 - Inner beam sits closest to water: prioritise UC4 incised pine there even if other members vary.
 
 ---

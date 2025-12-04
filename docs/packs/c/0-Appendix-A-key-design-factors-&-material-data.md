@@ -44,13 +44,13 @@
 
 ## 5. Connection / fixing data (enter from sourced manufacturer tables)  
 
-| Item                                      | Value (enter)            | Notes                                                             |
-| ----------------------------------------- | ------------------------ | ----------------------------------------------------------------- |
-| Saddle hanger shear/bearing capacity      | <enter>                  | From manufacturer datasheet for inner beam hanger and fasteners.  |
-| Face-mount hanger shear capacity          | <enter>                  | From manufacturer datasheet for outer beam hanger and fasteners.  |
-| Uplift strap (LSTA-type) tension capacity | <enter>                  | Include strap grade and screw/nail pattern.                       |
-| Toe-screw withdrawal (Ø6–8 × 120–160)     | <enter>                  | From fastener manufacturer for C24, used for uplift/anti-roll.    |
-| Flat-strap X-brace axial capacity         | <enter>                  | Fixings every other hole; state screw type/grade.                 |
+| Item                                      | Minimum (Option C)                      | Value (enter) | Notes                                                            |
+| ----------------------------------------- | --------------------------------------- | ------------- | ---------------------------------------------------------------- |
+| Saddle hanger shear/bearing capacity      | ≥ 1.6 kN factored per joist             | <enter>       | From manufacturer datasheet for inner beam hanger and fasteners. |
+| Face-mount hanger shear capacity          | ≥ 0.95 kN factored per joist            | <enter>       | From manufacturer datasheet for outer beam hanger and fasteners. |
+| Uplift strap (LSTA-type) tension capacity | ≥ 0.20 kN factored per joist            | <enter>       | Include strap grade and screw/nail pattern.                      |
+| Toe-screw withdrawal (Ø6–8 × 120–160)     | ≥ 0.20 kN withdrawal each screw         | <enter>       | From fastener manufacturer for C24, used for uplift/anti-roll.   |
+| Flat-strap X-brace axial capacity         | ≥ 1.0 kN axial, screws every other hole | <enter>       | Fixings every other hole; state screw type/grade.                |
 
 ## 6. Decking span data (28 × 145 @ 400 mm c/c)  
 
@@ -61,9 +61,9 @@
 
 Notes:  
 
-- Insert the manufacturer/supplier values in Sections 5–6 from your sourced data.  
-- The code factors above are fixed inputs for the Option C Design Basis.  
-- File is to be appended to the Structural Calculation Pack and cited in the Design Summary.  
+- Insert the manufacturer/supplier values in Sections 5–6 from your sourced data.
+- The code factors above are fixed inputs for the Option C Design Basis.
+- File is to be appended to the Structural Calculation Pack and cited in the Design Summary.
 
 ## oaicite reference index
 

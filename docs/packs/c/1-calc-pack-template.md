@@ -98,6 +98,7 @@ Use the worksheet in Section 7 for each member type. Keep the provided sizes; in
 - **Outer beam**: Face-mount hanger shear/bearing; optional toe-screws to remove play.
 - **Bracing**: Flat-strap X-brace axial capacity and fixings; confirm strap grade and screw/nail type.
 - **Uplift/peel**: State calculation of uplift forces if applicable; otherwise record “not governing” with justification.
+- **Perimeter pad ballast**: Refer to `uplift-pad-check.md` — worst uplift from Q on cantilever only = 0.21 kN per interior pad (7 joists), pad self-weight 0.216 kN (300×300×100); note if thicker pad/ballast adopted for margin.
 - **Corrosion**: Confirm stainless/class 4 fasteners and compatibility with hangers/straps.
 
 Placeholders: insert manufacturer references, fastener schedules, and utilisation ratios once known.

@@ -39,6 +39,7 @@ Use this as a step-by-step to turn the templates into an issue-ready pack. Tick 
 ## 6) Supports and bearing
 
 - [ ] Set pad layout and spacing; compute reactions; verify against allowable bearing (Appendix-A default 200 kN/m² or site data).
+- [ ] Perimeter uplift: copy `uplift-pad-check.md` outputs into the pack; confirm pad self-weight/ballast ≥ uplift (0.21 kN/pad worst-case) and note any thickening/ballast chosen.
 - [ ] Note DPC/EPDM isolation and any differential settlement assumptions.
 
 ## 7) Documentation fill-ins

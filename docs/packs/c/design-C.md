@@ -144,6 +144,7 @@
 * confirm **saddle hanger rebate depth** matches flange + DPC.
 * verify **strap material** and corrosion class.
 * confirm **pad layout** for load distribution.
+* log **perimeter pad uplift ballast** decision (300×300×100 pad self-weight vs 0.21 kN uplift; thicken/add ballast if margin needed) per `uplift-pad-check.md`.
 * optional: **small fascia** to hide liner clamp if visible.
 
 ---
