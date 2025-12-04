@@ -4,8 +4,8 @@ Use this as a step-by-step to turn the templates into an issue-ready pack. Tick 
 
 ## 1) Set project info
 
-- [ ] Enter project/site/client, project number, calc ID/revision/date, preparer/checker/approver in calc-pack-template.md front cover.
-- [ ] Set reliability class, design working life, and imposed load category confirmation in Design summary.
+- [x] Enter project/site/client, project number, calc ID/revision/date, preparer/checker/approver in calc-pack-template.md front cover.
+- [x] Set reliability class, design working life, and imposed load category confirmation in Design summary.
 
 ## 2) Confirm geometry and materials
 
