@@ -1,5 +1,17 @@
 # Design C Quanities
 
+## Checklist
+
+- [ ] Gravel
+- [ ] Concrete
+- [ ] Concrete reinforcement
+- [ ] [45deg joist connection](https://ctpostandbeam.com/specialty)
+- [ ] Compound joist connection
+- [ ] [Purchase Screwfix items](https://www.screwfix.com/p/simpson-strong-tie-mini-joist-hangers-47mm-x-62mm-10-pack/754tj)
+- [ ] [Simpson CSA Connector Screws – 5.0 x 40mm](https://tradefixdirect.com/p/simpson-csa-connector-screws-5-0-x-40mm/)
+- [ ] Connector between concrete pads and timber - plate goes into the pad
+- [ ] Slate
+
 ## Decking
 
 18.75m^2 decking
