@@ -47,7 +47,7 @@
 
 ---
 
-## Implementation report (relationship-first surface, March 2024)
+## Implementation report (relationship-first surface)
 
 ### Scope delivered
 

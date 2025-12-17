@@ -276,7 +276,7 @@ Phase 4 replaces the legacy anchor planner with the axis-map relationship schema
 - [ ] Checks: implement `tolerance` + `on_fail` (warn/error) and support `mode` semantics (plane/edge/point) rather than strict axis-coordinate equality only.
 - [ ] Groups: define and implement a `groups` surface (and selectors) so specs can target logical component sets (docs mention this but schema/loader/solver do not yet).
 - [ ] Axis-map: implement `frame` semantics (`world`/`local`/`component:<id>`) and broaden `target.mode` semantics beyond `run_between` point anchors (still mostly parsed but not used for constraint evaluation).
-- [ ] Cancelled (superseded by axis-map): legacy flush_bundle/align/contact extensions; new work targets axis-map-only specs.
+- [-] Cancelled (superseded by axis-map): legacy flush_bundle/align/contact extensions; new work targets axis-map-only specs.
 
 ### Phase 5 – Rich modelling, analysis, and extended integrations
 
