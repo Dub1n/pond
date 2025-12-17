@@ -94,8 +94,8 @@ components:
     class: IfcBuildingElementProxy
     size: [pond_span, pond_span, water_depth]
     material: water
-    label: "Pond water"
-    label_id: "C2"
+    label: "3x3x0.9m Pond water"
+    label_id: "W"
     # Relate anchors all three axes; no implicit centering needed
     relate:
       +x+y-x-y: { ref: pond_frame, pos: +x+y-x-y }  # symmetric faces bound together
@@ -129,8 +129,8 @@ components:
     class: IfcSlab
     size: [deck_span, deck_span, deck_thickness]
     material: decking
-    label: "Deck surface (1.0 m backspan + 0.25 m overhang)"
-    label_id: "C1"
+    label: "Decking (1.0 m backspan + 0.25 m overhang)"
+    label_id: "D"
     # Size repeats the X/Y defined by relate; lint can catch drift if they ever differ
     relate:
       +x+y-x-y: { ref: deck_frame, pos: +x+y-x-y }
@@ -145,8 +145,8 @@ components:
     class: IfcBeam
     size: [beam_width, deck_span, beam_height]
     material: timber
-    label: "Support beam at outer rim"
-    label_id: "C4"
+    label: "47x150mm Outer perimeter beam"
+    label_id: "O"
     # Axis-map relate replaces multiple align/contact clauses
     relate:
       -x: { ref: deck_frame, pos: -x }
@@ -160,8 +160,8 @@ components:
     class: IfcBeam
     size: [beam_width, deck_span, beam_height]
     material: timber
-    label: "Inner beam (saddle hanger rebate)"
-    label_id: "C4B"
+    label: "47x150mm Inner beam"
+    label_id: "I"
     # Axis-map relate sets X/Y/Z with one block
     relate:
       -x: { ref: pond_frame, pos: -x }
@@ -178,8 +178,8 @@ components:
       - joist_width
       - joist_depth
     material: timber
-    label: "47x150 mm joist (1.0 m backspan + 0.25 m cantilever)"
-    label_id: "C5"
+    label: "47x75mm mm Joist"
+    label_id: "J"
     # X set by relate, Y/Z driven via run_between axis-map (faces, no manual inset needed)
     relate:
       -x: { ref: outer_beam_west, pos: +x }
@@ -198,8 +198,8 @@ components:
     class: IfcBeam
     size: [corner_diagonal_length, joist_width, joist_depth]
     material: joist
-    label: "Corner joist to overhang"
-    label_id: "C8"
+    label: "47x75mm Joist from corner to overhang"
+    label_id: "C"
     relate:
       +z: { ref: joist_top, pos: +z }
     run_between:
@@ -218,8 +218,8 @@ components:
     class: IfcBeam
     size: [corner_tie_spacing, joist_width, joist_depth]
     material: joist
-    label: "Corner tie to diagonal"
-    label_id: "C9"
+    label: "47x75mm Corner tie to diagonal"
+    label_id: "T"
     relate:
       -x:
         ref: deck_frame
@@ -236,8 +236,8 @@ components:
     class: IfcBeam
     size: [joist_width, corner_tie_spacing, joist_depth]
     material: joist
-    label: "Corner tie to diagonal"
-    label_id: "C9"
+    label: "47x75mm Corner tie to diagonal"
+    label_id: "T"
     relate:
       -x:
         ref: deck_frame
@@ -274,8 +274,8 @@ components:
     class: IfcFooting
     size: [pad_size, pad_size, pad_height]
     material: pad
-    label: "Shallow pad foundation"
-    label_id: "C6"
+    label: "600x600x50mm Shallow pad foundation"
+    label_id: "P"
     ifc:
       predefined_type: PAD_FOOTING
     relate:
@@ -287,8 +287,8 @@ components:
     class: IfcFooting
     size: [pad_size, pad_size, pad_height]
     material: pad
-    label: "Shallow pad foundation"
-    label_id: "C6"
+    label: "600x600x50mm Shallow pad foundation"
+    label_id: "P"
     ifc:
       predefined_type: PAD_FOOTING
     relate:
@@ -300,8 +300,8 @@ components:
     class: IfcFooting
     size: [pad_size, pad_size, pad_height]
     material: pad
-    label: "Shallow pad foundation"
-    label_id: "C6"
+    label: "600x600x50mm Shallow pad foundation"
+    label_id: "P"
     ifc:
       predefined_type: PAD_FOOTING
     relate:
@@ -319,8 +319,8 @@ components:
     class: IfcFooting
     size: [pad_size, pad_size, pad_height]
     material: pad
-    label: "Shallow pad foundation"
-    label_id: "C6"
+    label: "600x600x50mm Shallow pad foundation"
+    label_id: "P"
     ifc:
       predefined_type: PAD_FOOTING
     relate:
@@ -335,8 +335,8 @@ components:
     class: IfcFooting
     size: [pad_size, pad_size, pad_height]
     material: pad
-    label: "Shallow pad foundation"
-    label_id: "C6"
+    label: "600x600x50mm Shallow pad foundation"
+    label_id: "P"
     ifc:
       predefined_type: PAD_FOOTING
     relate:
