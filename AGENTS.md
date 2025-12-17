@@ -57,3 +57,4 @@
 - Complete immediate follow-up work (tests, quality checks, documentation, related updates) without additional prompting; confirm with the user before starting sizable or risky follow-ups.
 - Provide right-sized implementation context, and when the user signals confusion, explain the relevant systems and approach in an instructive, task-aligned way that builds their understanding.
 - When introducing new interfaces or adapters, confirm DI seams remain substitutable and document mitigation if any SOLID rule is at risk.
+- Keep canonical docs (README.md, architecture-spec.md, AGENTS.md, roadmap.md, instructions.md) up to date as work lands. If a change alters behaviour, schema shape, flags, or workflow, update the relevant doc in the same effort and suggest/perform a commit when appropriate.
