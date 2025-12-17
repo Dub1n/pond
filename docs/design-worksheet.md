@@ -134,174 +134,77 @@ dimensions:
 
 ## 7) Component mapping plan (write before touching YAML)
 
-For each component group, write the intent, anchors/placement, repeats, and views. Use placement helpers (`placement.flush`, `attach_edge`, `inset`, `vertical.flush`) to avoid manual offsets.
-Always state which faces should meet (e.g., “outer west face to outer east face”) to avoid floating geometry.
+For each component group, write the intent, axis-map relates, arrays (`run_between` → `array`), operations, and views. State which faces/points must coincide (e.g., “-x+y to deck corner”) to avoid floating geometry. Frames are parsed but currently solved in world space.
 
-### 7a) Perimeter / outer frame
-
-- Intent & alignment: `<fill>`
-- Face alignment (which faces must be flush): `<fill>`
-- Placement (ref, flush edge, attach edge, inset): `<fill>`
-- Vertical datum: `<fill>`
-- Repeat/operations (if mirrored/rotated): `<fill>`
-- YAML skeleton to use:  
-
-```yaml
-- type: rectangle
-  id: <frame_id>
-  size: [<width>, <depth>]
-  placement:
-    flush:
-      ref: <ref_component>
-      edge: <edge>
-    attach_edge: <edge>
-    inset:
-      <axis>: <expression>
-  vertical:
-    flush:
-      ref: <ref_component>
-      face: <face>
-    attach_face: <face>
-    offset: <expression>
-  material: <material_key>
-  height: <value>
-```
-
-### 7b) Inner beams / headers / trimmers
+### 7a) Reference frames/planes
 
 - Intent & alignment: `<fill>`
-- Face alignment: `<fill>`
-- Placement/inset/translate: `<fill>`
-- Repeat (count/span/direction) or operations: `<fill>`
-- Vertical: `<fill>`
+- Which datums they tie to: `<fill>`
 - YAML skeleton:  
 
 ```yaml
-- type: rectangle
-  id: <beam_id>
-  size: [<width>, <depth>]
-  placement:
-    flush:
-      ref: <ref_component>
-      edge: <edge>
-    attach_edge: <edge>
-    inset:
-      <axis>: <expression>
-    translate:
-      <axis>: <expression>
-  repeat:
-    count: <number or omit>
-    direction: <axis_token>
-    span: <expression or omit>
-  vertical:
-    flush:
-      ref: <ref_component>
-      face: <face>
-    attach_face: <face>
-  material: <material_key>
-  height: <value>
+- id: <ref_id>
+  kind: reference
+  size: [<x>, <y>, <z>]   # axes you care about; missing defaults to 0
+  relate:
+    cxcy: { ref: origin } # example center tie; use axis-map keys as needed
 ```
 
-### 7c) Joist zones (each run separately)
+### 7b) Solids (beams/joists/slabs/pads)
 
-- Zone name/intended span: `<fill>`
-- Face alignment: `<fill>`
-- Placement and inset relative to datum/frame: `<fill>`
-- Repeat (count/span/direction/interval): `<fill>`
-- Vertical alignment: `<fill>`
+- Intent & alignment: `<fill>`
+- Face/edge/point alignment (subject/target pairs): `<fill>`
+- Vertical datum (z faces): `<fill>`
+- Arrays (if any): `<fill>`
+- Operations (rotate/mirror/translate/boolean): `<fill>`
 - YAML skeleton:  
 
 ```yaml
-- type: rectangle
-  id: <joist_id>
-  size: [<span_expression>, <joist_width>]
-  placement:
-    flush:
-      ref: <ref_component>
-      edge: <edge>
-    attach_edge: <edge>
-    inset:
-      <axis>: <expression>
-  repeat:
-    count: <number or omit>
-    direction: <axis_token>
-    span: <expression>
-  material: joist
-  height: <value>
-  vertical:
-    flush:
-      ref: <datum_component>
-      face: <face>
-    attach_face: <face>
+- id: <component_id>
+  class: <IfcEntity>
+  size: [<x>, <y>, <z>]
+  material: <material_key>
+  relate:
+    +x-y: { ref: <target>, pos: +x-y, gap: <expr_optional>, offset: <expr_optional> }
+    +z:   { ref: <target>, pos: +z }
+    -z:   { ref: <target>, pos: +z }
+  array:   # rename from run_between; optional
+    start:
+      +y: { ref: <target>, pos: +y }
+    end:
+      -y: { ref: <target>, pos: -y }
+    count: <n>           # enforce >=2; otherwise use relate only
+    include_seed: true
+    orient: along_run
+  place:   # optional named placements (inline axis-map)
+    - id: <placement_id>
+      +x: { ref: <target>, pos: -x }
+      +y: { ref: <target>, pos: +y }
+  voids: [<ids>]        # openings/void refs
+  ifc:
+    predefined_type: <TYPE>
 ```
 
-### 7d) Blocking / straps / accessories
+### 7c) Operations
 
-- Purpose and placement: `<fill>`
-- Face alignment: `<fill>`
-- Views (plan/section): `<fill>`
-- Operations (mirror/rotate) if needed: `<fill>`
-- YAML cue:  
+- Targets/selector plan: `<fill>`
+- Rotations/mirrors/translates/booleans: `<fill>`
+- YAML skeleton:  
 
 ```yaml
-- type: rectangle    # or polyline
-  id: <component_id>
-  placement:
-    # describe flush/offset choices
-  views: [plan]      # adjust if also in section
+operations:
+  - type: rotate
+    targets: [<ids or selectors>]
+    about: { ref: <target>, axis: +z }
+    count: 4
+    include_seed: true
+    id_map:
+      <seed_id>: [<rot0>, <rot1>, <rot2>, <rot3>]
+  - type: boolean
+    target: <host_id>
+    subtract: [<void_ids>]
+  # mirror planned but not implemented yet
 ```
-
-### 7e) Supports (pads/posts) and foundations
-
-- Layout logic and spacing: `<fill>`
-- Face alignment to supported members: `<fill>`
-- Placement and inset relative to beams/joists: `<fill>`
-- Vertical datum / embedment: `<fill>`
-- Repeat details: `<fill>`
-- YAML cue:  
-
-```yaml
-- type: rectangle
-  id: <support_id>
-  size: [<size>, <size>]
-  placement:
-    flush:
-      ref: <ref_component>
-      edge: <edge>
-    attach_edge: <edge>
-    inset:
-      <axis>: <expression>
-  repeat:
-    count: <number>
-    direction: <axis_token>
-    span: <expression>
-  vertical:
-    flush:
-      ref: <ref_component>
-      face: <face>
-    attach_face: <face>
-  material: timber
-  height: <value>
-```
-
-### 7f) Finishes & interfaces
-
-- Decking direction/fall/gaps: `<fill>`
-- Liner/edge treatment and clamp heights: `<fill>`
-- Additional detail polylines or cutouts: `<fill>`
-
-### 7g) Operations & views
-
-- Mirror/rotate targets and anchors: `<fill>`
-- Section plane (axis, coordinate, about what): `<fill>`
-- Components restricted to specific views: `<fill>`
-- Overhang/fall symmetry notes (how edges should finish): `<fill>`
-
-### 7h) Section components
-
-- Which plan components appear in section via slicing: `<fill>`
-- Extra section-only rectangles/annotations needed: `<fill>`
-- Elevation references reused from dimensions: `<fill>`
 
 ---
 
