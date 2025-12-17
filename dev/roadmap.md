@@ -267,11 +267,15 @@ Phase 4 replaces the legacy anchor planner with the axis-map relationship schema
 
 - [x] Axis-map schema landed: references (`kind: reference`), per-placement `place`, `flush` sugar, center tokens, size inference, aggregate selectors, typed operations (rotate/mirror/translate/boolean).
 - [x] Constraint solver: resolves axis-map relations, run_between spans, selector-aware operations, deterministic GUIDs, OCC collision detection (severity flag), neutral primitives (box/wedge/sweep) with footprints/meshes.
+- [x] Fix `run_between` multi-axis point anchors (e.g. `-x+y`) so diagonal spans stay corner-true; add regression test coverage.
 - [x] Planner/renderers: relationship planner projects plan/section from solids and emits dimension polylines; renderers share the bundle pipeline with legacy.
 - [x] Exporters: glTF/GLB from tessellated solids; IFC 4.3 Reference View with mm/deg units, Model/Axis/Body contexts, class/predefined-type/material mapping, openings, mapped items; STEP/OBJ reuse CadQuery solids.
 - [x] Linting: `scripts/lint_specs.py` runs solver + IFC validation, checks axis coverage/size inference/selector validity, emits mesh digests.
 - [x] Regression harness: relationship tests cover schema/solver/planner/validation; dual-render fixtures remain for legacy comparison.
 - [ ] Outstanding: resolve example collision hot-spots (e.g., Option C pad/joist overlaps) and finalise boolean cutouts for rotated arrays.
+- [ ] Checks: implement `tolerance` + `on_fail` (warn/error) and support `mode` semantics (plane/edge/point) rather than strict axis-coordinate equality only.
+- [ ] Groups: define and implement a `groups` surface (and selectors) so specs can target logical component sets (docs mention this but schema/loader/solver do not yet).
+- [ ] Axis-map: implement `frame` semantics (`world`/`local`/`component:<id>`) and broaden `target.mode` semantics beyond `run_between` point anchors (still mostly parsed but not used for constraint evaluation).
 - [ ] Cancelled (superseded by axis-map): legacy flush_bundle/align/contact extensions; new work targets axis-map-only specs.
 
 ### Phase 5 – Rich modelling, analysis, and extended integrations

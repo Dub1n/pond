@@ -205,6 +205,51 @@ class RelationshipSolverTests(unittest.TestCase):
         self.assertAlmostEqual(orient_x[1], 1.0, places=6)
         self.assertAlmostEqual(runner.transform.position[1], 475.0)
 
+    def test_run_between_multi_axis_point_anchors_center_on_span_midpoint(self) -> None:
+        spec_text = dedent(
+            """
+            schema: pond-relationship-test
+            info:
+              option: run-between-point-anchor
+            components:
+              - id: origin
+                kind: reference
+                size: [0, 0, 0]
+              - id: frame
+                kind: reference
+                size: [200, 200, 0]
+                relate:
+                  cxcy: { ref: origin }
+              - id: runner
+                class: IfcBeam
+                size: [282.842712, 10, 10]
+                relate:
+                  cz: { ref: origin }
+                run_between:
+                  start:
+                    -x+y: { ref: frame, pos: -x+y }
+                  end:
+                    +x-y: { ref: frame, pos: +x-y }
+                  count: 1
+                  include_seed: true
+                  orient: along_run
+                ifc:
+                  predefined_type: BEAM
+            """
+        )
+        with TemporaryDirectory() as tmp:
+            path = Path(tmp) / "run_point.yaml"
+            path.write_text(spec_text, encoding="utf-8")
+            spec = load_relationship_spec(path)
+        solver = ConstraintSolver(spec)
+        result = solver.solve()
+        runner = next(comp for comp in result.components if comp.component.id == "runner")
+        self.assertAlmostEqual(runner.transform.position[0], 0.0, places=6)
+        self.assertAlmostEqual(runner.transform.position[1], 0.0, places=6)
+        orient_x = runner.transform.orientation[0]
+        self.assertAlmostEqual(orient_x[0], 0.7071067811865476, places=6)
+        self.assertAlmostEqual(orient_x[1], -0.7071067811865476, places=6)
+
     def test_run_between_axis_maps_infer_size_and_interpolate(self) -> None:
         spec_text = dedent(
             """

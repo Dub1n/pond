@@ -20,11 +20,11 @@ This document captures the prep surface for the relationship-first schema descri
 
 - Run `python3 scripts/lint_specs.py` (or `.venv/bin/python scripts/lint_specs.py`) to lint both legacy and relationship-first specs. Use `--relationship-only` when iterating on the new schema.
 - The linter runs the solver + IFC exporter and checks reference integrity (component IDs, datums, bundles, planes), axis token ordering, `run_between.orient` values, frame targets, IFC coverage (mm/deg units, Axis/Body contexts, predefined types, material usages, RelVoids wiring), collision overlaps, and checks block references; outputs include check results and a mesh checksum for regression gates.
-- `scripts/build_diagrams.py` now builds relationship-first specs when `DIAGRAM_RELATIONSHIPS=1` is set; solver failures block rendering.
+- `scripts/build_diagrams.py` now builds relationship-first specs by default; set `DIAGRAM_RELATIONSHIPS=0` to force legacy-only mode.
 
 ### Feature flag
 
-- The relationship-first path is gated by `DIAGRAM_RELATIONSHIPS=1`; with the flag set, solver outputs feed the renderer/gltf exporter. Without it, the CLI will refuse relationship-first specs.
+- `scripts/build_diagrams.py` defaults `DIAGRAM_RELATIONSHIPS` to enabled when unset; set `DIAGRAM_RELATIONSHIPS=0` to disable relationship-first rendering.
 
 ### Reference example
 

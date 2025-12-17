@@ -27,7 +27,7 @@ Core traits:
 - Axis-map relates with explicit `ref`/`pos`/`gap`/`offset`/`mode` (plane|edge|point), frame-aware (`world`/`local`/`component:<id>`).
 - Center tokens (`cx`, `cy`, `cz`, `~x`, etc.) in keys and targets.
 - Reference components (`kind: reference`) are geometry-less anchors with lenient defaults; components infer missing size axes from relation pairs, linting conflicts when explicit sizes disagree.
-- `run_between` spans accept components or references and use axis-map `start`/`end` blocks (same shape as `relate`) to seed faces/centers; `orient: along_run` aligns local +X to the span and sizes can be inferred/interpolated from start/end faces.
+- `run_between` spans accept components or references and use axis-map `start`/`end` blocks (same shape as `relate`) to seed faces/centers; `orient: along_run` aligns local +X to the span and sizes can be inferred/interpolated from start/end faces. Multi-axis point anchors like `-x+y` are treated as a true corner point in `mode: point` (default), preventing diagonal spans from drifting along an edge.
 - `flush` sugar expands to axis-map entries (`faces: all` default, scalar or per-face inset).
 - `place` blocks embed per-placement axis-maps; no nested `relate`.
 - Aggregate selectors (`id`, `id.original`, `id.clones`) apply everywhere component lists are accepted, including typed `operations` (`rotate`, `mirror`, `translate`, `boolean`).
@@ -36,6 +36,7 @@ Core traits:
 ## Schema Loader
 - Resolves dimensions/expressions (`dimensions.*`) and registers unique leaf aliases.
 - Parses axis-map blocks for components, placements, and checks; supports `mode`, `gap`/`offset` as scalars or axis maps, center tokens, and frames.
+- Instance refs with a numeric suffix (e.g. `joist_run_west#1`) are valid `ref` targets (useful for pads/checks keyed off run elements).
 - Size inference: paired axes in relates fill missing `size`; conflicts lint unless equal.
 - Operations: typed blocks with selector support and id maps for rotations.
 - Validation hooks for missing axes (components only), bad selectors, frame targets, and inferred-size conflicts.
@@ -43,7 +44,7 @@ Core traits:
 ## Constraint Solver
 - Expands placements and selectors into explicit instances.
 - Applies axis-map relations with size inference, honoring center placements and per-axis gaps/offsets.
-- `run_between` generates spaced instances along spans using `start`/`end` axis-maps (single-axis OK; missing axes fall back to shared relates); sizes interpolate when start/end supply face pairs, and `orient: along_run` produces aligned orientations.
+- `run_between` generates spaced instances along spans using `start`/`end` axis-maps (single-axis OK; missing axes fall back to shared relates). When `mode: point` and the subject key has multiple axes (e.g. `-x+y`), the solver anchors the true point rather than treating the entry as independent faces; sizes interpolate when start/end supply face pairs, and `orient: along_run` produces aligned orientations.
 - Typed operations clone transforms with deterministic IDs; boolean ops attach void references.
 - Emits neutral primitives: CadQuery solids (box/wedge/sweep) + metadata, deterministic GUIDs, stored footprints/meshes.
 - Collision detection via OCC intersections; severity set by `DIAGRAM_RELATIONSHIPS_COLLISIONS`.
@@ -65,7 +66,7 @@ Core traits:
 - Baseline freshness: pair render scripts with `scripts/baseline_render_check.py --fresh-check`.
 
 ## Testing
-- Relationship tests cover axis-map parsing (center tokens, size inference), solver placements/operations/booleans, planner integration, and validation harness checksums.
+- Relationship tests cover axis-map parsing (center tokens, size inference), solver placements/operations/booleans, planner integration, and validation harness checksums, including regression coverage for multi-axis `run_between` point anchors.
 - Legacy tests remain for anchor DSL regressions. Run `python -m unittest discover` from an activated venv.
 
 ## Migration Notes

@@ -219,6 +219,10 @@ def _axes_from_pos(pos_token: str) -> List[tuple[str, int]]:
 def _ref_known(ref: str, component_ids: Set[str], datum_points: Set[str], datum_planes: Set[str], datum_bundles: Set[str]) -> bool:
     if ref == "self":
         return True
+    if "#" in ref:
+        base, _, suffix = ref.partition("#")
+        if base and suffix.isdigit() and base in component_ids:
+            return True
     if ref in component_ids or ref in datum_points or ref in datum_planes or ref in datum_bundles:
         return True
     if ref.startswith("datums."):

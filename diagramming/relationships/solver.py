@@ -701,10 +701,32 @@ class ConstraintSolver:
         component = plan.component
 
         def _resolved_axes(relations: Tuple[AxisRelation, ...], label: str) -> Tuple[Dict[str, float], Dict[str, float]]:
-            axis_states = {axis: AxisState() for axis in ("x", "y", "z")}
             constrained: set[str] = set()
+            centers: Dict[str, float] = {}
+            sizes: Dict[str, float] = {}
+
+            axis_states = {axis: AxisState() for axis in ("x", "y", "z")}
             for relation in relations:
-                for axis, _ in _axes_from_pos(relation.subject):
+                subject_axes = _axes_from_pos(relation.subject)
+                if relation.target.mode == "point" and len(subject_axes) > 1:
+                    target_axes = {axis: sign for axis, sign in _axes_from_pos(relation.target.pos)}
+                    for axis, subject_sign in subject_axes:
+                        target_sign = target_axes.get(axis, subject_sign)
+                        coord = resolver.axis_coordinate(relation.target.ref, axis, target_sign)
+                        if coord is None:
+                            diagnostics.add_error(
+                                f"component '{component.id}' relation references unknown target '{relation.target.ref}'",
+                                subject=component.id,
+                            )
+                            continue
+                        offset = self._axis_amount_for(axis, subject_sign, relation.target.offset)
+                        gap = self._axis_amount_for(axis, subject_sign, relation.target.gap)
+                        adjusted = coord + offset + gap * (subject_sign if subject_sign != 0 else 0)
+                        constrained.add(axis)
+                        centers[axis] = adjusted
+                    continue
+
+                for axis, _ in subject_axes:
                     constrained.add(axis)
                 self._apply_axis_relation(
                     component,
@@ -714,9 +736,10 @@ class ConstraintSolver:
                     diagnostics,
                     instance_id=label,
                 )
-            centers: Dict[str, float] = {}
-            sizes: Dict[str, float] = {}
+
             for axis in constrained:
+                if axis in centers:
+                    continue
                 explicit = component.size[AXIS_ORDER[axis]]
                 center_value, size_value = self._resolve_axis_state(
                     component,

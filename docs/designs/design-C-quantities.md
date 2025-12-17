@@ -5,12 +5,12 @@
 - [ ] Gravel
 - [ ] Concrete
 - [ ] Concrete reinforcement
-- [ ] [45deg joist connection](https://ctpostandbeam.com/specialty)
+- [ ] 45deg joist connection - [idea](https://ctpostandbeam.com/specialty)
 - [ ] Compound joist connection
-- [ ] [Purchase Screwfix items](https://www.screwfix.com/p/simpson-strong-tie-mini-joist-hangers-47mm-x-62mm-10-pack/754tj)
-- [ ] [Simpson CSA Connector Screws – 5.0 x 40mm](https://tradefixdirect.com/p/simpson-csa-connector-screws-5-0-x-40mm/)
-- [ ] Connector between concrete pads and timber - plate goes into the pad
 - [ ] Slate
+- [x] [Purchase Screwfix items](https://www.screwfix.com/p/simpson-strong-tie-mini-joist-hangers-47mm-x-62mm-10-pack/754tj)
+- [x] [Simpson CSA Connector Screws – 5.0 x 40mm](https://tradefixdirect.com/p/simpson-csa-connector-screws-5-0-x-40mm/)
+- [x] Connector between concrete pads and timber - plate goes into the pad
 
 ## Decking
 
@@ -69,11 +69,17 @@ oxfordbuildingsupplies.com:
 8 x 500mm: (B) 8x;
 Total: 50.67m
 
-(A): 19x 250mm = 4.75m
-(B): 8x 500mm + 1x 250mm + 1x 353mm= 4.603m
-(C): 2x 1410mm + 1x 250mm = 3.07m
-(D): 1x 906mm + 2x 1410mm + 3x 353mm = 4.785m
-(E:K): 5x 906mm + 1x 250mm = 4.78m
+(A): 19x 250mm
+(B): 8x 500mm + 1x 250mm + 1x 353mm
+(C): 2x 1410mm + 1x 250mm
+(D): 1x 906mm + 2x 1410mm + 3x 353mm
+(E): 5x 906mm + 1x 250mm
+(F): 5x 906mm + 1x 250mm
+(G): 5x 906mm + 1x 250mm
+(H): 5x 906mm + 1x 250mm
+(I): 5x 906mm + 1x 250mm
+(J): 5x 906mm + 1x 250mm
+(K): 5x 906mm + 1x 250mm
 
 11x 4.8m total
 11x £11.87 = £130.57
@@ -92,14 +98,8 @@ Total: £296.29
 ### Timber-Timber
 
 90deg: 4(11 + 7 + 7) = 100
-https://www.screwfix.com/p/simpson-strong-tie-mini-joist-hangers-47mm-x-62mm-10-pack/754tj £0.69 per item, £69 total
-
 45deg: 4(4) = 16
 compound: 4(1) = 4
-
-### Lining
-
-Concrete lintels 65mm x 100mm x (>=3000mm)
 
 ## Gravel
 

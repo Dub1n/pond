@@ -5,7 +5,7 @@ Use this as a quick-reference when editing relationship-first specs (schema `pon
 ## Setup
 
 - Activate the venv (`source .venv/bin/activate`) and install deps (`python3 -m pip install -r requirements.txt`).
-- Run tests with `python -m unittest discover` and renders with `DIAGRAM_RELATIONSHIPS=1 ./.venv/bin/python scripts/build_diagrams.py …`.
+- Run tests with `python -m unittest discover` and renders with `./.venv/bin/python scripts/build_diagrams.py …` (set `DIAGRAM_RELATIONSHIPS=0` to force legacy-only mode).
 - Collision severity: `DIAGRAM_RELATIONSHIPS_COLLISIONS=error|warn|ignore` (default `error`).
 
 ## Components & References
@@ -61,6 +61,8 @@ run_between:
 ```
 
 - Axes only present on one side apply to all clones; missing axes fall back to the component’s `relate`. When start/end provide face pairs, sizes are inferred and interpolated along the span, so no manual insets are needed to land faces on references.
+- For corner-to-corner spans (e.g. diagonals), multi-axis keys like `-x+y` in `run_between.start/end` are treated as point anchors when `mode: point` (the default), so the span is based on the actual corner point rather than drifting due to face/size assumptions.
+- You can reference run instances directly (e.g. `joist_run_west#1`) anywhere a `ref` is accepted.
 
 ## Operations & Selectors
 
@@ -76,6 +78,7 @@ run_between:
 ## Checks
 
 - Same axis-map shape under `checks:`; use `mode: plane|edge` for coplanar/colinear assertions. `on_fail: warn` downgrades failures; missing targets error by default.
+- Prefer checks for “this must never drift” geometry (like diagonal start/end conditions) and back them with a unit test when a bug is discovered (for example: `RelationshipSolverTests.test_run_between_multi_axis_point_anchors_center_on_span_midpoint`).
 
 ## IFC & Materials
 

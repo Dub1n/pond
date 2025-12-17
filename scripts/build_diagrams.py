@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import argparse
+import os
 import sys
 from pathlib import Path
 from typing import Iterable, List, Optional
@@ -126,6 +127,7 @@ def parse_args(argv: Optional[List[str]] = None) -> argparse.Namespace:
 
 
 def main(argv: Optional[List[str]] = None) -> int:
+    os.environ.setdefault("DIAGRAM_RELATIONSHIPS", "1")
     args = parse_args(argv)
     spec_paths = find_spec_paths(args.spec or [])
     if not spec_paths:
