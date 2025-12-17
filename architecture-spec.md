@@ -2,7 +2,7 @@
 
 ## Overview
 
-The stack now centres on a relationship-first schema and constraint solver that emit neutral CadQuery-backed primitives. Axis-map relations replace legacy anchor DSLs, making placement explicit and IFC-ready. Legacy specs still load, but relationship specs (schema prefix `pond-relationship*`, flag `DIAGRAM_RELATIONSHIPS=1`) are the canonical path forward.
+The stack now centres on a relationship-first schema and constraint solver that emit neutral CadQuery-backed primitives. Axis-map `relate` entries replace legacy anchor DSLs, making placement explicit and IFC-ready. Legacy specs still load, but relationship specs (schema prefix `pond-relationship*`, flag `DIAGRAM_RELATIONSHIPS=1`) are the canonical path forward.
 
 ```text
 YAML (relationship schema)
@@ -24,7 +24,7 @@ Constraint solver (CadQuery solids + diagnostics)
 ```
 
 Core traits:
-- Axis-map relates with explicit `ref`/`pos`/`gap`/`offset`/`mode` (plane|edge|point), frame-aware (`world`/`local`/`component:<id>`).
+- Axis-map `relate` entries keyed by subject tokens with explicit `ref`/`pos`/`gap`/`offset`/`mode` (plane|edge|point); frame tokens are parsed (`world`/`local`/`component:<id>`) but the current solver still treats all relations in world space.
 - Center tokens (`cx`, `cy`, `cz`, `~x`, etc.) in keys and targets.
 - Reference components (`kind: reference`) are geometry-less anchors with lenient defaults; components infer missing size axes from relation pairs, linting conflicts when explicit sizes disagree.
 - `run_between` spans accept components or references and use axis-map `start`/`end` blocks (same shape as `relate`) to seed faces/centers; `orient: along_run` aligns local +X to the span and sizes can be inferred/interpolated from start/end faces. Multi-axis point anchors like `-x+y` are treated as a true corner point in `mode: point` (default), preventing diagonal spans from drifting along an edge.
@@ -68,6 +68,8 @@ Core traits:
 ## Testing
 - Relationship tests cover axis-map parsing (center tokens, size inference), solver placements/operations/booleans, planner integration, and validation harness checksums, including regression coverage for multi-axis `run_between` point anchors.
 - Legacy tests remain for anchor DSL regressions. Run `python -m unittest discover` from an activated venv.
+
+Current gaps vs the prep surface: frames are ignored at solve time; checks only assert equality (no tolerance/on_fail); `relate_from` and assembly expansion are not implemented; IFC linting/enforcement is limited to a small set of entities.
 
 ## Migration Notes
 - Relationship schema supersedes legacy anchors/flush_bundle/align/contact; keep legacy path only for archived specs.

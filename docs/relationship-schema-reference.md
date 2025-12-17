@@ -1,35 +1,26 @@
 ## Relationship-first schema (prep)
 
-This document captures the prep surface for the relationship-first schema described in `dev/phase4-prep-report.md`. The loader, lints, and a box-only solver/renderer bridge are live behind `DIAGRAM_RELATIONSHIPS=1`.
+This doc tracks the current relationship-first surface behind `DIAGRAM_RELATIONSHIPS=1` and notes the gaps against the Phase 4 prep target.
 
 ### What is available now
 
-- Specs marked with `schema: pond-relationship*` parse via `diagramming.relationships.schema`.
-- Axis tokens use signed axes (`+x`, `-y`, `+z`); multi-axis positions are canonicalised (`+x-y+z`).
-- Datums support points, planes, and face bundles; helpers consume references such as `datums.planes.deck_top` and `datums.bundles.frame.x`.
-- Relationship helpers parsed today: `align` / `contact`, `flush_bundle`, `run_between`, `relate_from`, `touch_planes`, `touch_components`, plus `repeat` spans and `voids`. Checks reuse the same alignment vocabulary and default to `gap: 0`, `tolerance: 0.5`, `on_fail: error`.
-- IFC metadata is accepted (`ifc.predefined_type`, `ifc.psets`) and uppercased for consistency; IFC-classed components lint if they omit an `ifc` block.
-- Components use a single 3-axis `size: [x, y, z]` (missing axes default to 0); box, wedge, and swept profiles are supported with optional `profile_params` to drive slopes or custom sections.
-- Constraint solver resolves faces/planes/bundles into deterministic transforms and neutral CadQuery primitives (box, wedge, sweep) with stable GUID seeds; checks report pass/fail, diagnostics carry DOF/graph information, and component-to-component alignments provide connection hints for IFC `RelConnects` geometry. `assembly.rotate_quadrants` now expands into cloned, rotated components with per-instance transforms.
-- Relationship planner slices CadQuery solids directly for plan and section geometry before handing off to the existing SVG/PNG/glTF/IFC/STEP/OBJ pipeline when the feature flag is set.
-- Plan and section bundles add dimension polylines (arrowed lines + labels) derived from solved extents so annotations track the solid model.
-- CLI exports glTF by default and can also emit `model.step` / `model.obj` for relationship-first specs via `--step` and `--obj`. Output folders are keyed by the lowercased option ID so all artefacts for an option land in the same directory.
-- IFC export now targets IFC4X3 Reference View with Model/Axis/Body contexts, mm/deg units, swept solids for rectangular members, profile/layer material usages, openings linked via `RelVoids`, mapped items for repeats, and connection geometry derived from face/edge/point contacts.
+- Specs marked `schema: pond-relationship*` parse via `diagramming.relationships.schema`. Axis tokens use signed axes (`+x`, `-y`, `+z`) and multi-axis positions are canonicalised (`+x-y+z`).
+- Datums support points, planes, and face bundles. Axis-map `relate` entries (with `flush` sugar) and optional `place` blocks drive placement; `run_between` supplies start/end axis-maps and `orient: along_run` aligns +X to the full 3D span vector, interpolating sizes when start/end faces differ.
+- Frames are parsed but ignored by the solver today; all placement runs in world space. Checks reuse the axis-map shape but only assert strict coordinate equality (no tolerance/on_fail yet).
+- Components use a single `size: [x, y, z]` (missing axes default to 0); box, wedge, and swept profiles are supported via `profile_params`. `relate_from` and assemblies are accepted in the schema but are not expanded.
+- IFC metadata is accepted (`ifc.predefined_type`, `ifc.psets`), and linting enforces predefined-type/material on a small set of IFC entities; broader entity/type/material checks from the prep mapping table are still pending.
+- Relationship solves emit CadQuery-backed box/wedge/sweep solids with deterministic GUID seeds, footprints, collision reporting, simple dimension overlays, and glTF/IFC/STEP/OBJ exports. The planner slices solids directly for plan/section bundles.
 
 ### Linting
 
 - Run `python3 scripts/lint_specs.py` (or `.venv/bin/python scripts/lint_specs.py`) to lint both legacy and relationship-first specs. Use `--relationship-only` when iterating on the new schema.
-- The linter runs the solver + IFC exporter and checks reference integrity (component IDs, datums, bundles, planes), axis token ordering, `run_between.orient` values, frame targets, IFC coverage (mm/deg units, Axis/Body contexts, predefined types, material usages, RelVoids wiring), collision overlaps, and checks block references; outputs include check results and a mesh checksum for regression gates.
-- `scripts/build_diagrams.py` now builds relationship-first specs by default; set `DIAGRAM_RELATIONSHIPS=0` to force legacy-only mode.
-
-### Feature flag
-
-- `scripts/build_diagrams.py` defaults `DIAGRAM_RELATIONSHIPS` to enabled when unset; set `DIAGRAM_RELATIONSHIPS=0` to disable relationship-first rendering.
+- The linter runs the solver + IFC exporter and checks reference integrity, axis token ordering, `run_between.orient`, and minimal IFC coverage; collision overlaps are reported according to `DIAGRAM_RELATIONSHIPS_COLLISIONS`.
+- `scripts/build_diagrams.py` defaults `DIAGRAM_RELATIONSHIPS` to enabled; set it to `0` to force legacy-only mode.
 
 ### Reference example
 
-- `docs/examples/option-c-relationship.yaml` mirrors Option C using the relationship-first schema: datums/bundles drive placement, helpers define face-to-face intent, and repeats use axis spans instead of raw spacing.
+- The earlier Option C relationship example used legacy helpers and no longer parses; it has been archived at `archive/docs/examples/option-c-relationship.yaml` for historical reference.
 
 ### Limitations (prep state)
 
-- Assemblies are parsed but not yet expanded by the solver.
+- Frames are ignored; checks lack tolerance/on_fail; assemblies/relate_from are not expanded; IFC linting is minimal compared to the prep mapping table.

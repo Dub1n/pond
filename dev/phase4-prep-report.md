@@ -1,6 +1,6 @@
 # Phase 4 prep – relationship-first schema & solid kernel (IFC 4.3.2 aligned)
 
-> Last updated: 2025-11-25
+> Last updated: 2025-11-25 — Prep/target notes; the current implementation does not yet cover frames, assemblies, or the full IFC mapping (see the latest implementation review).
 
 ## Context & objective
 
@@ -62,11 +62,9 @@ These settings are chosen for maximum interoperability while keeping authoring d
 
 ### Alignment clauses (helpers expand to canonical form)
 
-- `align` — general alignment using `pos` tokens; supports `gap`/`contact`, optional `frame`.
-- `contact` — zero-gap alias of `align`.
-- `flush_bundle` — macro to align multiple faces to a bundle with per-face insets.
+- Axis-map `relate` entries keyed by subject tokens (`+x`, `-x+y`, `cxcy`, `+x+y-x-y`) carry `ref`/`pos`/`gap`/`offset`/`mode` (plane|edge|point). `flush` is sugar that expands to axis-map entries; frames are parsed but currently solved in world space.
 - `relate_from` — copy another component’s alignment set with targeted overrides (mirrors/variants).
-- `run_between` — place a component (or an array) between two targets; `start_pos` is required, `end_pos` defaults to `start_pos`, direction from `from→to`, optional `orient: along_run` rotates local +X to the run vector, `count`/`pitch`/`inset` control instance spacing.
+- `run_between` — place a component (or an array) between two targets using axis-map `start`/`end` blocks; `orient: along_run` aligns local +X to the run vector, `count`/`pitch`/`inset` control instance spacing.
 All helpers expand to explicit constraints in the solver’s debug output.
 
 ### Position tokens, frames, and alignment vocabulary

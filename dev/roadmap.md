@@ -263,20 +263,50 @@ this remains a useful low-level example but is effectively “Phase 1 era”.
 
 ### Phase 4 – Relationship-first solver, solids, and IFC 4.3.2 export
 
-Phase 4 replaces the legacy anchor planner with the axis-map relationship schema and CadQuery-backed solver. The pipeline now emits deterministic transforms, solids, footprints, and IFC-ready metadata from a single source of truth.
+Phase 4 replaces the legacy anchor planner with the axis-map relationship schema and CadQuery-backed solver. This phase delivers the “final form” feature set before the cleanup pass.
 
 - [x] Axis-map schema landed: references (`kind: reference`), per-placement `place`, `flush` sugar, center tokens, size inference, aggregate selectors, typed operations (rotate/mirror/translate/boolean).
 - [x] Constraint solver: resolves axis-map relations, run_between spans, selector-aware operations, deterministic GUIDs, OCC collision detection (severity flag), neutral primitives (box/wedge/sweep) with footprints/meshes.
-- [x] Fix `run_between` multi-axis point anchors (e.g. `-x+y`) so diagonal spans stay corner-true; add regression test coverage.
+- [x] Fix `run_between` multi-axis point anchors (e.g., `-x+y`) so diagonal spans stay corner-true; add regression test coverage.
 - [x] Planner/renderers: relationship planner projects plan/section from solids and emits dimension polylines; renderers share the bundle pipeline with legacy.
 - [x] Exporters: glTF/GLB from tessellated solids; IFC 4.3 Reference View with mm/deg units, Model/Axis/Body contexts, class/predefined-type/material mapping, openings, mapped items; STEP/OBJ reuse CadQuery solids.
 - [x] Linting: `scripts/lint_specs.py` runs solver + IFC validation, checks axis coverage/size inference/selector validity, emits mesh digests.
 - [x] Regression harness: relationship tests cover schema/solver/planner/validation; dual-render fixtures remain for legacy comparison.
-- [ ] Outstanding: resolve example collision hot-spots (e.g., Option C pad/joist overlaps) and finalise boolean cutouts for rotated arrays.
-- [ ] Checks: implement `tolerance` + `on_fail` (warn/error) and support `mode` semantics (plane/edge/point) rather than strict axis-coordinate equality only.
-- [ ] Groups: define and implement a `groups` surface (and selectors) so specs can target logical component sets (docs mention this but schema/loader/solver do not yet).
-- [ ] Axis-map: implement `frame` semantics (`world`/`local`/`component:<id>`) and broaden `target.mode` semantics beyond `run_between` point anchors (still mostly parsed but not used for constraint evaluation).
-- [-] Cancelled (superseded by axis-map): legacy flush_bundle/align/contact extensions; new work targets axis-map-only specs.
+- [ ] Implement frame-aware placement (subject/object frames, frame on `flush`) and preserve gaps/size inference in transformed frames; add regression coverage.
+- [ ] Mode semantics and checks: enforce `mode: plane|edge|point`, honour `tolerance`/`on_fail`, and add fail-on-warn modes for collisions/under/over-constraint; keep DOF reporting out of docs until implemented.
+- [ ] Selector/clone semantics: define template vs instance vs placement IDs, id_map remapping, and metadata/IFC propagation to clones; lint must validate `base#n` and selectors (`id`, `.original`, `.clones`) consistently.
+- [ ] Array helper guardrail: rename `run_between` to `array` and warn/error on `count=1` so single spans use `relate`/`place`; retain 3D `orient: along_run`.
+- [ ] IFC discipline: enforce the mapping table (entity + predefined type + material usage + mapped items) in lint/solver/export; ensure propagation to clones/voids; add fixtures.
+- [ ] Collision and boolean robustness: resolve collision hot-spots (e.g., Option C pad/joist overlaps), stabilise boolean cutouts for rotated arrays; add configurable collision flag (error|warn|ignore) alongside env var.
+- [ ] Helper parity (Phase 4 remove): strip `relate_from`/assemblies from docs/code for now; fail fast when declared.
+- [ ] Mirror operation: implement mirror transform (plane normal+point), integrate right-handed frame handling; add lint/tests.
+- [ ] Documentation note: keep DOF reporting marked as not yet available in instructions/docs until implemented.
+
+### Phase 4.? – Gap triage (to expand into detailed tasks)
+
+- [ ] Selector/clone semantics: define template vs instance vs placement IDs; enforce id_map remapping rules; ensure metadata/IFC carryover; add lint fixtures.
+- [ ] Array guardrails: enforce `count >= 2` (warn/error) so single-span anchors use `relate`/`place`; deprecate legacy `run_between` name in lint/errors; keep 3D `orient: along_run`.
+- [ ] Checks/diagnostics depth: add fail-on-warn modes for collisions/under/over-constraint; keep DOF reporting marked deferred in docs until implemented.
+- [ ] IFC propagation to clones/voids: ensure predefined type/material/RelVoids/mapped items flow through rotations/mirrors/arrays; add regression fixtures.
+- [ ] Clone-aware linting: accept `base#n` refs, validate cloned instance IDs/selectors consistently; fail unknown clone refs.
+- [ ] Frame-aware placement: honour `frame` (`world`/`local`/`component:<id>`) in solver math; warn on non-world frames until fully supported.
+- [ ] Mode semantics: enforce plane/edge/point behaviour beyond coordinate equality in solver and checks.
+- [ ] Determinism lint: fail when axes are under-constrained/ambiguous, when size inference conflicts, or when array count=1 is used.
+- [ ] IFC completeness gate: lint fails if IFC-classed components lack predefined type/material or RelVoids/mapped items don’t propagate to clones; emit a completeness summary.
+- [ ] Selector hygiene: lint unknown selectors and id_map/count mismatches; ensure selector surfaces don’t refer to legacy helpers.
+- [ ] Operation ordering checks: warn when transforms (mirror/rotate/translate) run before array expansion if that risks nondeterminism.
+- [ ] Docs/tests gate: new helpers/ops must ship with regression tests covering axis-map + IFC output; gate docs accordingly.
+- [ ] Additional diagnostics gaps: formalise remaining warning/error surfacing (collisions, under/over-constraint) for consistent exits.
+
+### Phase 4.5 – Legacy teardown and final-form hardening
+
+Once Phase 4 behaviours are complete, remove legacy-only code paths so the repository contains only the relationship-first “final form.”
+
+- [ ] Remove legacy anchor/planner/rendering helpers and schema surfaces; drop legacy fixtures/specs or move them under `archive/`.
+- [ ] Simplify CLI defaults: retire `DIAGRAM_RELATIONSHIPS` flag, remove dual-path build/lint logic, and delete legacy-only arguments.
+- [ ] Delete unused legacy exporters/renderers/tests; collapse duplicated bundle/material logic into the relationship pipeline.
+- [ ] Prune docs/examples referencing legacy helpers; refresh onboarding docs to cover relationship-first only.
+- [ ] Run full lint/test/build suite to verify the single-path engine; record the final release notes for the teardown.
 
 ### Phase 5 – Rich modelling, analysis, and extended integrations
 
@@ -293,6 +323,9 @@ With CadQuery + IFC export in place, Phase 5 focuses on **richer modelling patte
 - [ ] Incorporate ELK/Dagre (or similar) for graph-like layout in complex attachment/connection diagrams.
 - [ ] Provide a `--explain` CLI flag dumping intermediate constraint/geometry overlays (SVG/JSON) for debugging.
 - [ ] Footprint offset helpers (on solids, not just 2D) to keep reveals/tolerances declarative without manual size tweaks.
+- [ ] Selector groups/selectors integration: add a `groups` surface and selectors usable in operations/booleans; lint support.
+- [ ] DOF reporting and richer diagnostics: surface real DOF counts, parity with fail-on-warn modes; wire into docs once landed.
+- [ ] Re-evaluate `relate_from`/assemblies: decide if they should return (and how) now that core axis-map is stable.
 
 ### Phase 6 – Authoring UX & tooling
 

@@ -18,14 +18,12 @@ Pass `--orthographic` to also emit a headless 3D orthographic snapshot (`orthogr
 
 ### Relationship-first prep schema
 
-- Specs marked `schema: pond-relationship*` are lintable now via `python3 scripts/lint_specs.py` and renderable when `DIAGRAM_RELATIONSHIPS=1` is set. Without the flag, the CLI skips relationship-first specs.
-- The prep schema uses signed axis tokens, datums/bundles, helpers (`align`, `contact`, `flush_bundle`, `run_between`, `relate_from`), and a `checks` block; see `docs/relationship-schema-reference.md` plus the worked example in `docs/examples/option-c-relationship.yaml`.
-- Relationship solving outputs neutral CadQuery-backed solids (box/wedge/sweep) with deterministic GUID seeds, OCC footprints/sections, and glTF/IFC/STEP/OBJ exports. IFC builds target IFC4X3 Reference View with Model/Axis/Body contexts, mm/deg units, swept solids where possible, material usages, openings, mapped items, and connection geometry; solver diagnostics now carry collision volumes and check results.
-- Helpers now resolve frames (`world`/`local`/`component:<id>`) through align/contact/flush clauses, expand `relate_from` and `assembly.linear_bracing`, and orient `run_between orient: along_run` with 3D vectors; `run_between` uses axis-map `start`/`end` blocks (relate syntax) so faces land without insets and sizes can be inferred/interpolated along the span. Multi-axis point anchors like `-x+y` are treated as a true corner point in `mode: point` (default), which keeps diagonals from drifting along an edge.
-- `assembly.rotate_quadrants` keeps gaps stable when a rotated subject stays on the same axis, flips them only when a sign change crosses axes with opposing faces, and remaps numbered-instance refs (e.g. `foo#1`) so rotated clones stay symmetrical.
-- Plan/section bundles add arrowed dimension polylines derived from solved extents so annotations stay aligned with solids.
-- Linting runs the solver + IFC exporter, enforcing axis tokens/frames, class/predefined-type/material expectations from the IFC mapping table, mm/deg units, Axis/Body contexts, RelVoids wiring, collision overlaps, and emits mesh digests for regression gates. Collision severity can be tuned with `DIAGRAM_RELATIONSHIPS_COLLISIONS=error|warn|ignore` (defaults to `error`).
-- Legacy specs can optionally include `ifc` blocks (`predefined_type`, `psets`); the loader normalises IFC class names/pset names and preserves them in feature/mesh metadata for IFC-ready exports.
+- Specs marked `schema: pond-relationship*` parse via `diagramming.relationships.schema` and build when `DIAGRAM_RELATIONSHIPS=1` is set (the CLI defaults it on). Placement uses axis-map `relate` entries keyed by subject tokens (`+x`, `-x+y`, `cxcy`, `+x+y-x-y`, etc.) with `ref`/`pos`/`gap`/`offset`/`mode` fields on the target. `flush` is sugar that expands to axis-map entries; `place` adds per-placement axis-maps. `run_between` provides start/end axis-maps with `orient: along_run` aligning +X to the 3D span vector and interpolating sizes when start/end faces differ.
+- References are regular components with `kind: reference`; missing axes default to 0 and can be anchored with center tokens (e.g., `cxcy: { ref: origin }`).
+- Frames are parsed on targets but currently ignored by the solver, so all placement runs in world space. Checks reuse the axis-map vocabulary but only assert strict coordinate equality (no tolerance/on_fail yet).
+- Helper coverage is intentionally narrow today: axis-map relates/flush/place and `run_between` are supported. `relate_from` and assemblies are parsed but not expanded.
+- Relationship solves emit CadQuery-backed box/wedge/sweep solids with deterministic GUID seeds, footprints, collision reporting, and glTF/IFC/STEP/OBJ exports. IFC linting is minimal (predefined type/material required on a few IFC classes); the exporter relies on the provided class names.
+- The legacy Option C relationship example now lives in `archive/docs/examples/option-c-relationship.yaml` because it uses deprecated helpers and no longer parses against the current loader.
 
 ### Blender export
 

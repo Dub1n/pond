@@ -1,24 +1,21 @@
-# Phase 4 implementation vs prep schema
+# Phase 4 implementation vs prep schema (refresh)
 
-Scope: compared the relationship-first implementation in `diagramming/relationships` against the target described in `dev/phase4-prep-report.md`, and walked through the authored example in `docs/examples/option-c-relationship.yaml`.
+Scope: current relationship-first implementation in `diagramming/relationships` vs the target in `dev/phase4-prep-report.md`. The Option C relationship example is still in the tree but now archived; the notes below reflect the live code rather than that legacy spec.
 
 ## Findings against the prep schema
 
-- Align/contact is parsed and used, but frames are ignored end-to-end. `schema.py` accepts `frame` and `component:<id>` targets, yet `solver.py` resolves every alignment in world space and never transforms by subject/object frames; `flush_bundle.frame` is also dropped. `on_fail` is stored but not acted on, so checks always error rather than warn.
-- `run_between` resolves spans and rotation only in the XY plane. `orient: along_run` just sets a Z-rotation from atan2(x, y) and skips Z-bearing vectors and frame-aware orientation, so local +X is not actually aligned to the 3D run vector the prep doc calls for.
-- Constraint robustness is partial. `run_between` seeds untouched axes as “soft” but `_finalise_transform` treats them as solved, so unconstrained X/Y/Z from a single-axis span won’t trip the DOF error the prep report expects. Collision checks run, but contact/overlap assertions from the `checks` block are limited to simple gap tolerances.
-- Helper coverage lags the target. `relate_from` is parsed but treated as an unsupported helper at solve time, and only `assembly.rotate_quadrants` is expanded—assemblies like `assembly.linear_bracing` in the example never materialise. `touch_planes`/`touch_components` exist as convenience macros even though the prep schema only documents `align`/`contact`/`flush_bundle`/`run_between`.
-- IFC discipline is looser than the mapping table in the prep doc. Linting enforces an `ifc` block only when the class already starts with `Ifc`, but it doesn’t check the entity/predefined type pairing or material usage expectations from the table. The solver and exporter fall back to `IfcBuildingElementProxy` when classes are non-standard, so author intent can silently drift from the IFC-aligned surface.
+- Frames remain parsed only. `schema.py` accepts `frame` (including `component:<id>`) but the solver ignores it everywhere, so all relates run in world space. Checks also drop `tolerance`/`on_fail` semantics and only do strict equality comparisons.
+- `run_between orient: along_run` now uses the full 3D span vector (via `_orientation_from_direction`) and applies base twist, so +X aligns to the span even when Z differs. Frame-aware orientation is still absent.
+- Constraint signals are shallow. Under-constrained axes raise errors, but degrees-of-freedom counts stay zeroed and checks don’t report gaps/overlaps—only axis equality. Collision reporting works with error/warn/ignore modes.
+- Helper/assembly coverage is narrower than the prep surface. Only axis-map `relate`/`flush`/`place` and `run_between` are supported; `relate_from` and any `assembly.*` entries are parsed but never expanded, and the older `touch_*` macros no longer exist.
+- IFC linting is minimal. A few entity names (`IfcBeam`, `IfcMember`, `IfcSlab`, `IfcOpeningElement`) require `ifc.predefined_type`/material, but entity/type pairing, material usages, and mapped-item rules from the prep mapping table are not enforced.
 
-## Option C example observations
+## Option C example (archived)
 
-- The example barely exercises `align`: it is only used for pad Y placement, while the main members lean on `touch_planes`/`touch_components` and `flush_bundle`. That bypasses the general `align` vocabulary outlined in the prep report, and frames are never specified.
-- Several classes aren’t IFC entities (`PondWater`, `DeckSurface`, `Pad`, `IfcJoist`) and none of the IFC classes carry `ifc.predefined_type`, so the schema’s IFC alignment guarantees aren’t demonstrated.
-- Components mix two-value `size` with a separate `height` field even though the prep surface standardises on a single `[x, y, z]` vector. Assemblies such as `assembly.linear_bracing` are declared but won’t expand under the current solver, so authored intent is partly dropped.
+- The example still uses the legacy helper vocabulary (`flush_bundle`, `contact`, `touch_*`, mixed `size` + `height`, non-IFC class names). It no longer parses against the current axis-map loader and its assemblies would not execute. It has been archived to avoid confusion.
 
 ## Takeaways
 
-- Implement frame-aware alignment/flush handling in the solver and honour `on_fail` so the checks block can downgrade to warnings when requested.
-- Expand helper coverage to match the prep schema (`relate_from`, `assembly.linear_bracing`, full `run_between` orientation), and fail fast on helpers that are declared but unsupported.
-- Tighten linting to enforce the IFC mapping table (entity + predefined type + material usage) and detect unconstrained “soft” axes so authors catch drift early.
-- Refresh `docs/examples/option-c-relationship.yaml` to use the core `align`/`contact` vocabulary, IFC classes with predefined types, and the unified `size` vector, then rerun the relationship lint/IFC validation with `DIAGRAM_RELATIONSHIPS=1`.
+- Add frame-aware placement and respect `tolerance`/`on_fail` in checks to match the prep surface.
+- Implement the documented helpers (`relate_from`, assemblies such as `assembly.linear_bracing`) and fail fast when unsupported helpers are declared.
+- Tighten IFC linting to match the mapping table (entity + predefined type + material usage, mapped items) so author intent stays IFC-aligned.

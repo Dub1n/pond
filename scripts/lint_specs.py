@@ -30,9 +30,6 @@ def find_spec_paths(explicit: Iterable[str]) -> List[Path]:
     phase3_dir = Path("diagrams/specs")
     if phase3_dir.exists():
         default_paths.extend(sorted(phase3_dir.glob("*.yaml")))
-    example_relationship = Path("docs/examples/option-c-relationship.yaml")
-    if example_relationship.exists():
-        default_paths.append(example_relationship)
     return default_paths
 
 
@@ -42,7 +39,7 @@ def parse_args(argv: List[str] | None) -> argparse.Namespace:
         "--spec",
         action="append",
         dest="specs",
-        help="Specific spec files to lint (defaults to diagrams/specs/*.yaml and the Phase 4 example).",
+        help="Specific spec files to lint (defaults to diagrams/specs/*.yaml).",
     )
     parser.add_argument(
         "--relationship-only",
