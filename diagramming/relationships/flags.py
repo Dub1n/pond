@@ -7,6 +7,8 @@ from typing import Any
 _ENV_FLAG = "DIAGRAM_RELATIONSHIPS"
 _SCHEMA_PREFIX = "pond-relationship"
 _COLLISION_FLAG = "DIAGRAM_RELATIONSHIPS_COLLISIONS"
+_FAIL_ON_WARN_FLAG = "DIAGRAM_RELATIONSHIPS_FAIL_ON_WARN"
+_COLLISION_IGNORE_CLASSES_FLAG = "DIAGRAM_RELATIONSHIPS_COLLISIONS_IGNORE_CLASSES"
 
 
 def relationship_mode_enabled() -> bool:
@@ -41,6 +43,30 @@ def collision_handling_mode() -> str:
     return "error"
 
 
+def fail_on_warn() -> bool:
+    """
+    When set, upgrades solver warnings to errors (e.g., collisions, guardrails).
+    """
+
+    raw = os.getenv(_FAIL_ON_WARN_FLAG)
+    if raw is None:
+        return False
+    return str(raw).strip().lower() in {"1", "true", "yes", "on"}
+
+
+def collision_ignore_classes() -> set[str]:
+    """
+    Returns a set of IFC class names to skip during collision detection.
+    Defaults to ignoring `ifcfooting`.
+    """
+
+    raw = os.getenv(_COLLISION_IGNORE_CLASSES_FLAG)
+    if raw is None:
+        return {"ifcfooting"}
+    entries = [item.strip().lower() for item in raw.split(",") if item.strip()]
+    return set(entries)
+
+
 def is_relationship_schema(schema_field: Any) -> bool:
     """
     Lightweight check to decide whether a YAML document should be parsed using
@@ -57,4 +83,10 @@ def is_relationship_schema(schema_field: Any) -> bool:
     return text.startswith(_SCHEMA_PREFIX)
 
 
-__all__ = ["relationship_mode_enabled", "collision_handling_mode", "is_relationship_schema"]
+__all__ = [
+    "relationship_mode_enabled",
+    "collision_handling_mode",
+    "collision_ignore_classes",
+    "fail_on_warn",
+    "is_relationship_schema",
+]

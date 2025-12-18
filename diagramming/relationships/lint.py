@@ -20,6 +20,7 @@ IFC_REQUIREMENTS = {
     "ifcmember": {"predefined": True, "material": True},
     "ifcslab": {"predefined": True, "material": True},
     "ifcopeningelement": {"predefined": True, "material": False},
+    "ifcfooting": {"predefined": True, "material": True},
 }
 
 
@@ -72,6 +73,15 @@ def lint_relationship_spec(spec: RelationshipDiagramSpec) -> List[str]:
         solver = ConstraintSolver(spec)
         result = solver.solve()
         errors.extend([err.message for err in result.diagnostics.errors])
+        for prim in result.primitives:
+            class_lower = (prim.class_name or "").lower()
+            requirements = IFC_REQUIREMENTS.get(class_lower)
+            if not requirements:
+                continue
+            if requirements.get("predefined") and not prim.ifc:
+                errors.append(f"component '{prim.id}' ({prim.class_name}) is missing ifc.predefined_type")
+            if requirements.get("material") and not prim.material:
+                errors.append(f"component '{prim.id}' ({prim.class_name}) is missing material for IFC export")
     except Exception as exc:  # pragma: no cover - guardrail for missing deps
         errors.append(f"lint solver failed: {exc}")
 
@@ -188,6 +198,13 @@ def _lint_operation(operation: object, *, known_ids: Set[str], errors: List[str]
     if isinstance(operation, RotateOperation):
         selectors.extend(operation.targets)
         selectors.extend(operation.id_map.keys())
+        for base, mapped in operation.id_map.items():
+            if base not in known_ids:
+                errors.append(f"rotate.id_map references unknown base '{base}'")
+            if len(mapped) < operation.count:
+                errors.append(
+                    f"rotate.id_map for '{base}' provides {len(mapped)} ids but count={operation.count}"
+                )
     elif isinstance(operation, (MirrorOperation, TranslateOperation)):
         selectors.extend(operation.targets)
     elif isinstance(operation, BooleanOperation):

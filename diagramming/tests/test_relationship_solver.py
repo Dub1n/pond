@@ -1,6 +1,8 @@
 from __future__ import annotations
 
+import os
 from pathlib import Path
+from unittest import mock
 from tempfile import TemporaryDirectory
 from textwrap import dedent
 import unittest
@@ -458,6 +460,131 @@ class RelationshipSolverTests(unittest.TestCase):
         warning_texts = [warning.message for warning in result.diagnostics.warnings]
         self.assertEqual(len(runners), 1)
         self.assertTrue(any("count should be >= 2" in msg for msg in warning_texts))
+
+    def test_rotate_clones_preserve_ifc_metadata(self) -> None:
+        spec_text = dedent(
+            """
+            schema: pond-relationship-test
+            info:
+              option: rotate-metadata
+            components:
+              - id: origin
+                kind: reference
+                size: [0, 0, 0]
+              - id: beam
+                class: IfcBeam
+                size: [100, 50, 20]
+                material: timber
+                relate:
+                  cxcy: { ref: origin }
+                ifc:
+                  predefined_type: BEAM
+            operations:
+              - type: rotate
+                about: { ref: origin, axis: +z }
+                count: 2
+                include_seed: true
+            """
+        )
+        with TemporaryDirectory() as tmp:
+            path = Path(tmp) / "rotate-meta.yaml"
+            path.write_text(spec_text, encoding="utf-8")
+            spec = load_relationship_spec(path)
+        solver = ConstraintSolver(spec)
+        result = solver.solve()
+        clone = next(comp for comp in result.components if comp.instance_id == "beam_rot1")
+        self.assertEqual(clone.primitive.material, "timber")
+        self.assertEqual(clone.primitive.metadata.get("material"), "timber")
+        self.assertEqual(clone.primitive.ifc.get("predefined_type"), "BEAM")
+
+    def test_footing_collisions_are_ignored(self) -> None:
+        spec_text = dedent(
+            """
+            schema: pond-relationship-test
+            info:
+              option: footing-collision
+            components:
+              - id: origin
+                kind: reference
+                size: [0, 0, 0]
+              - id: footing
+                class: IfcFooting
+                size: [100, 100, 50]
+                material: pad
+                relate:
+                  cxcy: { ref: origin }
+                  cz: { ref: origin }
+                ifc:
+                  predefined_type: PAD_FOOTING
+              - id: beam_a
+                class: IfcBeam
+                size: [100, 100, 50]
+                material: timber
+                relate:
+                  cxcy: { ref: origin }
+                  cz: { ref: origin }
+                ifc:
+                  predefined_type: BEAM
+              - id: beam_b
+                class: IfcBeam
+                size: [100, 100, 50]
+                material: timber
+                relate:
+                  cxcy: { ref: origin }
+                  cz: { ref: origin }
+                ifc:
+                  predefined_type: BEAM
+            """
+        )
+        with TemporaryDirectory() as tmp:
+            path = Path(tmp) / "collision.yaml"
+            path.write_text(spec_text, encoding="utf-8")
+            spec = load_relationship_spec(path)
+        solver = ConstraintSolver(spec)
+        result = solver.solve()
+        collision_pairs = {(a, b) for a, b, _ in result.diagnostics.collisions}
+        self.assertIn(("beam_a", "beam_b"), collision_pairs)
+        self.assertFalse(any("footing" in " ".join(pair) for pair in collision_pairs))
+
+    def test_fail_on_warn_upgrades_collision_warning(self) -> None:
+        spec_text = dedent(
+            """
+            schema: pond-relationship-test
+            info:
+              option: collision-warn
+            components:
+              - id: origin
+                kind: reference
+                size: [0, 0, 0]
+              - id: beam_a
+                class: IfcBeam
+                size: [100, 100, 50]
+                material: timber
+                relate:
+                  cxcy: { ref: origin }
+                ifc:
+                  predefined_type: BEAM
+              - id: beam_b
+                class: IfcBeam
+                size: [100, 100, 50]
+                material: timber
+                relate:
+                  cxcy: { ref: origin }
+                ifc:
+                  predefined_type: BEAM
+            """
+        )
+        env = os.environ.copy()
+        env["DIAGRAM_RELATIONSHIPS_COLLISIONS"] = "warn"
+        env["DIAGRAM_RELATIONSHIPS_FAIL_ON_WARN"] = "1"
+        with TemporaryDirectory() as tmp:
+            path = Path(tmp) / "collision-warn.yaml"
+            path.write_text(spec_text, encoding="utf-8")
+            with mock.patch.dict(os.environ, env, clear=True):
+                spec = load_relationship_spec(path)
+                solver = ConstraintSolver(spec)
+                result = solver.solve()
+        self.assertTrue(any("collision" in err.message for err in result.diagnostics.errors))
 
     def test_mirror_operation_reflects_position_and_orientation(self) -> None:
         spec_text = dedent(

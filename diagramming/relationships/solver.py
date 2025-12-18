@@ -23,7 +23,7 @@ from .schema import (
     TranslateOperation,
     canonical_pos_token,
 )
-from .flags import collision_handling_mode
+from .flags import collision_handling_mode, collision_ignore_classes, fail_on_warn
 
 
 GUID_NAMESPACE = uuid.UUID("6c7b3d9e-4f21-4b06-9fbf-2a6e2d6a8b2c")
@@ -208,6 +208,10 @@ class SolveDiagnostics:
 
     def add_warning(self, message: str, *, subject: Optional[str] = None) -> None:
         self.warnings.append(Diagnostic(level="warning", message=message, subject=subject))
+
+    def escalate_warnings(self) -> None:
+        for warning in self.warnings:
+            self.errors.append(Diagnostic(level="error", message=warning.message, subject=warning.subject))
 
     def record_graph_edge(self, source: str, target: str) -> None:
         if not target:
@@ -403,6 +407,8 @@ class ConstraintSolver:
         self.datum_planes = self._build_planes(spec)
         self.datum_bundles = self._build_bundles(spec, self.datum_points, self.datum_planes)
         self.collision_mode = collision_handling_mode()
+        self.fail_on_warn = fail_on_warn()
+        self.collision_ignore = collision_ignore_classes()
 
     def solve(self) -> SolveResult:
         diagnostics = SolveDiagnostics()
@@ -435,6 +441,8 @@ class ConstraintSolver:
 
         primitives = tuple(item.primitive for item in solved)
         self._detect_collisions(primitives, diagnostics)
+        if self.fail_on_warn:
+            diagnostics.escalate_warnings()
         scene = self._build_scene(primitives)
         return SolveResult(components=tuple(solved), diagnostics=diagnostics, primitives=primitives, scene=scene)
 
@@ -972,6 +980,9 @@ class ConstraintSolver:
         selected_ids: List[str] = []
         for selector in targets:
             selected_ids.extend(self._resolve_selector(selector, index))
+        if not selected_ids:
+            diagnostics.add_warning(f"rotate operation matched no components for targets {op.targets}")
+            return created
         about_coords = self._reference_coordinates(op.about, component_states)
         if about_coords is None:
             diagnostics.add_error(f"rotate about target '{op.about}' not found")
@@ -1045,6 +1056,9 @@ class ConstraintSolver:
         targets = op.targets or list(index.keys())
         for selector in targets:
             selected_ids.extend(self._resolve_selector(selector, index))
+        if not selected_ids:
+            diagnostics.add_warning(f"mirror operation matched no components for targets {op.targets}")
+            return created
         axis = op.axis
         coordinate = op.coordinate
         for instance_id in selected_ids:
@@ -1103,6 +1117,9 @@ class ConstraintSolver:
         targets = op.targets or list(index.keys())
         for selector in targets:
             selected_ids.extend(self._resolve_selector(selector, index))
+        if not selected_ids:
+            diagnostics.add_warning(f"translate operation matched no components for targets {op.targets}")
+            return created
         for instance_id in selected_ids:
             base = next((s for s in solved if s.instance_id == instance_id), None)
             if base is None:
@@ -1157,6 +1174,9 @@ class ConstraintSolver:
         subtract_ids: List[str] = []
         for selector in op.subtract:
             subtract_ids.extend(self._resolve_selector(selector, index))
+        if not target_ids:
+            diagnostics.add_warning(f"boolean target '{op.target}' matched no components")
+            return
         for target_id in target_ids:
             target = next((s for s in solved if s.instance_id == target_id), None)
             if target is None:
@@ -1236,6 +1256,8 @@ class ConstraintSolver:
         metadata.setdefault("class", component.class_name)
         metadata.setdefault("profile", component.profile)
         metadata.setdefault("guid", guid)
+        if component.material:
+            metadata.setdefault("material", component.material)
         ifc_dict = component.ifc.to_dict() if component.ifc else None
         if component.profile_params:
             metadata.setdefault("profile_params", dict(component.profile_params))
@@ -1376,6 +1398,7 @@ class ConstraintSolver:
             return
         solids: List[tuple[str, Any]] = []
         void_map: Dict[str, set[str]] = {prim.id: set(prim.voids) for prim in primitives}
+        prim_index: Dict[str, NeutralPrimitive] = {prim.id: prim for prim in primitives}
         for prim in primitives:
             if prim.solid is None:
                 continue
@@ -1384,6 +1407,10 @@ class ConstraintSolver:
         for idx, (first_id, first_solid) in enumerate(solids):
             for second_id, second_solid in solids[idx + 1 :]:
                 if second_id in void_map.get(first_id, set()) or first_id in void_map.get(second_id, set()):
+                    continue
+                first_class = (prim_index.get(first_id).class_name or "").lower()
+                second_class = (prim_index.get(second_id).class_name or "").lower()
+                if first_class in self.collision_ignore or second_class in self.collision_ignore:
                     continue
                 try:
                     intersection = first_solid.intersect(second_solid)
