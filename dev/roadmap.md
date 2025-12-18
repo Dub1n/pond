@@ -4,10 +4,10 @@
 
 - [x] Implement frame-aware placement (subject/object frames, frame on `flush`), preserving gaps and size inference when transforming frames.
 - [ ] Enforce `mode: plane|edge|point`, honour `tolerance`/`on_fail`, and improve DOF reporting; add fail-on-warn paths for collisions/under/over-constraint.
-- [ ] Finalise selector/clone semantics (template vs placement IDs, id_map remapping, metadata/IFC propagation to clones); lint `base#n` and selectors consistently.
+- [ ] Finalise selector/clone semantics (template vs placement IDs, id_map remapping, metadata/IFC propagation to clones); lint `base#n` and selectors consistently. (Progress: id_map length lint, selector warnings, clone metadata/IFC/material propagation.)
 - [x] Rename `run_between` to `array`, add guardrails (`count >= 2`, warn/error on single spans), and retain 3D `orient: along_run` support.
-- [ ] IFC discipline: enforce mapping table (entity + predefined type + material usage + mapped items) in lint/solver/export; ensure propagation to clones/voids; add fixtures.
-- [ ] Collision and boolean robustness: resolve collision hot-spots (e.g., Option C pad/joist overlaps), stabilise boolean cutouts for rotated arrays; make collision severity configurable alongside env.
+- [ ] IFC discipline: enforce mapping table (entity + predefined type + material usage + mapped items) in lint/solver/export; ensure propagation to clones/voids; add fixtures. (Progress: lint re-checks solved primitives for predefined/material, footings included; clone material/IFC carried.)
+- [ ] Collision and boolean robustness: resolve collision hot-spots (e.g., Option C pad/joist overlaps), stabilise boolean cutouts for rotated arrays; make collision severity configurable alongside env. (Progress: footing collisions ignored by default; `DIAGRAM_RELATIONSHIPS_FAIL_ON_WARN` promotes warnings.)
 - [ ] Helper parity cleanup: strip `relate_from`/assemblies from docs/code or implement them; fail fast when declared until supported.
 - [x] Implement mirror operation (plane normal + point) with right-handed frame handling; add lint/tests.
 - [ ] Expand metadata mapping to align with IFC classes (carry-over from Phase 3 backlog).
