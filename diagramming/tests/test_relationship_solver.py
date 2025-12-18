@@ -797,6 +797,115 @@ class RelationshipSolverTests(unittest.TestCase):
         self.assertTrue(any("tolerance" in msg and "delta" in msg for msg in warning_texts))
         self.assertTrue(any("axis y" in msg for msg in error_texts))
 
+    def test_plane_mode_limits_axes_and_warns_on_extras(self) -> None:
+        spec_text = dedent(
+            """
+            schema: pond-relationship-test
+            info:
+              option: mode-plane
+            components:
+              - id: origin
+                kind: reference
+                size: [0, 0, 0]
+              - id: frame
+                kind: reference
+                size: [200, 200, 0]
+                relate:
+                  cxcy: { ref: origin }
+              - id: block
+                class: IfcBeam
+                size: [20, 20, 20]
+                relate:
+                  +x+y:
+                    ref: frame
+                    pos: +x+y
+                    mode: plane
+                  cz: { ref: origin }
+                ifc:
+                  predefined_type: BEAM
+            """
+        )
+        with TemporaryDirectory() as tmp:
+            path = Path(tmp) / "mode-plane.yaml"
+            path.write_text(spec_text, encoding="utf-8")
+            spec = load_relationship_spec(path)
+        solver = ConstraintSolver(spec)
+        result = solver.solve()
+        block = next(comp for comp in result.components if comp.instance_id == "block")
+        self.assertAlmostEqual(block.transform.position[0], 90.0)
+        self.assertEqual(result.diagnostics.degrees_of_freedom.get("block"), 1)
+        self.assertTrue(any("mode 'plane'" in warn.message or "extra axes" in warn.message for warn in result.diagnostics.warnings))
+
+    def test_edge_mode_accepts_two_axes(self) -> None:
+        spec_text = dedent(
+            """
+            schema: pond-relationship-test
+            info:
+              option: mode-edge
+            components:
+              - id: origin
+                kind: reference
+                size: [0, 0, 0]
+              - id: frame
+                kind: reference
+                size: [200, 200, 0]
+                relate:
+                  cxcy: { ref: origin }
+              - id: block
+                class: IfcBeam
+                size: [20, 20, 20]
+                relate:
+                  +x+y:
+                    ref: frame
+                    pos: +x+y
+                    mode: edge
+                  cz: { ref: origin }
+                ifc:
+                  predefined_type: BEAM
+            """
+        )
+        with TemporaryDirectory() as tmp:
+            path = Path(tmp) / "mode-edge.yaml"
+            path.write_text(spec_text, encoding="utf-8")
+            spec = load_relationship_spec(path)
+        solver = ConstraintSolver(spec)
+        result = solver.solve()
+        block = next(comp for comp in result.components if comp.instance_id == "block")
+        self.assertAlmostEqual(block.transform.position[0], 90.0)
+        self.assertAlmostEqual(block.transform.position[1], 90.0)
+        self.assertEqual(result.diagnostics.degrees_of_freedom.get("block"), 0)
+        self.assertFalse(result.diagnostics.warnings)
+
+    def test_fail_on_warn_promotes_under_constraint(self) -> None:
+        spec_text = dedent(
+            """
+            schema: pond-relationship-test
+            info:
+              option: dof-fail
+            components:
+              - id: origin
+                kind: reference
+                size: [0, 0, 0]
+              - id: block
+                class: IfcBeam
+                size: [100, 50, 25]
+                relate:
+                  cz: { ref: origin }
+                ifc:
+                  predefined_type: BEAM
+            """
+        )
+        env = os.environ.copy()
+        env["DIAGRAM_RELATIONSHIPS_FAIL_ON_WARN"] = "1"
+        with TemporaryDirectory() as tmp:
+            path = Path(tmp) / "dof-fail.yaml"
+            path.write_text(spec_text, encoding="utf-8")
+            with mock.patch.dict(os.environ, env, clear=True):
+                spec = load_relationship_spec(path)
+                solver = ConstraintSolver(spec)
+                result = solver.solve()
+        self.assertTrue(any("under-constrained" in err.message for err in result.diagnostics.errors))
+
     def test_rotate_id_map_prefers_seed_and_carries_boolean_voids(self) -> None:
         spec_text = dedent(
             """

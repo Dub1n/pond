@@ -664,6 +664,14 @@ class ConstraintSolver:
         instance_id: str,
     ) -> None:
         subject_axes = _axes_from_pos(relation.subject)
+        mode = (relation.target.mode or "point").lower()
+        max_axes = {"plane": 1, "edge": 2}.get(mode, None)
+        if max_axes is not None and len(subject_axes) > max_axes:
+            diagnostics.add_warning(
+                f"component '{component.id}' relation '{relation.subject}' uses mode '{mode}' and extra axes will be ignored",
+                subject=instance_id,
+            )
+            subject_axes = subject_axes[:max_axes]
         target_axes = {}
         for axis, sign in _axes_from_pos(relation.target.pos):
             target_axes.setdefault(axis, set()).add(sign)
@@ -699,6 +707,40 @@ class ConstraintSolver:
                     state.center = adjusted
             else:
                 state.faces[subject_sign] = adjusted
+        self._enforce_relation_mode(component, relation, axis_states, diagnostics, instance_id=instance_id)
+
+    def _enforce_relation_mode(
+        self,
+        component: RelationshipComponent,
+        relation: AxisRelation,
+        axis_states: Dict[str, AxisState],
+        diagnostics: SolveDiagnostics,
+        *,
+        instance_id: str,
+    ) -> None:
+        mode = (relation.target.mode or "point").lower()
+        if mode not in {"point", "plane", "edge"}:
+            diagnostics.add_error(
+                f"component '{component.id}' relation uses unsupported mode '{relation.target.mode}'",
+                subject=instance_id,
+            )
+            return
+        axes = _axes_from_pos(relation.subject)
+        if mode == "plane":
+            # keep only the axis matching the plane; others stay free
+            if len(axes) != 1:
+                diagnostics.add_warning(
+                    f"component '{component.id}' relation '{relation.subject}' should use a single axis for plane mode",
+                    subject=instance_id,
+                )
+            return
+        if mode == "edge":
+            if len(axes) != 2:
+                diagnostics.add_warning(
+                    f"component '{component.id}' relation '{relation.subject}' should use two axes for edge mode",
+                    subject=instance_id,
+                )
+            return
 
     def _resolve_axis_state(
         self,
