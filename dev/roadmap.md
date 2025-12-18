@@ -2,14 +2,14 @@
 
 ## Active / near-term
 
-- [ ] Implement frame-aware placement (subject/object frames, frame on `flush`), preserving gaps and size inference when transforming frames.
+- [x] Implement frame-aware placement (subject/object frames, frame on `flush`), preserving gaps and size inference when transforming frames.
 - [ ] Enforce `mode: plane|edge|point`, honour `tolerance`/`on_fail`, and improve DOF reporting; add fail-on-warn paths for collisions/under/over-constraint.
 - [ ] Finalise selector/clone semantics (template vs placement IDs, id_map remapping, metadata/IFC propagation to clones); lint `base#n` and selectors consistently.
-- [ ] Rename `run_between` to `array`, add guardrails (`count >= 2`, warn/error on single spans), and retain 3D `orient: along_run` support.
+- [x] Rename `run_between` to `array`, add guardrails (`count >= 2`, warn/error on single spans), and retain 3D `orient: along_run` support.
 - [ ] IFC discipline: enforce mapping table (entity + predefined type + material usage + mapped items) in lint/solver/export; ensure propagation to clones/voids; add fixtures.
 - [ ] Collision and boolean robustness: resolve collision hot-spots (e.g., Option C pad/joist overlaps), stabilise boolean cutouts for rotated arrays; make collision severity configurable alongside env.
 - [ ] Helper parity cleanup: strip `relate_from`/assemblies from docs/code or implement them; fail fast when declared until supported.
-- [ ] Implement mirror operation (plane normal + point) with right-handed frame handling; add lint/tests.
+- [x] Implement mirror operation (plane normal + point) with right-handed frame handling; add lint/tests.
 - [ ] Expand metadata mapping to align with IFC classes (carry-over from Phase 3 backlog).
 
 ## Phase 4 prep checklist (status captured here; source file archived)
@@ -24,7 +24,7 @@
 ## Backlog – relationship-first hardening
 
 - [ ] IFC completeness gate: fail when IFC-classed components lack predefined type/material or RelVoids/mapped items don’t propagate to clones; emit a completeness summary.
-- [ ] Array guardrails: enforce `count >= 2`, deprecate legacy `run_between` name in lint/errors; keep 3D `orient: along_run`.
+- [x] Array guardrails: enforce `count >= 2`, deprecate legacy `run_between` name in lint/errors; keep 3D `orient: along_run`.
 - [ ] Checks/diagnostics depth: formalise warning/error surfacing for collisions and under/over-constraint; add DOF reporting.
 - [ ] Clone-aware linting: accept `base#n` refs, validate cloned instance IDs/selectors consistently; fail unknown clone refs.
 - [ ] Selector hygiene: lint unknown selectors and id_map/count mismatches; warn when transforms run before array expansion if that risks nondeterminism.

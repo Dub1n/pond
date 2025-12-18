@@ -134,7 +134,7 @@ dimensions:
 
 ## 7) Component mapping plan (write before touching YAML)
 
-For each component group, write the intent, axis-map relates, arrays (`run_between` → `array`), operations, and views. State which faces/points must coincide (e.g., “-x+y to deck corner”) to avoid floating geometry. Frames are parsed but currently solved in world space.
+For each component group, write the intent, axis-map relates, arrays (`array`, legacy `run_between`), operations, and views. State which faces/points must coincide (e.g., “-x+y to deck corner”) to avoid floating geometry. Frames are honoured during placement.
 
 ### 7a) Reference frames/planes
 

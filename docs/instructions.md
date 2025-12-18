@@ -16,7 +16,7 @@ Use this as a quick-reference when editing relationship-first specs (schema `pon
 
 ## Axis-Map Relate (core shape)
 
-Frames (`frame: world|local|component:<id>`) are accepted in the schema but the solver currently treats all relations in world space; prefer world-frame inputs until frame-aware placement lands.
+Frames (`frame: world|local|component:<id>`) are honoured during placement; axis-map and `flush` relations follow the chosen frame while keeping gaps/offsets and size inference intact.
 
 Each entry maps subject axes to a target:
 
@@ -49,10 +49,10 @@ place:
     +z: { ref: pad_top, pos: +z }
 ```
 
-- `run_between` lays out arrays along a span using axis-map `start`/`end` (same shape as `relate`; single axis is fine):
+- `array` (alias `run_between`) lays out arrays along a span using axis-map `start`/`end` (same shape as `relate`; single axis is fine):
 
 ```yaml
-run_between:
+array:
   start:
     +y: { ref: frame, pos: +y }
   end:
@@ -63,7 +63,8 @@ run_between:
 ```
 
 - Axes only present on one side apply to all clones; missing axes fall back to the component’s `relate`. When start/end provide face pairs, sizes are inferred and interpolated along the span, so no manual insets are needed to land faces on references.
-- For corner-to-corner spans (e.g. diagonals), multi-axis keys like `-x+y` in `run_between.start/end` are treated as point anchors when `mode: point` (the default), so the span is based on the actual corner point rather than drifting due to face/size assumptions.
+- Arrays expect `count >= 2`; count=1 yields a lint error and solver warning—use a plain placement when you only need a single instance.
+- For corner-to-corner spans (e.g. diagonals), multi-axis keys like `-x+y` in `array.start/end` are treated as point anchors when `mode: point` (the default), so the span is based on the actual corner point rather than drifting due to face/size assumptions.
 - You can reference run instances directly (e.g. `joist_run_west#1`) anywhere a `ref` is accepted.
 
 ## Operations & Selectors
@@ -80,7 +81,7 @@ run_between:
 ## Checks
 
 - Same axis-map shape under `checks:`; use `mode: plane|edge` for coplanar/colinear assertions. `on_fail`/tolerance are not yet honoured by the solver (checks currently assert strict coordinate equality).
-- Prefer checks for “this must never drift” geometry (like diagonal start/end conditions) and back them with a unit test when a bug is discovered (for example: `RelationshipSolverTests.test_run_between_multi_axis_point_anchors_center_on_span_midpoint`).
+- Prefer checks for “this must never drift” geometry (like diagonal start/end conditions) and back them with a unit test when a bug is discovered (for example: `RelationshipSolverTests.test_array_multi_axis_point_anchors_center_on_span_midpoint`).
 
 ## IFC & Materials
 

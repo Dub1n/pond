@@ -117,8 +117,46 @@ def _orientation_from_direction(direction: Tuple[float, float, float], twist_deg
             tuple(float(val) for val in oriented[:, 0]),
             tuple(float(val) for val in oriented[:, 1]),
             tuple(float(val) for val in oriented[:, 2]),
-        )
+    )
     return orientation
+
+
+def _reflect_point(point: Tuple[float, float, float], axis: str, coordinate: float) -> Tuple[float, float, float]:
+    idx = AXIS_ORDER[axis]
+    reflected = list(point)
+    reflected[idx] = coordinate - (point[idx] - coordinate)
+    return (reflected[0], reflected[1], reflected[2])
+
+
+def _reflect_vector(vector: Tuple[float, float, float], axis: str) -> Tuple[float, float, float]:
+    if axis == "x":
+        return (-vector[0], vector[1], vector[2])
+    if axis == "y":
+        return (vector[0], -vector[1], vector[2])
+    return (vector[0], vector[1], -vector[2])
+
+
+def _reflect_orientation(orientation: OrientationMatrix, axis: str) -> OrientationMatrix:
+    x_axis = _normalise_vector(_reflect_vector(orientation[0], axis))
+    y_axis = _normalise_vector(_reflect_vector(orientation[1], axis))
+    z_axis = _normalise_vector(
+        (
+            x_axis[1] * y_axis[2] - x_axis[2] * y_axis[1],
+            x_axis[2] * y_axis[0] - x_axis[0] * y_axis[2],
+            x_axis[0] * y_axis[1] - x_axis[1] * y_axis[0],
+        )
+    )
+    if z_axis == (0.0, 0.0, 0.0):
+        z_axis = _normalise_vector(orientation[2])
+    # Re-orthogonalise to keep a right-handed basis after the reflection.
+    y_axis = _normalise_vector(
+        (
+            z_axis[1] * x_axis[2] - z_axis[2] * x_axis[1],
+            z_axis[2] * x_axis[0] - z_axis[0] * x_axis[2],
+            z_axis[0] * x_axis[1] - z_axis[1] * x_axis[0],
+        )
+    )
+    return (x_axis, y_axis, z_axis)
 
 
 def _rotation_from_orientation(orientation: OrientationMatrix) -> Tuple[float, float, float]:
@@ -279,6 +317,20 @@ class ReferenceResolver:
         self.datum_planes = datum_planes
         self.datum_bundles = datum_bundles
 
+    def _frame_orientation(self, frame: str, ref: str) -> OrientationMatrix:
+        if frame == "world":
+            return IDENTITY_ORIENTATION
+        if frame.startswith("component:"):
+            component_id = frame.split(":", 1)[1]
+            state = self.component_states.get(component_id)
+            if state is not None:
+                return getattr(state, "orientation", IDENTITY_ORIENTATION)
+        if frame == "local":
+            state = self.component_states.get(ref)
+            if state is not None:
+                return getattr(state, "orientation", IDENTITY_ORIENTATION)
+        return IDENTITY_ORIENTATION
+
     def coords_for_ref(self, ref: str) -> Optional[Dict[str, float]]:
         if ref in self.component_states:
             pos = self.component_states[ref].transform.position
@@ -297,17 +349,23 @@ class ReferenceResolver:
         ref: str,
         axis: str,
         sign: int,
+        frame: str = "world",
     ) -> Optional[float]:
         if ref in self.component_states:
             state = self.component_states[ref]
             idx = AXIS_ORDER[axis]
-            orientation = getattr(state, "orientation", IDENTITY_ORIENTATION)
+            orientation = self._frame_orientation(frame, ref)
             axis_vec = _axis_vector(orientation, axis)
-            half = state.size[idx] / 2 * _world_axis_component(axis, axis_vec)
-            base = state.transform.position[idx]
+            base = state.transform.position
+            offset = 0.0 if sign == 0 else _half_size(state.size, axis) * float(sign)
+            point = (
+                base[0] + axis_vec[0] * offset,
+                base[1] + axis_vec[1] * offset,
+                base[2] + axis_vec[2] * offset,
+            )
             if sign == 0:
-                return base
-            return base + sign * half
+                return base[idx]
+            return point[idx]
 
         if ref in self.datum_bundles:
             bundle = self.datum_bundles[ref]
@@ -608,7 +666,7 @@ class ConstraintSolver:
                 else:
                     # Fall back to the first explicit sign provided on the target
                     target_sign = sorted(target_axes[axis])[0]
-            coord = resolver.axis_coordinate(relation.target.ref, axis, target_sign)
+            coord = resolver.axis_coordinate(relation.target.ref, axis, target_sign, frame=relation.target.frame)
             if coord is None:
                 diagnostics.add_error(
                     f"component '{component.id}' relation references unknown target '{relation.target.ref}'",
@@ -712,7 +770,12 @@ class ConstraintSolver:
                     target_axes = {axis: sign for axis, sign in _axes_from_pos(relation.target.pos)}
                     for axis, subject_sign in subject_axes:
                         target_sign = target_axes.get(axis, subject_sign)
-                        coord = resolver.axis_coordinate(relation.target.ref, axis, target_sign)
+                        coord = resolver.axis_coordinate(
+                            relation.target.ref,
+                            axis,
+                            target_sign,
+                            frame=relation.target.frame,
+                        )
                         if coord is None:
                             diagnostics.add_error(
                                 f"component '{component.id}' relation references unknown target '{relation.target.ref}'",
@@ -773,7 +836,7 @@ class ConstraintSolver:
         length = math.sqrt(direction[0] ** 2 + direction[1] ** 2 + direction[2] ** 2)
         if length <= 1e-6:
             diagnostics.add_error(
-                f"component '{plan.id}' run_between has zero-length span",
+                f"component '{plan.id}' {clause.source} has zero-length span",
                 subject=plan.id,
             )
             length = 1.0
@@ -784,12 +847,18 @@ class ConstraintSolver:
         effective_length = max(length - inset_start - inset_end, 0.0)
 
         positions: List[float] = []
-        if clause.count == 1:
+        count = clause.count
+        if count is not None and count < 2:
+            diagnostics.add_warning(
+                f"component '{plan.id}' {clause.source} count should be >= 2 (got {count})",
+                subject=plan.id,
+            )
+        if count == 1:
             positions = [inset_start + effective_length / 2]
             if not clause.include_seed:
                 positions = []
-        elif clause.count:
-            total = max(clause.count, 1)
+        elif count:
+            total = max(count, 1)
             step = effective_length / max(total - 1, 1)
             positions = [inset_start + step * i for i in range(total)]
             if not clause.include_seed and positions:
@@ -982,20 +1051,12 @@ class ConstraintSolver:
             base = next((s for s in solved if s.instance_id == instance_id), None)
             if base is None:
                 continue
-            if not op.include_seed and instance_id == base.instance_id:
-                pass
-            mirrored_pos = list(base.transform.position)
-            idx = AXIS_ORDER[axis]
-            mirrored_pos[idx] = coordinate - (mirrored_pos[idx] - coordinate)
-            orientation = base.transform.orientation
+            if not op.include_seed and base.origin == "original":
+                continue
+            mirrored_pos = _reflect_point(base.transform.position, axis, coordinate)
+            orientation = _reflect_orientation(base.transform.orientation, axis)
             rotation = _rotation_from_orientation(orientation)
-            if axis == "x":
-                rotation = (-rotation[0], rotation[1], -rotation[2])
-            elif axis == "y":
-                rotation = (rotation[0], -rotation[1], -rotation[2])
-            else:
-                rotation = (rotation[0], rotation[1], -rotation[2])
-            transform = ComponentTransform(position=tuple(mirrored_pos), rotation=rotation, orientation=orientation)
+            transform = ComponentTransform(position=mirrored_pos, rotation=rotation, orientation=orientation)
             new_id = f"{instance_id}_mirrored"
             guid = self._stable_guid(base.template_id, new_id, coordinate)
             primitive = self._neutral_primitive(
@@ -1282,8 +1343,13 @@ class ConstraintSolver:
             passed = True
             for axis, subject_sign in subject_axes:
                 target_sign = target_axes.get(axis, subject_sign)
-                subject_coord = resolver.axis_coordinate("self", axis, subject_sign)
-                object_coord = resolver.axis_coordinate(clause.target.ref, axis, target_sign)
+                subject_coord = resolver.axis_coordinate("self", axis, subject_sign, frame=clause.target.frame)
+                object_coord = resolver.axis_coordinate(
+                    clause.target.ref,
+                    axis,
+                    target_sign,
+                    frame=clause.target.frame,
+                )
                 if object_coord is None:
                     diagnostics.add_error(
                         f"check references unknown target '{clause.target.ref}'",

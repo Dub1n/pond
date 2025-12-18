@@ -414,6 +414,7 @@ class RunBetweenSpec:
     inset_start: Optional[float] = None
     inset_end: Optional[float] = None
     include_seed: bool = False
+    source: str = "run_between"
 
 
 @dataclass(slots=True)
@@ -760,7 +761,11 @@ def _parse_component(data: Mapping[str, Any], dimensions: DimensionResolver) -> 
             else:
                 voids.append(str(entry))
     relations = tuple(_parse_axis_map(data.get("relate", {}), dimensions))
-    run_between = _parse_run_between(data.get("run_between"), dimensions)
+    array_raw = data.get("array")
+    run_between_raw = data.get("run_between")
+    if array_raw is not None and run_between_raw is not None:
+        raise SchemaError(f"component '{comp_id}' cannot specify both array and run_between")
+    run_between = _parse_run_between(array_raw, dimensions, source="array") if array_raw is not None else _parse_run_between(run_between_raw, dimensions)
     place = tuple(_parse_place(data.get("place", ()), dimensions))
     description = str(data["description"]) if "description" in data else None
     material = str(data["material"]) if data.get("material") is not None else None
@@ -860,6 +865,7 @@ def _parse_flush(payload: Any, dimensions: DimensionResolver) -> List[AxisRelati
     ref_raw = payload.get("ref") or payload.get("component") or payload.get("to")
     if ref_raw is None:
         raise SchemaError("flush requires a ref/component/to field")
+    frame = _parse_frame(payload.get("frame"))
     faces_raw = payload.get("faces") or ("+x", "-x", "+y", "-y", "+z", "-z")
     if isinstance(faces_raw, str):
         faces = [faces_raw]
@@ -888,30 +894,31 @@ def _parse_flush(payload: Any, dimensions: DimensionResolver) -> List[AxisRelati
                     pos=subject,
                     gap=gap,
                     mode="plane",
+                    frame=frame,
                 ),
             )
         )
     return relations
 
 
-def _parse_run_between(payload: Any, dimensions: DimensionResolver) -> Optional[RunBetweenSpec]:
+def _parse_run_between(payload: Any, dimensions: DimensionResolver, *, source: str = "run_between") -> Optional[RunBetweenSpec]:
     if payload is None:
         return None
     if not isinstance(payload, Mapping):
-        raise SchemaError("run_between must be a mapping")
+        raise SchemaError(f"{source} must be a mapping")
     start_raw = payload.get("start")
     end_raw = payload.get("end")
     if start_raw is None:
-        raise SchemaError("run_between requires a start axis-map")
+        raise SchemaError(f"{source} requires a start axis-map")
     if not isinstance(start_raw, Mapping):
-        raise SchemaError("run_between.start must be a mapping")
+        raise SchemaError(f"{source}.start must be a mapping")
     if end_raw is not None and not isinstance(end_raw, Mapping):
-        raise SchemaError("run_between.end must be a mapping when provided")
+        raise SchemaError(f"{source}.end must be a mapping when provided")
     orient = str(payload.get("orient", "preserve_axes"))
     count = payload.get("count")
     pitch = payload.get("pitch")
     if (count is not None or pitch is not None) and end_raw is None:
-        raise SchemaError("run_between with count/pitch requires an end axis-map")
+        raise SchemaError(f"{source} with count/pitch requires an end axis-map")
     inset = payload.get("inset", {}) or {}
     inset_start = _resolve_optional_number(inset.get("start"), dimensions) if isinstance(inset, Mapping) else None
     inset_end = _resolve_optional_number(inset.get("end"), dimensions) if isinstance(inset, Mapping) else None
@@ -925,6 +932,7 @@ def _parse_run_between(payload: Any, dimensions: DimensionResolver) -> Optional[
         inset_start=inset_start,
         inset_end=inset_end,
         include_seed=include_seed,
+        source=source,
     )
 
 

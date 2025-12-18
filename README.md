@@ -26,7 +26,7 @@ python scripts/build_diagrams.py --spec diagrams/specs/deck-framing.yaml --optio
 ## Relationship schema highlights
 
 - Axis-map `relate` entries map subject axes (`+x`, `-x+y`, `cxcy`, `~x`, etc.) to targets with explicit `ref`/`pos`/`gap`/`offset`/`mode`. `flush` sugar expands to these entries; `place` embeds per-placement axis-maps. Frames are parsed (`world`/`local`/`component:<id>`) but solving is currently world-space only.
-- Arrays use `run_between` (rename to `array` planned) with axis-map `start`/`end` blocks; `orient: along_run` aligns +X to the span and interpolates sizes from start/end faces. Instances accept selectors (`id`, `id.original`, `id.clones`) in typed `operations` (rotate/mirror/translate/boolean); rotations remap numbered clones.
+- Arrays use `array` (legacy alias: `run_between`) with axis-map `start`/`end` blocks; `orient: along_run` aligns +X to the span and interpolates sizes from start/end faces. Instances accept selectors (`id`, `id.original`, `id.clones`) in typed `operations` (rotate/mirror/translate/boolean); rotations remap numbered clones.
 - Components can be solids or geometry-less references (`kind: reference`). Missing sizes infer from relation pairs; conflicts lint. Checks reuse the same axis-map vocabulary and currently assert coordinate equality only.
 
 ## What you can build
@@ -38,7 +38,7 @@ python scripts/build_diagrams.py --spec diagrams/specs/deck-framing.yaml --optio
 ## Usage tips and gotchas
 
 - Activate the venv before running scripts; if a dependency is missing, rerun the command via `./.venv/bin/python …` and add the package to `requirements.txt`.
-- Keep specs declarative: prefer axis-map relates and `run_between` spans over manual coordinates. Avoid frames until frame-aware solving lands. Use center tokens when anchoring symmetric geometry to avoid conflicting size inference.
+- Keep specs declarative: prefer axis-map relates and `array` spans over manual coordinates. Use center tokens when anchoring symmetric geometry to avoid conflicting size inference.
 - Collision handling: set `DIAGRAM_RELATIONSHIPS_COLLISIONS=error|warn|ignore` (default `error`).
 - Do not hand-edit `diagrams/output/` artefacts; regenerate instead. Keep `docs/instructions.md` handy when authoring specs and see `DEVELOPMENT.md` for maintainers.
 

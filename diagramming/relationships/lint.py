@@ -162,10 +162,13 @@ def _lint_run_between(
     datum_bundles: Set[str],
     errors: List[str],
 ) -> None:
+    label = run_between.source or "array"
     if not run_between.start_relations:
-        errors.append(f"component '{component.id}' run_between requires a start axis-map")
+        errors.append(f"component '{component.id}' {label} requires a start axis-map")
     if (run_between.count and run_between.count > 1 or run_between.pitch) and not run_between.end_relations:
-        errors.append(f"component '{component.id}' run_between requires an end axis-map when using count/pitch")
+        errors.append(f"component '{component.id}' {label} requires an end axis-map when using count/pitch")
+    if run_between.count is not None and run_between.count < 2:
+        errors.append(f"component '{component.id}' {label} count must be >= 2 (got {run_between.count})")
     for relation in tuple(run_between.start_relations) + tuple(run_between.end_relations):
         _lint_axis_relation(
             relation,
@@ -174,10 +177,10 @@ def _lint_run_between(
             datum_planes=datum_planes,
             datum_bundles=datum_bundles,
             errors=errors,
-            context=f"component '{component.id}' run_between",
+            context=f"component '{component.id}' {label}",
         )
     if run_between.orient not in {"preserve_axes", "along_run"}:
-        errors.append(f"component '{component.id}' run_between uses unsupported orient '{run_between.orient}'")
+        errors.append(f"component '{component.id}' {label} uses unsupported orient '{run_between.orient}'")
 
 
 def _lint_operation(operation: object, *, known_ids: Set[str], errors: List[str]) -> None:

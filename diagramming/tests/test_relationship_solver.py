@@ -66,7 +66,65 @@ class RelationshipSolverTests(unittest.TestCase):
         self.assertAlmostEqual(opening.primitive.size[1], 900.0)
         self.assertAlmostEqual(opening.transform.position[2], 50.0)
 
-    def test_run_between_generates_along_run_orientation(self) -> None:
+    def test_frame_local_axes_follow_orientation(self) -> None:
+        spec_text = dedent(
+            """
+            schema: pond-relationship-test
+            info:
+              option: frame-local
+            components:
+              - id: origin
+                kind: reference
+                size: [0, 0, 0]
+              - id: frame
+                kind: reference
+                size: [100, 80, 40]
+                metadata:
+                  _rotation_z: 180
+                relate:
+                  cxcy: { ref: origin }
+                  cz: { ref: origin }
+              - id: block
+                class: IfcMember
+                size: [20, 20, 20]
+                relate:
+                  +x: { ref: frame, pos: +x, frame: local }
+                  cy: { ref: origin }
+                  cz: { ref: origin }
+                ifc:
+                  predefined_type: MEMBER
+              - id: flush_block
+                class: IfcMember
+                size: [null, null, null]
+                relate:
+                  flush:
+                    ref: frame
+                    frame: local
+                ifc:
+                  predefined_type: MEMBER
+            """
+        )
+        with TemporaryDirectory() as tmp:
+            path = Path(tmp) / "frame-local.yaml"
+            path.write_text(spec_text, encoding="utf-8")
+            spec = load_relationship_spec(path)
+        solver = ConstraintSolver(spec)
+        result = solver.solve()
+        block = next(comp for comp in result.components if comp.instance_id == "block")
+        flush_block = next(comp for comp in result.components if comp.instance_id == "flush_block")
+
+        self.assertAlmostEqual(block.transform.position[0], -60.0)
+        self.assertAlmostEqual(block.transform.position[1], 0.0)
+        self.assertAlmostEqual(block.transform.position[2], 0.0)
+
+        self.assertAlmostEqual(flush_block.transform.position[0], 0.0)
+        self.assertAlmostEqual(flush_block.transform.position[1], 0.0)
+        self.assertAlmostEqual(flush_block.transform.position[2], 0.0)
+        self.assertAlmostEqual(flush_block.primitive.size[0], 100.0)
+        self.assertAlmostEqual(flush_block.primitive.size[1], 80.0)
+        self.assertAlmostEqual(flush_block.primitive.size[2], 40.0)
+
+    def test_array_generates_along_run_orientation(self) -> None:
         spec_text = dedent(
             """
             schema: pond-relationship-test
@@ -92,7 +150,7 @@ class RelationshipSolverTests(unittest.TestCase):
                 relate:
                   cy: { ref: origin }
                   cz: { ref: origin }
-                run_between:
+                array:
                   start:
                     +x: { ref: start, pos: +x }
                   end:
@@ -155,7 +213,7 @@ class RelationshipSolverTests(unittest.TestCase):
         self.assertAlmostEqual(beam.transform.position[0], -550.0)
         self.assertAlmostEqual(beam.primitive.size[0], 100.0)
 
-    def test_run_between_orients_to_span_direction(self) -> None:
+    def test_array_orients_to_span_direction(self) -> None:
         spec_text = dedent(
             """
             schema: pond-relationship-test
@@ -181,7 +239,7 @@ class RelationshipSolverTests(unittest.TestCase):
                 relate:
                   cx: { ref: origin }
                   cz: { ref: origin }
-                run_between:
+                array:
                   start:
                     +y: { ref: start, pos: +y }
                   end:
@@ -205,7 +263,7 @@ class RelationshipSolverTests(unittest.TestCase):
         self.assertAlmostEqual(orient_x[1], 1.0, places=6)
         self.assertAlmostEqual(runner.transform.position[1], 475.0)
 
-    def test_run_between_multi_axis_point_anchors_center_on_span_midpoint(self) -> None:
+    def test_array_multi_axis_point_anchors_center_on_span_midpoint(self) -> None:
         spec_text = dedent(
             """
             schema: pond-relationship-test
@@ -225,7 +283,7 @@ class RelationshipSolverTests(unittest.TestCase):
                 size: [282.842712, 10, 10]
                 relate:
                   cz: { ref: origin }
-                run_between:
+                array:
                   start:
                     -x+y: { ref: frame, pos: -x+y }
                   end:
@@ -250,7 +308,7 @@ class RelationshipSolverTests(unittest.TestCase):
         self.assertAlmostEqual(orient_x[0], 0.7071067811865476, places=6)
         self.assertAlmostEqual(orient_x[1], -0.7071067811865476, places=6)
 
-    def test_run_between_axis_maps_infer_size_and_interpolate(self) -> None:
+    def test_array_axis_maps_infer_size_and_interpolate(self) -> None:
         spec_text = dedent(
             """
             schema: pond-relationship-test
@@ -276,7 +334,7 @@ class RelationshipSolverTests(unittest.TestCase):
                 relate:
                   cy: { ref: origin }
                   cz: { ref: origin }
-                run_between:
+                array:
                   start:
                     -x: { ref: start, pos: +x }
                     +x: { ref: start, pos: +x, offset: 200 }
@@ -304,6 +362,193 @@ class RelationshipSolverTests(unittest.TestCase):
         self.assertAlmostEqual(xs[1], 1100.0)
         self.assertAlmostEqual(sizes[0], 200.0)
         self.assertAlmostEqual(sizes[1], 200.0)
+
+    def test_run_between_alias_is_preserved(self) -> None:
+        spec_text = dedent(
+            """
+            schema: pond-relationship-test
+            info:
+              option: run-between-alias
+            components:
+              - id: origin
+                kind: reference
+                size: [0, 0, 0]
+              - id: start
+                kind: reference
+                size: [0, 0, 0]
+                relate:
+                  cx: { ref: origin, offset: -200 }
+              - id: end
+                kind: reference
+                size: [0, 0, 0]
+                relate:
+                  cx: { ref: origin, offset: 200 }
+              - id: runner
+                class: IfcBeam
+                size: [100, 50, 10]
+                relate:
+                  cy: { ref: origin }
+                  cz: { ref: origin }
+                run_between:
+                  start:
+                    +x: { ref: start, pos: +x }
+                  end:
+                    +x: { ref: end, pos: +x }
+                  count: 2
+                  include_seed: true
+                  orient: along_run
+                ifc:
+                  predefined_type: BEAM
+            """
+        )
+        with TemporaryDirectory() as tmp:
+            path = Path(tmp) / "run-between-alias.yaml"
+            path.write_text(spec_text, encoding="utf-8")
+            spec = load_relationship_spec(path)
+        solver = ConstraintSolver(spec)
+        result = solver.solve()
+        runners = [comp for comp in result.components if comp.component.id == "runner"]
+        self.assertEqual(len(runners), 2)
+
+    def test_array_count_guardrail_warns_on_single_span(self) -> None:
+        spec_text = dedent(
+            """
+            schema: pond-relationship-test
+            info:
+              option: array-guardrail
+            components:
+              - id: origin
+                kind: reference
+                size: [0, 0, 0]
+              - id: start
+                kind: reference
+                size: [0, 0, 0]
+                relate:
+                  cx: { ref: origin, offset: -100 }
+              - id: end
+                kind: reference
+                size: [0, 0, 0]
+                relate:
+                  cx: { ref: origin, offset: 100 }
+              - id: runner
+                class: IfcBeam
+                size: [50, 20, 10]
+                relate:
+                  cy: { ref: origin }
+                  cz: { ref: origin }
+                array:
+                  start:
+                    +x: { ref: start, pos: +x }
+                  end:
+                    +x: { ref: end, pos: +x }
+                  count: 1
+                  include_seed: true
+                  orient: along_run
+                ifc:
+                  predefined_type: BEAM
+            """
+        )
+        with TemporaryDirectory() as tmp:
+            path = Path(tmp) / "array-guardrail.yaml"
+            path.write_text(spec_text, encoding="utf-8")
+            spec = load_relationship_spec(path)
+        solver = ConstraintSolver(spec)
+        result = solver.solve()
+        runners = [comp for comp in result.components if comp.component.id == "runner"]
+        warning_texts = [warning.message for warning in result.diagnostics.warnings]
+        self.assertEqual(len(runners), 1)
+        self.assertTrue(any("count should be >= 2" in msg for msg in warning_texts))
+
+    def test_mirror_operation_reflects_position_and_orientation(self) -> None:
+        spec_text = dedent(
+            """
+            schema: pond-relationship-test
+            info:
+              option: mirror-basic
+            components:
+              - id: origin
+                kind: reference
+                size: [0, 0, 0]
+              - id: beam
+                class: IfcBeam
+                size: [100, 50, 10]
+                metadata:
+                  _rotation_z: 90
+                relate:
+                  cx: { ref: origin, offset: 200 }
+                  cy: { ref: origin }
+                  cz: { ref: origin }
+                ifc:
+                  predefined_type: BEAM
+            operations:
+              - type: mirror
+                targets: [beam]
+                plane:
+                  axis: x
+                  coordinate: 0
+                include_seed: true
+            """
+        )
+        with TemporaryDirectory() as tmp:
+            path = Path(tmp) / "mirror.yaml"
+            path.write_text(spec_text, encoding="utf-8")
+            spec = load_relationship_spec(path)
+        solver = ConstraintSolver(spec)
+        result = solver.solve()
+        beams = {comp.instance_id: comp for comp in result.components if comp.component.id == "beam"}
+        mirrored = beams.get("beam_mirrored")
+        self.assertIsNotNone(mirrored)
+        assert mirrored is not None
+        self.assertAlmostEqual(mirrored.transform.position[0], -200.0)
+        self.assertAlmostEqual(mirrored.transform.position[1], 0.0)
+        x_axis = mirrored.transform.orientation[0]
+        y_axis = mirrored.transform.orientation[1]
+        z_axis = mirrored.transform.orientation[2]
+        cross = (
+            x_axis[1] * y_axis[2] - x_axis[2] * y_axis[1],
+            x_axis[2] * y_axis[0] - x_axis[0] * y_axis[2],
+            x_axis[0] * y_axis[1] - x_axis[1] * y_axis[0],
+        )
+        handedness = cross[0] * z_axis[0] + cross[1] * z_axis[1] + cross[2] * z_axis[2]
+        self.assertGreater(handedness, 0.9)
+
+    def test_mirror_operation_skips_seeds_when_requested(self) -> None:
+        spec_text = dedent(
+            """
+            schema: pond-relationship-test
+            info:
+              option: mirror-seed
+            components:
+              - id: origin
+                kind: reference
+                size: [0, 0, 0]
+              - id: beam
+                class: IfcBeam
+                size: [100, 50, 10]
+                relate:
+                  cx: { ref: origin, offset: 150 }
+                  cy: { ref: origin }
+                  cz: { ref: origin }
+                ifc:
+                  predefined_type: BEAM
+            operations:
+              - type: mirror
+                targets: [beam]
+                plane:
+                  axis: x
+                  coordinate: 0
+                include_seed: false
+            """
+        )
+        with TemporaryDirectory() as tmp:
+            path = Path(tmp) / "mirror-seed.yaml"
+            path.write_text(spec_text, encoding="utf-8")
+            spec = load_relationship_spec(path)
+        solver = ConstraintSolver(spec)
+        result = solver.solve()
+        beams = [comp for comp in result.components if comp.component.id == "beam"]
+        mirrored = [comp for comp in beams if comp.instance_id.endswith("_mirrored")]
+        self.assertEqual(len(mirrored), 0)
 
     def test_boolean_operation_aggregates_clone_selectors(self) -> None:
         spec_text = dedent(
