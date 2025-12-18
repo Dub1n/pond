@@ -3,7 +3,9 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Dict, Iterable, List, Sequence
 
-from shapely.affinity import rotate as shapely_rotate, translate as shapely_translate
+import math
+import numpy as np
+from shapely.affinity import affine_transform, rotate as shapely_rotate, translate as shapely_translate
 from shapely.geometry import MultiPoint, Polygon as ShapelyPolygon, box as shapely_box
 
 from ..materials import apply_material_class
@@ -34,6 +36,8 @@ class RelationshipPlanner:
         key = spec.info.option.lower() if spec.info.option else "relationship"
         self.option = RelationshipOption(key=key, title=spec.info.title)
         self._footprints = self._build_footprint_map(solved.primitives)
+        self._primitive_index = {prim.id: prim for prim in solved.primitives}
+        self._template_refs = self._build_template_reference_map(solved.primitives)
 
     def plan(self) -> List[RelationshipPlannedView]:
         plan_features = list(self._footprint_features(self.solved.primitives))
@@ -71,13 +75,20 @@ class RelationshipPlanner:
     # ------------------------------------------------------------------ #
     def _footprint_features(self, primitives: Sequence[NeutralPrimitive]) -> Iterable[PolygonFeature]:
         footprints = self._footprints
+        prim_index = self._primitive_index
         for primitive in primitives:
             shape = footprints.get(primitive.id)
             if shape is None or shape.is_empty:
                 continue
             metadata = primitive.metadata or {}
             if primitive.voids:
-                void_shapes = [footprints.get(vid) for vid in primitive.voids if footprints.get(vid) is not None]
+                void_shapes = []
+                for vid in primitive.voids:
+                    base_shape = footprints.get(vid)
+                    if base_shape is None:
+                        continue
+                    mapped = self._mapped_void_shape(primitive, prim_index.get(vid), base_shape)
+                    void_shapes.append(mapped)
                 if void_shapes:
                     union = None
                     for vshape in void_shapes:
@@ -110,6 +121,75 @@ class RelationshipPlanner:
                     else tuple(self.spec.views.keys()) if self.spec.views else ("plan",),
                 )
                 yield feature
+
+    def _mapped_void_shape(
+        self,
+        host: NeutralPrimitive,
+        void_prim: NeutralPrimitive | None,
+        shape: ShapelyPolygon,
+    ) -> ShapelyPolygon:
+        if void_prim is None:
+            return shape
+        host_template = (
+            host.template_id
+            or (host.metadata.get("template_id") if host.metadata else None)
+            or host.id
+        )
+        void_template = (
+            void_prim.template_id
+            or (void_prim.metadata.get("template_id") if void_prim.metadata else None)
+            or void_prim.id
+        )
+        base_host = self._template_refs.get(host_template)
+        base_void = self._template_refs.get(void_template)
+        if base_host is None or base_void is None:
+            return shape
+        try:
+            host_matrix = self._transform_matrix(base_host.transform)
+            void_matrix = self._transform_matrix(base_void.transform)
+            relative = np.linalg.inv(host_matrix) @ void_matrix
+            target_matrix = self._transform_matrix(host.transform) @ relative
+            current_matrix = self._transform_matrix(void_prim.transform)
+            delta = target_matrix @ np.linalg.inv(current_matrix)
+            return affine_transform(shape, self._affine_from_matrix(delta))
+        except Exception:
+            return shape
+
+    def _build_template_reference_map(self, primitives: Sequence[NeutralPrimitive]) -> Dict[str, NeutralPrimitive]:
+        refs: Dict[str, NeutralPrimitive] = {}
+        for prim in primitives:
+            template = prim.template_id or (prim.metadata.get("template_id") if prim.metadata else None) or prim.id
+            existing = refs.get(template)
+            if existing is None or (getattr(existing, "origin", "clone") != "original" and getattr(prim, "origin", "clone") == "original"):
+                refs[template] = prim
+            refs.setdefault(template, prim)
+        return refs
+
+    def _transform_matrix(self, transform) -> np.ndarray:
+        orientation = getattr(transform, "orientation", None)
+        if orientation is None:
+            angle = math.radians(transform.rotation[2] if transform.rotation else 0.0)
+            orientation = (
+                (math.cos(angle), math.sin(angle), 0.0),
+                (-math.sin(angle), math.cos(angle), 0.0),
+                (0.0, 0.0, 1.0),
+            )
+        matrix = np.eye(4, dtype=float)
+        matrix[0:3, 0] = np.array(orientation[0])
+        matrix[0:3, 1] = np.array(orientation[1])
+        matrix[0:3, 2] = np.array(orientation[2])
+        matrix[0:3, 3] = np.array(transform.position)
+        return matrix
+
+    def _affine_from_matrix(self, matrix: np.ndarray) -> tuple[float, float, float, float, float, float]:
+        return (
+            float(matrix[0, 0]),
+            float(matrix[0, 1]),
+            float(matrix[1, 0]),
+            float(matrix[1, 1]),
+            float(matrix[0, 3]),
+            float(matrix[1, 3]),
+        )
 
     def _footprint_from_mesh(self, primitive: NeutralPrimitive) -> ShapelyPolygon | None:
         mesh = mesh_from_primitive(primitive, to_meters=False)

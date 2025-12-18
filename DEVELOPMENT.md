@@ -30,9 +30,9 @@ flowchart TD
 - **Arrays**: `array` (legacy alias: `run_between`) supplies `start`/`end` axis-maps; `orient: along_run` aligns +X to the span and interpolates size from paired faces. Missing axes fall back to component-level relates; lint enforces `count >= 2` with solver warnings for single-span requests. Run instances (`base#n`) are valid refs/selectors.
 - **Operations & selectors**: typed `operations` (`rotate`, `mirror`, `translate`, `boolean`) accept selectors (`id`, `id.original`, `id.clones`). Rotations remap numbered clones; mirror reflects across axis-aligned planes while keeping orientations right-handed.
 - **Size inference & references**: components infer missing sizes from axis pairs; conflicts with explicit size lint. `kind: reference` components are geometry-less anchors with missing axes defaulting to 0.
-- **Checks & diagnostics**: checks reuse axis-map shapes and now honour `tolerance` + `on_fail: warn|error|ignore`; DOF reporting warns only when an axis can’t infer a position or size (remaining DOF), while explicit spans + sizes are permitted so long as they agree. Collisions report via OCC; severity driven by `DIAGRAM_RELATIONSHIPS_COLLISIONS=error|warn|ignore` (default `error`) with `DIAGRAM_RELATIONSHIPS_FAIL_ON_WARN=1` to promote warnings; `--collision-mode/--collision-ignore/--fail-on-warn` on the CLI set these without touching the environment. Footings (`IfcFooting`) are ignored in collision pairs by default to keep pad supports from flooding reports.
+- **Checks & diagnostics**: checks reuse axis-map shapes and now honour `tolerance` + `on_fail: warn|error|ignore`; DOF reporting warns only when an axis can’t infer a position or size (remaining DOF), while explicit spans + sizes are permitted so long as they agree. Collisions report via OCC; severity driven by `DIAGRAM_RELATIONSHIPS_COLLISIONS=error|warn|ignore` (default `error`) with `DIAGRAM_RELATIONSHIPS_FAIL_ON_WARN=1` to promote warnings; `--collision-mode/--collision-ignore/--fail-on-warn` on the CLI set these without touching the environment. Footings (`IfcFooting`) are ignored in collision pairs by default (even when a custom ignore list is supplied) to keep pad supports from flooding reports.
 - **Planner & renderers**: relationship planner projects footprints/section slices from solids and emits dimension polylines; renderers share styling with the legacy path.
-- **Exporters**: tessellated glTF/GLB with metadata in `extras`; IFC 4.3 Reference View (mm/deg units, Model/Axis/Body contexts, predefined-type/material expectations, RelVoids for openings); STEP/OBJ reuse CadQuery solids.
+- **Exporters**: tessellated glTF/GLB with metadata in `extras`; IFC 4.3 Reference View (mm/deg units, Model/Axis/Body contexts, predefined-type/material expectations, mapped items/types for repeats, RelVoids propagated to clones); STEP/OBJ reuse CadQuery solids.
 
 ## Architecture details (canonical surfaces)
 
@@ -41,7 +41,7 @@ flowchart TD
 - Components: solids or `kind: reference` anchors; references default missing axes to 0. Missing component size axes infer from relation pairs; conflicts lint unless matched. Aggregate selectors (`id`, `id.original`, `id.clones`) are accepted wherever component lists appear. Typed `operations`: `rotate`, `mirror`, `translate`, `boolean`; rotation remaps numbered instances. `relate_from` and assemblies parse but do not expand (planned removal/reevaluation).
 - Constraint solver: expands placements/arrays/selectors into explicit instances with deterministic GUID seeds. Resolves axis-map relations with size inference, applies run spans, executes typed operations, and reports OCC collisions (severity via `DIAGRAM_RELATIONSHIPS_COLLISIONS`). Diagnostics capture errors/warnings and shallow DOF notes; checks assert coordinate equality only (no tolerance/on_fail).
 - Planner/renderers: RelationshipPlanner projects plan footprints and section slices from solver primitives, deriving dimension polylines from solved extents. GeometryBundle carries polygons/polylines, legend data, and the canonical `trimesh.Scene`; SVG renderer consumes bundles, PNG via cairosvg when available.
-- Exporters: glTF/GLB via tessellated solids with metadata in `extras` (mm→m); IFC 4.3 Reference View with Model/Axis/Body contexts, class/predefined-type/material mapping, openings via `IfcRelVoidsElement`, deterministic GUIDs; STEP/OBJ reuse CadQuery solids. `scripts/build_diagrams.py` orchestrates exports; `scripts/lint_specs.py` runs schema + solver + IFC validation and emits mesh digests.
+- Exporters: glTF/GLB via tessellated solids with metadata in `extras` (mm→m); IFC 4.3 Reference View with Model/Axis/Body contexts, class/predefined-type/material mapping, mapped items/types for repeated members, openings via `IfcRelVoidsElement` (propagated to clones), deterministic GUIDs; STEP/OBJ reuse CadQuery solids. `scripts/build_diagrams.py` orchestrates exports; `scripts/lint_specs.py` runs schema + solver + IFC validation and emits mesh digests.
 
 ## Spec authoring notes
 
@@ -58,7 +58,7 @@ Pulled from the latest implementation review:
 - Frames are honoured for axis-map/flush; monitor non-orthogonal use until richer DOF/tolerance handling lands.
 - Checks enforce equality only; `tolerance`/`on_fail` semantics are not honoured.
 - Helper coverage is limited to axis-map `relate`/`flush`/`place` plus `array`/`run_between`; `relate_from` and assemblies parse but do not expand.
-- IFC linting is minimal (entity names + predefined type/material on a few classes); mapped items, material usages, and broader pairing rules remain to be enforced.
+- IFC mapping table enforcement now covers predefined type/material usage, mapped items/types, and cloned openings across exporter/lint/validation.
 - Collision reporting exists, but DOF counts and richer diagnostics are shallow.
 
 ## IFC alignment (working rules)

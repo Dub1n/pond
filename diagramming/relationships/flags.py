@@ -61,10 +61,12 @@ def collision_ignore_classes() -> set[str]:
     """
 
     raw = os.getenv(_COLLISION_IGNORE_CLASSES_FLAG)
+    ignores = {"ifcfooting"}
     if raw is None:
-        return {"ifcfooting"}
+        return ignores
     entries = [item.strip().lower() for item in raw.split(",") if item.strip()]
-    return set(entries)
+    ignores.update(entries)
+    return ignores
 
 
 def is_relationship_schema(schema_field: Any) -> bool:

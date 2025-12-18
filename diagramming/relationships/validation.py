@@ -4,7 +4,7 @@ import hashlib
 from dataclasses import dataclass
 from pathlib import Path
 from tempfile import TemporaryDirectory
-from typing import Iterable, List, Sequence, Tuple
+from typing import Dict, Iterable, List, Sequence, Tuple
 
 from shapely.geometry import Polygon as ShapelyPolygon
 
@@ -158,17 +158,57 @@ def _ifc_model_errors(primitives: Sequence[NeutralPrimitive]) -> List[str]:
     if "Body" not in contexts:
         errors.append("IFC validation: Body context missing")
 
+    def _has_mapped_representation(element, context: str = "Body") -> bool:
+        reps = getattr(getattr(element, "Representation", None), "Representations", []) or []
+        for rep in reps:
+            if not rep.ContextOfItems or getattr(rep.ContextOfItems, "ContextIdentifier", "") != context:
+                continue
+            items = getattr(rep, "Items", []) or []
+            if any(getattr(item, "is_a", lambda *_: False)("IfcMappedItem") for item in items):
+                return True
+        return False
+
     rel_voids = model.by_type("IfcRelVoidsElement")
     openings = {rel.RelatedOpeningElement for rel in rel_voids if rel.RelatedOpeningElement}
 
     type_links = list(model.by_type("IfcRelDefinesByType"))
-    mapped_items = list(model.by_type("IfcMappedItem"))
+    type_by_tag = {}
+    for link in type_links:
+        for related in getattr(link, "RelatedObjects", []) or []:
+            tag = getattr(related, "Tag", None)
+            if tag:
+                type_by_tag[tag] = link.RelatingType
+
+    products_by_tag = {}
+    mapped_body_by_tag = {}
+    template_counts: Dict[str, int] = {}
+    template_for_guid: Dict[str, str] = {}
+    prim_by_id = {prim.id: prim for prim in primitives}
+    id_for_guid = {prim.guid: prim.id for prim in primitives if prim.guid}
+    expected_void_pairs = set()
+    for prim in primitives:
+        template = (
+            getattr(prim, "template_id", None)
+            or (prim.metadata.get("template_id", prim.id) if prim.metadata else None)
+            or prim.id
+        )
+        template_counts[template] = template_counts.get(template, 0) + 1
+        if prim.guid:
+            template_for_guid[prim.guid] = template
+        for void_id in prim.voids:
+            void_prim = prim_by_id.get(void_id)
+            if void_prim and void_prim.guid:
+                expected_void_pairs.add((prim.guid, void_prim.guid))
 
     for element in model.by_type("IfcElement"):
         reps = getattr(getattr(element, "Representation", None), "Representations", []) or []
         rep_contexts = {getattr(rep.ContextOfItems, "ContextIdentifier", "") for rep in reps if rep.ContextOfItems}
         type_name = element.is_a()
         predefined = getattr(element, "PredefinedType", None)
+        tag = getattr(element, "Tag", None)
+        if tag:
+            products_by_tag[tag] = element
+            mapped_body_by_tag[tag] = _has_mapped_representation(element, "Body")
         if predefined is None or str(predefined).upper() in {"", "NOTDEFINED"}:
             errors.append(f"IFC validation: element {element.GlobalId} missing predefined type ({type_name})")
 
@@ -200,19 +240,45 @@ def _ifc_model_errors(primitives: Sequence[NeutralPrimitive]) -> List[str]:
         if type_name == "IfcOpeningElement" and element not in openings:
             errors.append(f"IFC validation: opening {element.GlobalId} is not linked by IfcRelVoidsElement")
 
-    for class_name in ("IfcBeam", "IfcMember", "IfcSlab"):
-        elements = model.by_type(class_name)
-        if len(elements) <= 1:
+    actual_void_pairs = set()
+    for rel in rel_voids:
+        host_tag = getattr(rel.RelatingBuildingElement, "Tag", None)
+        opening_tag = getattr(rel.RelatedOpeningElement, "Tag", None)
+        if host_tag and opening_tag:
+            actual_void_pairs.add((host_tag, opening_tag))
+    missing_pairs = []
+    for host_guid, void_guid in expected_void_pairs:
+        pair = (host_guid, void_guid)
+        if pair in actual_void_pairs:
             continue
-        has_type = any(
-            getattr(link, "RelatingType", None)
-            and getattr(link.RelatingType, "is_a", lambda *_: False)(f"{class_name}Type")
-            for link in type_links
-        )
-        if not has_type:
-            errors.append(f"IFC validation: repeated {class_name} elements should use {class_name}Type definitions")
-        if not mapped_items:
-            errors.append(f"IFC validation: repeated {class_name} elements should use mapped representations")
+        host_label = id_for_guid.get(host_guid, host_guid)
+        void_label = id_for_guid.get(void_guid, void_guid)
+        missing_pairs.append(f"{host_label}->{void_label}")
+    if missing_pairs:
+        sample = "; ".join(sorted(missing_pairs)[:3])
+        suffix = " …" if len(missing_pairs) > 3 else ""
+        errors.append(f"IFC validation: missing IfcRelVoidsElement for {len(missing_pairs)} pairs ({sample}{suffix})")
+
+    repeated_templates = {template for template, count in template_counts.items() if count > 1}
+    mapped_required = {"IfcBeam", "IfcMember", "IfcSlab"}
+    missing_types: set[str] = set()
+    missing_mapped: set[str] = set()
+    for tag, product in products_by_tag.items():
+        template = template_for_guid.get(tag)
+        if template is None or template not in repeated_templates:
+            continue
+        class_name = product.is_a()
+        if class_name not in mapped_required:
+            continue
+        type_record = type_by_tag.get(tag)
+        if not type_record or not getattr(type_record, "is_a", lambda *_: False)(f"{class_name}Type"):
+            missing_types.add(template)
+        if not mapped_body_by_tag.get(tag):
+            missing_mapped.add(template)
+    if missing_types:
+        errors.append(f"IFC validation: repeated templates missing type definitions ({', '.join(sorted(missing_types))})")
+    if missing_mapped:
+        errors.append(f"IFC validation: repeated templates missing mapped Body representations ({', '.join(sorted(missing_mapped))})")
 
     return errors
 

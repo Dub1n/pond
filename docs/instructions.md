@@ -6,7 +6,7 @@ Use this as a quick-reference when editing relationship-first specs (schema `pon
 
 - Activate the venv (`source .venv/bin/activate`) and install deps (`python3 -m pip install -r requirements.txt`).
 - Run tests with `python -m unittest discover` and renders with `./.venv/bin/python scripts/build_diagrams.py …` (set `DIAGRAM_RELATIONSHIPS=0` to force legacy-only mode).
-- Collision severity: `DIAGRAM_RELATIONSHIPS_COLLISIONS=error|warn|ignore` (default `error`); set `DIAGRAM_RELATIONSHIPS_FAIL_ON_WARN=1` to promote warnings. CLI helpers (`scripts/build_diagrams.py`, `scripts/lint_specs.py`) accept `--collision-mode`, `--collision-ignore`, and `--fail-on-warn` to set these without exporting env vars. Footings are ignored in collision checks by default to avoid noisy pad overlaps.
+- Collision severity: `DIAGRAM_RELATIONSHIPS_COLLISIONS=error|warn|ignore` (default `error`); set `DIAGRAM_RELATIONSHIPS_FAIL_ON_WARN=1` to promote warnings. CLI helpers (`scripts/build_diagrams.py`, `scripts/lint_specs.py`) accept `--collision-mode`, `--collision-ignore`, and `--fail-on-warn` to set these without exporting env vars. Footings are ignored in collision checks by default (even when a custom ignore list is supplied) to avoid noisy pad overlaps.
 
 ## Components & References
 
@@ -71,7 +71,7 @@ array:
 
 - Typed operations: `rotate`, `mirror`, `translate`, `boolean`.
 - Selectors: `id` (all instances), `id.original` (seeds/place entries), `id.clones` (generated copies). Work in operations, booleans, groups, checks.
-- Boolean subtract uses selectors against a target component (void references are stored on the host).
+- Boolean subtract uses selectors against a target component (void references are stored on the host and propagate to clones for IFC openings and plan cutouts).
 
 ## Size Inference Rules
 
@@ -87,6 +87,7 @@ array:
 ## IFC & Materials
 
 - Provide `class` and `ifc.predefined_type` where applicable (beams/joists/slabs/openings). Materials map to `diagramming/materials.py`.
+- Repeated beams/members/slabs emit mapped items and type definitions; missing predefined types/material usages are linted and validated at export time, and openings propagate to cloned hosts.
 - Metadata (labels, views, psets) flows into glTF/IFC exports.
 
 ## Run & Validate

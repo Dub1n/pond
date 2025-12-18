@@ -144,6 +144,134 @@ class RelationshipValidationTests(unittest.TestCase):
         errors = lint_relationship_spec(spec)
         self.assertTrue(any("matched no components" in err or "unknown selector" in err for err in errors))
 
+    def test_ifc_mapped_items_and_types_on_repeats(self) -> None:
+        spec_text = dedent(
+            """
+            schema: pond-relationship-test
+            info:
+              option: mapped-items
+            components:
+              - id: origin
+                kind: reference
+                size: [0, 0, 0]
+              - id: beam
+                class: IfcBeam
+                size: [400, 50, 150]
+                material: timber
+                relate:
+                  cx: { ref: origin }
+                  cy: { ref: origin }
+                  cz: { ref: origin }
+                array:
+                  start:
+                    +y: { ref: origin, offset: -600 }
+                  end:
+                    +y: { ref: origin, offset: 600 }
+                  count: 3
+                  include_seed: true
+                ifc:
+                  predefined_type: BEAM
+            """
+        )
+        with TemporaryDirectory() as tmp:
+            path = Path(tmp) / "mapped.yaml"
+            path.write_text(spec_text, encoding="utf-8")
+            spec = load_relationship_spec(path)
+        report = validate_relationship_spec(spec)
+        self.assertFalse(report.errors)
+        try:
+            from diagramming.planner.exporters import IfcExporter
+            import ifcopenshell
+        except Exception as exc:  # pragma: no cover - optional dependency guard
+            self.skipTest(f"ifcopenshell not available: {exc}")
+        exporter = IfcExporter()
+        with TemporaryDirectory() as tmp:
+            ifc_path = Path(tmp) / "model.ifc"
+            exporter.export(report.result.primitives, ifc_path)
+            model = ifcopenshell.open(ifc_path)
+        beams = model.by_type("IfcBeam")
+        mapped_items = model.by_type("IfcMappedItem")
+        type_links = model.by_type("IfcRelDefinesByType")
+        typed_objects = {
+            obj
+            for link in type_links
+            for obj in getattr(link, "RelatedObjects", []) or []
+        }
+        self.assertGreaterEqual(len(beams), 2)
+        self.assertTrue(mapped_items)
+        self.assertTrue(all(beam in typed_objects for beam in beams))
+
+    def test_relvoids_propagate_to_clones(self) -> None:
+        spec_text = dedent(
+            """
+            schema: pond-relationship-test
+            info:
+              option: relvoid-clones
+            components:
+              - id: origin
+                kind: reference
+                size: [0, 0, 0]
+              - id: slab
+                class: IfcSlab
+                size: [200, 200, 40]
+                material: decking
+                place:
+                  - id: slab_a
+                    cx: { ref: origin, offset: -300 }
+                    cy: { ref: origin }
+                    cz: { ref: origin }
+                  - id: slab_b
+                    cx: { ref: origin, offset: 300 }
+                    cy: { ref: origin }
+                    cz: { ref: origin }
+                ifc:
+                  predefined_type: FLOOR
+              - id: void
+                class: IfcOpeningElement
+                size: [80, 80, 40]
+                relate:
+                  cxcy: { ref: slab, pos: cxcy }
+                  cz: { ref: slab, pos: cz }
+                ifc:
+                  predefined_type: OPENING
+            operations:
+              - type: boolean
+                target: slab
+                subtract: [void]
+            """
+        )
+        with TemporaryDirectory() as tmp:
+            path = Path(tmp) / "relvoid.yaml"
+            path.write_text(spec_text, encoding="utf-8")
+            spec = load_relationship_spec(path)
+        report = validate_relationship_spec(spec)
+        self.assertFalse(report.errors)
+        try:
+            from diagramming.planner.exporters import IfcExporter
+            import ifcopenshell
+        except Exception as exc:  # pragma: no cover - optional dependency guard
+            self.skipTest(f"ifcopenshell not available: {exc}")
+        exporter = IfcExporter()
+        with TemporaryDirectory() as tmp:
+            ifc_path = Path(tmp) / "relvoid.ifc"
+            exporter.export(report.result.primitives, ifc_path)
+            model = ifcopenshell.open(ifc_path)
+        slabs = model.by_type("IfcSlab")
+        openings = model.by_type("IfcOpeningElement")
+        rels = model.by_type("IfcRelVoidsElement")
+        self.assertEqual(len(slabs), 2)
+        self.assertEqual(len(openings), 2)
+        self.assertEqual(len(rels), 2)
+        x_coords = set()
+        for opening in openings:
+            placement = getattr(opening, "ObjectPlacement", None)
+            relative = getattr(placement, "RelativePlacement", None) if placement else None
+            coords = getattr(relative, "Location", None)
+            if coords:
+                xyz = getattr(coords, "Coordinates", [])
+                if xyz:
+                    x_coords.add(round(float(xyz[0]), 3))
+        self.assertGreater(len(x_coords), 1)
 
 if __name__ == "__main__":  # pragma: no cover
     unittest.main()

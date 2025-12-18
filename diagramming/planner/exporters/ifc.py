@@ -14,7 +14,7 @@ import ifcopenshell.util.element
 import ifcopenshell.util.unit
 import numpy as np
 
-from ...relationships.solver import ConnectionHint, NeutralPrimitive
+from ...relationships.solver import ComponentTransform, ConnectionHint, NeutralPrimitive
 
 
 MM_TO_METERS = 0.001
@@ -63,9 +63,24 @@ class IfcExporter:
         self._seen_connections.clear()
         model, contexts, storey = self._bootstrap_model()
         primitives_by_id = {prim.id: prim for prim in primitives}
+        reference_by_template: Dict[str, NeutralPrimitive] = {}
         products_by_ref: Dict[str, ifcopenshell.entity_instance] = {}
 
         for primitive in primitives:
+            template = (
+                getattr(primitive, "template_id", None)
+                or (primitive.metadata.get("template_id") if primitive.metadata else None)
+                or primitive.id
+            )
+            if template:
+                existing = reference_by_template.get(template)
+                if existing is None or getattr(existing, "origin", "clone") != "original" and getattr(primitive, "origin", "clone") == "original":
+                    reference_by_template[template] = primitive
+                reference_by_template.setdefault(template, primitive)
+            class_lower = (primitive.class_name or "").lower()
+            if class_lower == "ifcopeningelement":
+                primitives_by_id[primitive.id] = primitive
+                continue
             product = self._create_product(model, primitive)
             self._assign_spatial(model, product, storey)
             self._place_product(model, product, primitive, storey.ObjectPlacement)
@@ -87,7 +102,7 @@ class IfcExporter:
             if base_ref and base_ref not in products_by_ref:
                 products_by_ref[base_ref] = product
 
-        self._apply_openings(model, contexts, primitives_by_id, products_by_ref, storey)
+        self._apply_openings(model, contexts, primitives_by_id, products_by_ref, reference_by_template, storey)
         self._apply_connections(model, primitives_by_id, products_by_ref)
 
         out_path.parent.mkdir(parents=True, exist_ok=True)
@@ -514,6 +529,7 @@ class IfcExporter:
         contexts: Dict[str, ifcopenshell.entity_instance],
         primitives: Dict[str, NeutralPrimitive],
         products: Dict[str, ifcopenshell.entity_instance],
+        references: Dict[str, NeutralPrimitive],
         storey,
     ) -> None:
         for host_id, primitive in primitives.items():
@@ -526,6 +542,13 @@ class IfcExporter:
                 void_prim = primitives.get(void_id)
                 if void_prim is None:
                     continue
+                void_template = (
+                    getattr(void_prim, "template_id", None)
+                    or (void_prim.metadata.get("template_id") if void_prim.metadata else None)
+                    or void_id
+                )
+                mapped_transform = self._opening_transform(primitive, void_template, references)
+                predefined = void_prim.ifc.get("predefined_type") if void_prim.ifc else None
                 opening = ifcopenshell.api.run(
                     "root.create_entity",
                     model,
@@ -533,8 +556,14 @@ class IfcExporter:
                     name=f"Opening:{void_id}",
                 )
                 self._set_guid(opening, f"opening::{host_id}::{void_id}")
-                placement = self._placement_from_transform(model, void_prim.transform, storey.ObjectPlacement)
+                placement_transform = mapped_transform or void_prim.transform
+                placement = self._placement_from_transform(model, placement_transform, storey.ObjectPlacement)
                 opening.ObjectPlacement = placement
+                if predefined and hasattr(opening, "PredefinedType"):
+                    try:
+                        opening.PredefinedType = predefined
+                    except Exception:
+                        pass
                 rep = self._body_representation(model, contexts["body"], void_prim)
                 if rep:
                     ifcopenshell.api.run("geometry.assign_representation", model, product=opening, representation=rep)
@@ -545,6 +574,34 @@ class IfcExporter:
                     RelatedOpeningElement=opening,
                 )
                 rel.Description = f"void {void_id}"
+                try:
+                    opening.Tag = void_prim.guid
+                except Exception:
+                    pass
+
+    def _opening_transform(
+        self,
+        host: NeutralPrimitive,
+        void_template: str,
+        references: Dict[str, NeutralPrimitive],
+    ) -> Optional[ComponentTransform]:
+        host_template = (
+            getattr(host, "template_id", None)
+            or (host.metadata.get("template_id") if host.metadata else None)
+            or host.id
+        )
+        base_host = references.get(host_template)
+        base_void = references.get(void_template)
+        if base_host is None or base_void is None:
+            return None
+        try:
+            host_matrix = self._transform_matrix(base_host.transform)
+            void_matrix = self._transform_matrix(base_void.transform)
+            relative = np.linalg.inv(host_matrix) @ void_matrix
+            target_matrix = self._transform_matrix(host.transform) @ relative
+            return self._transform_from_matrix(target_matrix)
+        except Exception:
+            return None
 
     def _apply_connections(
         self,
@@ -598,6 +655,35 @@ class IfcExporter:
         return model.createIfcConnectionPointGeometry(point, obj_point)
 
     # ------------------------------------------------------------------ #
+    def _transform_matrix(self, transform: ComponentTransform) -> np.ndarray:
+        orientation = getattr(transform, "orientation", None)
+        if orientation is None:
+            angle = math.radians(transform.rotation[2] if transform.rotation else 0.0)
+            orientation = (
+                (math.cos(angle), math.sin(angle), 0.0),
+                (-math.sin(angle), math.cos(angle), 0.0),
+                (0.0, 0.0, 1.0),
+            )
+        matrix = np.eye(4, dtype=float)
+        matrix[0:3, 0] = np.array(orientation[0])
+        matrix[0:3, 1] = np.array(orientation[1])
+        matrix[0:3, 2] = np.array(orientation[2])
+        matrix[0:3, 3] = np.array(transform.position)
+        return matrix
+
+    def _transform_from_matrix(self, matrix: np.ndarray) -> ComponentTransform:
+        position = (
+            float(matrix[0, 3]),
+            float(matrix[1, 3]),
+            float(matrix[2, 3]),
+        )
+        orientation = (
+            (float(matrix[0, 0]), float(matrix[1, 0]), float(matrix[2, 0])),
+            (float(matrix[0, 1]), float(matrix[1, 1]), float(matrix[2, 1])),
+            (float(matrix[0, 2]), float(matrix[1, 2]), float(matrix[2, 2])),
+        )
+        return ComponentTransform(position=position, rotation=(0.0, 0.0, 0.0), orientation=orientation)
+
     def _placement_from_transform(self, model, transform, parent_placement):
         tx, ty, tz = transform.position
         orientation = getattr(transform, "orientation", None)
@@ -746,6 +832,7 @@ class IfcExporter:
         params = tuple(sorted((primitive.profile_params or {}).items()))
         return "::".join(
             [
+                primitive.template_id,
                 primitive.class_name or "Proxy",
                 primitive.profile,
                 predefined,
@@ -759,11 +846,11 @@ class IfcExporter:
         if not class_name:
             return None
         mapping = {
-            "IfcBeam": "IfcBeamType",
-            "IfcMember": "IfcMemberType",
-            "IfcSlab": "IfcSlabType",
+            "ifcbeam": "IfcBeamType",
+            "ifcmember": "IfcMemberType",
+            "ifcslab": "IfcSlabType",
         }
-        return mapping.get(class_name)
+        return mapping.get(class_name.lower())
 
     def _set_guid(self, entity, seed: str) -> None:
         entity.GlobalId = self._guid(seed)

@@ -253,6 +253,7 @@ class ConnectionHint:
 @dataclass(slots=True)
 class NeutralPrimitive:
     id: str
+    template_id: str
     class_name: Optional[str]
     profile: str
     profile_params: Dict[str, object]
@@ -261,6 +262,8 @@ class NeutralPrimitive:
     metadata: Dict[str, object]
     transform: ComponentTransform
     guid: str
+    seed_id: Optional[str] = None
+    origin: str = "original"
     solid: Optional[Any] = None
     footprint: Optional[ShapelyPolygon] = None
     mesh: Optional[Any] = None
@@ -597,6 +600,8 @@ class ConstraintSolver:
                 transform,
                 guid,
                 tuple(),
+                origin=instance.get("origin", plan.origin),
+                seed_id=plan.seed_id,
             )
             solved_component = SolvedComponent(
                 component=component,
@@ -1098,6 +1103,8 @@ class ConstraintSolver:
                     base.primitive.connections,
                     voids=base.primitive.voids,
                     ifc_data=base.primitive.ifc,
+                    origin="clone",
+                    seed_id=base.seed_id,
                 )
                 solved_component = SolvedComponent(
                     component=base.component,
@@ -1162,6 +1169,8 @@ class ConstraintSolver:
                 base.primitive.connections,
                 voids=base.primitive.voids,
                 ifc_data=base.primitive.ifc,
+                origin="clone",
+                seed_id=base.seed_id,
             )
             solved_component = SolvedComponent(
                 component=base.component,
@@ -1224,6 +1233,8 @@ class ConstraintSolver:
                 base.primitive.connections,
                 voids=base.primitive.voids,
                 ifc_data=base.primitive.ifc,
+                origin="clone",
+                seed_id=base.seed_id,
             )
             solved_component = SolvedComponent(
                 component=base.component,
@@ -1339,6 +1350,8 @@ class ConstraintSolver:
         *,
         voids: Sequence[str] | None = None,
         ifc_data: Optional[Dict[str, object]] = None,
+        origin: str = "original",
+        seed_id: Optional[str] = None,
     ) -> NeutralPrimitive:
         metadata = dict(component.metadata)
         metadata.setdefault("id", instance_id)
@@ -1363,6 +1376,7 @@ class ConstraintSolver:
         solid, footprint = self._build_cadquery_block(component, size, transform)
         return NeutralPrimitive(
             id=instance_id,
+            template_id=template_id,
             class_name=component.class_name,
             profile=component.profile,
             profile_params=dict(component.profile_params),
@@ -1371,6 +1385,8 @@ class ConstraintSolver:
             metadata=metadata,
             transform=transform,
             guid=guid,
+            seed_id=seed_id,
+            origin=origin,
             solid=solid,
             footprint=footprint,
             connections=tuple(connections),

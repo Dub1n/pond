@@ -546,6 +546,58 @@ class RelationshipSolverTests(unittest.TestCase):
         self.assertIn(("beam_a", "beam_b"), collision_pairs)
         self.assertFalse(any("footing" in " ".join(pair) for pair in collision_pairs))
 
+    def test_collision_ignore_classes_still_skip_footings(self) -> None:
+        spec_text = dedent(
+            """
+            schema: pond-relationship-test
+            info:
+              option: footing-collision
+            components:
+              - id: origin
+                kind: reference
+                size: [0, 0, 0]
+              - id: footing
+                class: IfcFooting
+                size: [100, 100, 50]
+                material: pad
+                relate:
+                  cxcy: { ref: origin }
+                  cz: { ref: origin }
+                ifc:
+                  predefined_type: PAD_FOOTING
+              - id: beam_a
+                class: IfcBeam
+                size: [100, 100, 50]
+                material: timber
+                relate:
+                  cxcy: { ref: origin }
+                  cz: { ref: origin }
+                ifc:
+                  predefined_type: BEAM
+              - id: beam_b
+                class: IfcBeam
+                size: [100, 100, 50]
+                material: timber
+                relate:
+                  cxcy: { ref: origin }
+                  cz: { ref: origin }
+                ifc:
+                  predefined_type: BEAM
+            """
+        )
+        env = os.environ.copy()
+        env["DIAGRAM_RELATIONSHIPS_COLLISIONS_IGNORE_CLASSES"] = "ifcslab"
+        with TemporaryDirectory() as tmp:
+            path = Path(tmp) / "collision-ignore.yaml"
+            path.write_text(spec_text, encoding="utf-8")
+            with mock.patch.dict(os.environ, env, clear=True):
+                spec = load_relationship_spec(path)
+                solver = ConstraintSolver(spec)
+                result = solver.solve()
+        collision_pairs = {(a, b) for a, b, _ in result.diagnostics.collisions}
+        self.assertIn(("beam_a", "beam_b"), collision_pairs)
+        self.assertFalse(any("footing" in " ".join(pair) for pair in collision_pairs))
+
     def test_fail_on_warn_upgrades_collision_warning(self) -> None:
         spec_text = dedent(
             """

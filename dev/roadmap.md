@@ -6,8 +6,8 @@
 - [x] Enforce `mode: plane|edge|point`, honour `tolerance`/`on_fail`, and improve DOF reporting; add fail-on-warn paths for collisions/under/over-constraint. (Progress: lint enforces mode shapes; solver trims extra axes per mode, reports DOF, and fail-on-warn can promote under-constraint warnings; checks honour tolerance/on_fail.)
 - [x] Finalise selector/clone semantics (template vs placement IDs, id_map remapping, metadata/IFC propagation to clones); lint `base#n` and selectors consistently. (Progress: id_map length lint, selector warnings, clone metadata/IFC/material propagation. Remaining: ✅ enforce `base#n` validity, deterministic template/placement remap, IFC/void propagation to clones, selector/id_map fixtures.)
 - [x] Rename `run_between` to `array`, add guardrails (`count >= 2`, warn/error on single spans), and retain 3D `orient: along_run` support.
-- [ ] IFC discipline: enforce mapping table (entity + predefined type + material usage + mapped items) in lint/solver/export; ensure propagation to clones/voids; add fixtures. (Progress: lint re-checks solved primitives for predefined/material, footings included; clone material/IFC carried; RelVoids propagate to clones; mapped-item/type checks added. Remaining: exporter-side completeness review and fixtures.)
-- [ ] Collision and boolean robustness: resolve collision hot-spots (e.g., Option C pad/joist overlaps), stabilise boolean cutouts for rotated arrays; make collision severity configurable alongside env. (Progress: footing collisions ignored by default; `DIAGRAM_RELATIONSHIPS_FAIL_ON_WARN` promotes warnings; collision CLI/env controls exposed. Remaining: fix beam/joist overlaps and rotated-array boolean stability, add fixtures.)
+- [x] IFC discipline: enforce mapping table (entity + predefined type + material usage + mapped items) in lint/solver/export; ensure propagation to clones/voids; add fixtures. (Progress: exporter/lint/validation enforce predefined/material/mapped items/types; RelVoids follow clones; fixtures cover mapped items and openings.)
+- [x] Collision and boolean robustness: resolve collision hot-spots (e.g., Option C pad/joist overlaps), stabilise boolean cutouts for rotated arrays; make collision severity configurable alongside env. (Progress: footing ignores stick even with overrides; boolean cutouts track cloned placements/rotations; collision ignore/severity covered by fixtures.)
 - [ ] Helper parity cleanup: strip `relate_from`/assemblies from docs/code or implement them; fail fast when declared until supported.
 - [x] Implement mirror operation (plane normal + point) with right-handed frame handling; add lint/tests.
 - [ ] Expand metadata mapping to align with IFC classes (carry-over from Phase 3 backlog).
@@ -17,7 +17,7 @@
 - [ ] Loader covers datums/helpers/assemblies and expression dimensions to prep spec expectations.
 - [ ] Constraint solver meets prep goals (frames, DOF/tolerance-aware checks, deterministic transforms).
 - [x] CadQuery exporter builds solids; SVG/PNG derive from OCC projections.
-- [ ] IFC exporter enforces the prep mapping table (Axis/Body, predefined type/material usage, mapped items, openings).
+- [x] IFC exporter enforces the prep mapping table (Axis/Body, predefined type/material usage, mapped items, openings).
 - [ ] Lint/CI gating and docs/examples refreshed for the final relationship surface.
 - [ ] Migration playbook executed; legacy schema archived; release notes updated.
 
