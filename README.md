@@ -39,7 +39,7 @@ python scripts/build_diagrams.py --spec diagrams/specs/deck-framing.yaml --optio
 
 - Activate the venv before running scripts; if a dependency is missing, rerun the command via `./.venv/bin/python …` and add the package to `requirements.txt`.
 - Keep specs declarative: prefer axis-map relates and `array` spans over manual coordinates. Use center tokens when anchoring symmetric geometry to avoid conflicting size inference.
-- Collision handling: set `DIAGRAM_RELATIONSHIPS_COLLISIONS=error|warn|ignore` (default `error`).
+- Collision handling: set `DIAGRAM_RELATIONSHIPS_COLLISIONS=error|warn|ignore` (default `error`) or pass `--collision-mode/--collision-ignore/--fail-on-warn` to `scripts/build_diagrams.py` and `scripts/lint_specs.py`.
 - Do not hand-edit `diagrams/output/` artefacts; regenerate instead. Keep `docs/instructions.md` handy when authoring specs and see `DEVELOPMENT.md` for maintainers.
 
 ## Exports to Blender and friends

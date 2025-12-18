@@ -123,12 +123,32 @@ def parse_args(argv: Optional[List[str]] = None) -> argparse.Namespace:
         action="store_true",
         help="Skip IFC export for relationship-first specs.",
     )
+    parser.add_argument(
+        "--collision-mode",
+        choices=("error", "warn", "ignore"),
+        help="Override collision handling severity (default: DIAGRAM_RELATIONSHIPS_COLLISIONS).",
+    )
+    parser.add_argument(
+        "--collision-ignore",
+        help="Comma-separated IFC classes to skip during collision checks (e.g., IfcFooting,IfcSlab).",
+    )
+    parser.add_argument(
+        "--fail-on-warn",
+        action="store_true",
+        help="Promote solver warnings to errors (sets DIAGRAM_RELATIONSHIPS_FAIL_ON_WARN=1).",
+    )
     return parser.parse_args(argv)
 
 
 def main(argv: Optional[List[str]] = None) -> int:
     os.environ.setdefault("DIAGRAM_RELATIONSHIPS", "1")
     args = parse_args(argv)
+    if args.collision_mode:
+        os.environ["DIAGRAM_RELATIONSHIPS_COLLISIONS"] = args.collision_mode
+    if args.collision_ignore:
+        os.environ["DIAGRAM_RELATIONSHIPS_COLLISIONS_IGNORE_CLASSES"] = args.collision_ignore
+    if args.fail_on_warn:
+        os.environ["DIAGRAM_RELATIONSHIPS_FAIL_ON_WARN"] = "1"
     spec_paths = find_spec_paths(args.spec or [])
     if not spec_paths:
         print("No spec files found.", file=sys.stderr)

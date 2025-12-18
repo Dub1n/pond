@@ -161,6 +161,9 @@ def _ifc_model_errors(primitives: Sequence[NeutralPrimitive]) -> List[str]:
     rel_voids = model.by_type("IfcRelVoidsElement")
     openings = {rel.RelatedOpeningElement for rel in rel_voids if rel.RelatedOpeningElement}
 
+    type_links = list(model.by_type("IfcRelDefinesByType"))
+    mapped_items = list(model.by_type("IfcMappedItem"))
+
     for element in model.by_type("IfcElement"):
         reps = getattr(getattr(element, "Representation", None), "Representations", []) or []
         rep_contexts = {getattr(rep.ContextOfItems, "ContextIdentifier", "") for rep in reps if rep.ContextOfItems}
@@ -196,6 +199,20 @@ def _ifc_model_errors(primitives: Sequence[NeutralPrimitive]) -> List[str]:
 
         if type_name == "IfcOpeningElement" and element not in openings:
             errors.append(f"IFC validation: opening {element.GlobalId} is not linked by IfcRelVoidsElement")
+
+    for class_name in ("IfcBeam", "IfcMember", "IfcSlab"):
+        elements = model.by_type(class_name)
+        if len(elements) <= 1:
+            continue
+        has_type = any(
+            getattr(link, "RelatingType", None)
+            and getattr(link.RelatingType, "is_a", lambda *_: False)(f"{class_name}Type")
+            for link in type_links
+        )
+        if not has_type:
+            errors.append(f"IFC validation: repeated {class_name} elements should use {class_name}Type definitions")
+        if not mapped_items:
+            errors.append(f"IFC validation: repeated {class_name} elements should use mapped representations")
 
     return errors
 

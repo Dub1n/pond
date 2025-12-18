@@ -946,6 +946,33 @@ class ConstraintSolver:
                 return [selector]
         return []
 
+    def _mapped_rotate_id(
+        self,
+        base: SolvedComponent,
+        op: RotateOperation,
+        turn: int,
+        diagnostics: SolveDiagnostics,
+    ) -> str:
+        suffix = ""
+        if "#" in base.instance_id:
+            suffix = "#" + base.instance_id.split("#", 1)[1]
+        mapping_keys = [base.instance_id]
+        if base.seed_id:
+            mapping_keys.append(base.seed_id)
+        mapping_keys.append(base.template_id)
+        for key in mapping_keys:
+            mapped = op.id_map.get(key)
+            if mapped is None:
+                continue
+            if turn >= len(mapped):
+                diagnostics.add_error(
+                    f"rotate.id_map for '{key}' is missing an entry for turn {turn}",
+                    subject=base.instance_id,
+                )
+                break
+            return f"{mapped[turn]}{suffix}"
+        return f"{base.instance_id}_rot{turn}"
+
     def _apply_operations(
         self,
         solved: List[SolvedComponent],
@@ -981,7 +1008,7 @@ class ConstraintSolver:
         for selector in targets:
             selected_ids.extend(self._resolve_selector(selector, index))
         if not selected_ids:
-            diagnostics.add_warning(f"rotate operation matched no components for targets {op.targets}")
+            diagnostics.add_error(f"rotate operation matched no components for targets {op.targets}")
             return created
         about_coords = self._reference_coordinates(op.about, component_states)
         if about_coords is None:
@@ -1002,14 +1029,13 @@ class ConstraintSolver:
                     # already exists
                     continue
                 angle = angle_step * turn
-                new_id = f"{instance_id}_rot{turn}"
-                base_mapping = op.id_map.get(base.template_id) or op.id_map.get(instance_id)
-                if base_mapping and len(base_mapping) > turn:
-                    mapped = base_mapping[turn]
-                    suffix = ""
-                    if "#" in instance_id:
-                        suffix = "#" + instance_id.split("#", 1)[1]
-                    new_id = f"{mapped}{suffix}"
+                new_id = self._mapped_rotate_id(base, op, turn, diagnostics)
+                if new_id in component_states:
+                    diagnostics.add_error(
+                        f"rotate operation would create duplicate id '{new_id}'",
+                        subject=instance_id,
+                    )
+                    continue
                 rotated_transform = self._rotate_transform(base.transform, about_coords, axis, angle)
                 guid = self._stable_guid(base.template_id, new_id, angle)
                 primitive = self._neutral_primitive(
@@ -1020,6 +1046,8 @@ class ConstraintSolver:
                     rotated_transform,
                     guid,
                     base.primitive.connections,
+                    voids=base.primitive.voids,
+                    ifc_data=base.primitive.ifc,
                 )
                 solved_component = SolvedComponent(
                     component=base.component,
@@ -1057,7 +1085,7 @@ class ConstraintSolver:
         for selector in targets:
             selected_ids.extend(self._resolve_selector(selector, index))
         if not selected_ids:
-            diagnostics.add_warning(f"mirror operation matched no components for targets {op.targets}")
+            diagnostics.add_error(f"mirror operation matched no components for targets {op.targets}")
             return created
         axis = op.axis
         coordinate = op.coordinate
@@ -1081,6 +1109,8 @@ class ConstraintSolver:
                 transform,
                 guid,
                 base.primitive.connections,
+                voids=base.primitive.voids,
+                ifc_data=base.primitive.ifc,
             )
             solved_component = SolvedComponent(
                 component=base.component,
@@ -1118,7 +1148,7 @@ class ConstraintSolver:
         for selector in targets:
             selected_ids.extend(self._resolve_selector(selector, index))
         if not selected_ids:
-            diagnostics.add_warning(f"translate operation matched no components for targets {op.targets}")
+            diagnostics.add_error(f"translate operation matched no components for targets {op.targets}")
             return created
         for instance_id in selected_ids:
             base = next((s for s in solved if s.instance_id == instance_id), None)
@@ -1140,6 +1170,8 @@ class ConstraintSolver:
                 transform,
                 guid,
                 base.primitive.connections,
+                voids=base.primitive.voids,
+                ifc_data=base.primitive.ifc,
             )
             solved_component = SolvedComponent(
                 component=base.component,
@@ -1175,7 +1207,10 @@ class ConstraintSolver:
         for selector in op.subtract:
             subtract_ids.extend(self._resolve_selector(selector, index))
         if not target_ids:
-            diagnostics.add_warning(f"boolean target '{op.target}' matched no components")
+            diagnostics.add_error(f"boolean target '{op.target}' matched no components")
+            return
+        if not subtract_ids:
+            diagnostics.add_error(f"boolean subtract list {op.subtract} matched no components for target '{op.target}'")
             return
         for target_id in target_ids:
             target = next((s for s in solved if s.instance_id == target_id), None)
@@ -1248,6 +1283,9 @@ class ConstraintSolver:
         transform: ComponentTransform,
         guid: str,
         connections: Sequence[ConnectionHint],
+        *,
+        voids: Sequence[str] | None = None,
+        ifc_data: Optional[Dict[str, object]] = None,
     ) -> NeutralPrimitive:
         metadata = dict(component.metadata)
         metadata.setdefault("id", instance_id)
@@ -1258,7 +1296,10 @@ class ConstraintSolver:
         metadata.setdefault("guid", guid)
         if component.material:
             metadata.setdefault("material", component.material)
-        ifc_dict = component.ifc.to_dict() if component.ifc else None
+        if ifc_data:
+            ifc_dict = dict(ifc_data)
+        else:
+            ifc_dict = component.ifc.to_dict() if component.ifc else None
         if component.profile_params:
             metadata.setdefault("profile_params", dict(component.profile_params))
         if component.ifc:
@@ -1281,7 +1322,7 @@ class ConstraintSolver:
             footprint=footprint,
             connections=tuple(connections),
             ifc=ifc_dict,
-            voids=tuple(component.voids),
+            voids=tuple(voids or component.voids),
         )
 
     def _build_cadquery_block(

@@ -104,6 +104,46 @@ class RelationshipValidationTests(unittest.TestCase):
         errors = lint_relationship_spec(spec)
         self.assertTrue(any("id_map" in err for err in errors))
 
+    def test_lint_flags_unknown_clone_selector(self) -> None:
+        spec_text = dedent(
+            """
+            schema: pond-relationship-test
+            info:
+              option: selector-clone
+            components:
+              - id: origin
+                kind: reference
+                size: [0, 0, 0]
+              - id: host
+                class: IfcSlab
+                size: [200, 200, 20]
+                material: decking
+                relate:
+                  cxcy: { ref: origin }
+                  cz: { ref: origin }
+                ifc:
+                  predefined_type: FLOOR
+              - id: void
+                class: IfcOpeningElement
+                size: [50, 50, 20]
+                relate:
+                  cxcy: { ref: origin }
+                  cz: { ref: origin }
+                ifc:
+                  predefined_type: OPENING
+            operations:
+              - type: boolean
+                target: host
+                subtract: [void#2]
+            """
+        )
+        with TemporaryDirectory() as tmp:
+            path = Path(tmp) / "selector-clone.yaml"
+            path.write_text(spec_text, encoding="utf-8")
+            spec = load_relationship_spec(path)
+        errors = lint_relationship_spec(spec)
+        self.assertTrue(any("matched no components" in err or "unknown selector" in err for err in errors))
+
 
 if __name__ == "__main__":  # pragma: no cover
     unittest.main()

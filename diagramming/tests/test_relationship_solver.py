@@ -729,6 +729,69 @@ class RelationshipSolverTests(unittest.TestCase):
         self.assertIn("pad_a", slab.primitive.voids)
         self.assertIn("pad_b", slab.primitive.voids)
 
+    def test_rotate_id_map_prefers_seed_and_carries_boolean_voids(self) -> None:
+        spec_text = dedent(
+            """
+            schema: pond-relationship-test
+            info:
+              option: rotate-seed-voids
+            components:
+              - id: origin
+                kind: reference
+                size: [0, 0, 0]
+              - id: host
+                class: IfcSlab
+                size: [200, 200, 20]
+                material: decking
+                relate:
+                  cxcy: { ref: origin }
+                  cz: { ref: origin }
+                ifc:
+                  predefined_type: FLOOR
+              - id: cutter
+                class: IfcOpeningElement
+                size: [50, 50, 20]
+                relate:
+                  cxcy: { ref: origin }
+                  cz: { ref: origin }
+                place:
+                  - id: cut_seed
+                    cxcy: { ref: origin }
+                ifc:
+                  predefined_type: OPENING
+            operations:
+              - type: rotate
+                about: { ref: origin, axis: +z }
+                count: 2
+                include_seed: true
+                targets: [cutter]
+                id_map:
+                  cut_seed: [cut_seed, cut_seed_rot]
+                  cutter: [cutter_a, cutter_b]
+              - type: boolean
+                target: host
+                subtract: [cutter]
+              - type: rotate
+                about: { ref: origin, axis: +z }
+                count: 2
+                include_seed: true
+                targets: [host]
+                id_map:
+                  host: [host_seed, host_clone]
+            """
+        )
+        with TemporaryDirectory() as tmp:
+            path = Path(tmp) / "rotate-seed-voids.yaml"
+            path.write_text(spec_text, encoding="utf-8")
+            spec = load_relationship_spec(path)
+        solver = ConstraintSolver(spec)
+        result = solver.solve()
+        ids = {comp.instance_id for comp in result.components}
+        self.assertIn("cut_seed_rot", ids)
+        host_clone = next(comp for comp in result.components if comp.instance_id == "host_clone")
+        self.assertIn("cut_seed", host_clone.primitive.voids)
+        self.assertIn("cut_seed_rot", host_clone.primitive.voids)
+
 
 if __name__ == "__main__":  # pragma: no cover
     unittest.main()

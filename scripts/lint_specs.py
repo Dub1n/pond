@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import argparse
+import os
 import sys
 from pathlib import Path
 from typing import Iterable, List, Tuple
@@ -51,6 +52,20 @@ def parse_args(argv: List[str] | None) -> argparse.Namespace:
         action="store_true",
         help="Only lint legacy specs using the current planner schema.",
     )
+    parser.add_argument(
+        "--collision-mode",
+        choices=("error", "warn", "ignore"),
+        help="Override collision handling severity for relationship specs.",
+    )
+    parser.add_argument(
+        "--collision-ignore",
+        help="Comma-separated IFC classes to skip during collision checks.",
+    )
+    parser.add_argument(
+        "--fail-on-warn",
+        action="store_true",
+        help="Promote solver warnings to errors (sets DIAGRAM_RELATIONSHIPS_FAIL_ON_WARN=1).",
+    )
     return parser.parse_args(argv)
 
 
@@ -96,6 +111,12 @@ def lint_path(path: Path, *, relationship_only: bool, legacy_only: bool) -> Tupl
 
 def main(argv: List[str] | None = None) -> int:
     args = parse_args(argv)
+    if args.collision_mode:
+        os.environ["DIAGRAM_RELATIONSHIPS_COLLISIONS"] = args.collision_mode
+    if args.collision_ignore:
+        os.environ["DIAGRAM_RELATIONSHIPS_COLLISIONS_IGNORE_CLASSES"] = args.collision_ignore
+    if args.fail_on_warn:
+        os.environ["DIAGRAM_RELATIONSHIPS_FAIL_ON_WARN"] = "1"
     spec_paths = find_spec_paths(args.specs or [])
     if not spec_paths:
         print("No spec files found.", file=sys.stderr)
