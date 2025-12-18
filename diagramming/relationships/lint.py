@@ -161,6 +161,14 @@ def _lint_axis_relation(
 ) -> None:
     if not _ref_known(relation.target.ref, component_ids, datum_points, datum_planes, datum_bundles):
         errors.append(f"{context} references unknown target '{relation.target.ref}'")
+    mode = (relation.target.mode or "point").lower()
+    if mode not in {"point", "plane", "edge"}:
+        errors.append(f"{context} uses unsupported mode '{relation.target.mode}'")
+    subject_axes = _axes_from_pos(relation.subject)
+    if mode == "plane" and len(subject_axes) != 1:
+        errors.append(f"{context} mode 'plane' requires a single-axis subject (got '{relation.subject}')")
+    if mode == "edge" and len(subject_axes) != 2:
+        errors.append(f"{context} mode 'edge' requires two-axis subject (got '{relation.subject}')")
 
 
 def _lint_run_between(

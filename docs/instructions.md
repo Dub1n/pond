@@ -82,6 +82,7 @@ array:
 
 - Same axis-map shape under `checks:`; use `mode: plane|edge` for coplanar/colinear assertions. `on_fail`/tolerance are not yet honoured by the solver (checks currently assert strict coordinate equality).
 - Prefer checks for “this must never drift” geometry (like diagonal start/end conditions) and back them with a unit test when a bug is discovered (for example: `RelationshipSolverTests.test_array_multi_axis_point_anchors_center_on_span_midpoint`).
+- Checks accept `tolerance` and `on_fail: warn|error|ignore`; failures respect the chosen severity, and `fail_on_warn` still promotes warnings. DOF reporting warns only when an axis can’t infer a position or size (remaining DOF); providing both spans and explicit sizes is allowed as long as they agree.
 
 ## IFC & Materials
 

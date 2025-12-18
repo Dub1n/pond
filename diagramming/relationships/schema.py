@@ -402,6 +402,8 @@ class AxisMapTarget:
 class AxisRelation:
     subject: PosToken
     target: AxisMapTarget
+    tolerance: Optional[float] = None
+    on_fail: str = "error"
 
 
 @dataclass(slots=True)
@@ -842,6 +844,10 @@ def _parse_axis_map(data: Any, dimensions: DimensionResolver) -> List[AxisRelati
         gap = _parse_axis_amount(payload.get("gap"), dimensions)
         offset = _parse_axis_amount(payload.get("offset"), dimensions)
         mode = str(payload.get("mode", "point"))
+        tolerance = _resolve_optional_number(payload.get("tolerance"), dimensions)
+        on_fail_raw = str(payload.get("on_fail", "error")).lower()
+        if on_fail_raw not in {"error", "warn", "ignore"}:
+            raise SchemaError(f"axis-map entry '{subject}' has unsupported on_fail '{on_fail_raw}'")
         frame = _parse_frame(payload.get("frame"))
         relations.append(
             AxisRelation(
@@ -854,6 +860,8 @@ def _parse_axis_map(data: Any, dimensions: DimensionResolver) -> List[AxisRelati
                     mode=mode,
                     frame=frame,
                 ),
+                tolerance=tolerance,
+                on_fail=on_fail_raw,
             )
         )
     return relations
@@ -896,6 +904,8 @@ def _parse_flush(payload: Any, dimensions: DimensionResolver) -> List[AxisRelati
                     mode="plane",
                     frame=frame,
                 ),
+                tolerance=None,
+                on_fail="error",
             )
         )
     return relations

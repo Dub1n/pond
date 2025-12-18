@@ -729,6 +729,74 @@ class RelationshipSolverTests(unittest.TestCase):
         self.assertIn("pad_a", slab.primitive.voids)
         self.assertIn("pad_b", slab.primitive.voids)
 
+    def test_under_constrained_axes_warn_and_report_dof(self) -> None:
+        spec_text = dedent(
+            """
+            schema: pond-relationship-test
+            info:
+              option: dof-warn
+            components:
+              - id: origin
+                kind: reference
+                size: [0, 0, 0]
+              - id: block
+                class: IfcBeam
+                size: [100, 50, 25]
+                relate:
+                  cz: { ref: origin }
+                ifc:
+                  predefined_type: BEAM
+            """
+        )
+        with TemporaryDirectory() as tmp:
+            path = Path(tmp) / "dof-warn.yaml"
+            path.write_text(spec_text, encoding="utf-8")
+            spec = load_relationship_spec(path)
+        solver = ConstraintSolver(spec)
+        result = solver.solve()
+        warning_texts = [warning.message for warning in result.diagnostics.warnings]
+        self.assertTrue(any("under-constrained on axis x" in msg for msg in warning_texts))
+        self.assertTrue(any("under-constrained on axis y" in msg for msg in warning_texts))
+        dof = result.diagnostics.degrees_of_freedom.get("block", 0)
+        self.assertGreaterEqual(dof, 2)
+
+    def test_checks_honor_tolerance_and_on_fail(self) -> None:
+        spec_text = dedent(
+            """
+            schema: pond-relationship-test
+            info:
+              option: check-tolerance
+            datums:
+              offset_ref:
+                type: point
+                coordinates: { x: 10, y: 10 }
+            components:
+              - id: origin
+                kind: reference
+                size: [0, 0, 0]
+            checks:
+              +x:
+                ref: offset_ref
+                tolerance: 5
+                on_fail: warn
+              +y:
+                ref: offset_ref
+                pos: +y
+                tolerance: 1
+                on_fail: error
+            """
+        )
+        with TemporaryDirectory() as tmp:
+            path = Path(tmp) / "check-tolerance.yaml"
+            path.write_text(spec_text, encoding="utf-8")
+            spec = load_relationship_spec(path)
+        solver = ConstraintSolver(spec)
+        result = solver.solve()
+        warning_texts = [warning.message for warning in result.diagnostics.warnings]
+        error_texts = [error.message for error in result.diagnostics.errors]
+        self.assertTrue(any("tolerance" in msg and "delta" in msg for msg in warning_texts))
+        self.assertTrue(any("axis y" in msg for msg in error_texts))
+
     def test_rotate_id_map_prefers_seed_and_carries_boolean_voids(self) -> None:
         spec_text = dedent(
             """

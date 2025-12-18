@@ -546,10 +546,11 @@ class ConstraintSolver:
                     size[AXIS_ORDER[axis]] = value
             final_center: Dict[str, float] = {}
 
+            dof_count = 0
             for axis in ("x", "y", "z"):
                 explicit = size[AXIS_ORDER[axis]]
                 state = axis_states[axis]
-                center_value, size_value = self._resolve_axis_state(
+                center_value, size_value, axis_dof = self._resolve_axis_state(
                     component,
                     axis,
                     state,
@@ -558,6 +559,7 @@ class ConstraintSolver:
                     allow_default_zero=component.kind == "reference",
                     instance_id=instance["id"],
                 )
+                dof_count += axis_dof
                 final_center[axis] = center_value
                 size[AXIS_ORDER[axis]] = size_value
 
@@ -582,7 +584,9 @@ class ConstraintSolver:
             diagnostics.degrees_of_freedom[instance["id"]] = 0
 
             if component.kind == "reference":
+                diagnostics.degrees_of_freedom[instance["id"]] = dof_count
                 continue
+            diagnostics.degrees_of_freedom[instance["id"]] = dof_count
 
             guid = self._stable_guid(plan.template_id, instance["id"])
             primitive = self._neutral_primitive(
@@ -706,12 +710,13 @@ class ConstraintSolver:
         *,
         allow_default_zero: bool,
         instance_id: str,
-    ) -> Tuple[float, float]:
+    ) -> Tuple[float, float, int]:
         center = state.center
         size_value = explicit_size
         pos_plus = state.faces.get(1)
         pos_minus = state.faces.get(-1)
 
+        axis_dof = 0
         inferred_size = None
         if pos_plus is not None and pos_minus is not None:
             inferred_size = pos_plus - pos_minus
@@ -732,6 +737,8 @@ class ConstraintSolver:
             size_value = inferred_size
         if size_value is None:
             size_value = 0.0
+            if component.kind != "reference":
+                axis_dof += 1
 
         if center is None:
             if pos_plus is not None and pos_minus is not None:
@@ -743,11 +750,12 @@ class ConstraintSolver:
             elif allow_default_zero:
                 center = 0.0
             else:
-                diagnostics.add_error(
+                diagnostics.add_warning(
                     f"component '{component.id}' remains under-constrained on axis {axis}",
                     subject=instance_id,
                 )
                 center = 0.0
+                axis_dof += 1
 
         if size_value <= 0 and component.kind != "reference":
             diagnostics.add_warning(
@@ -755,7 +763,7 @@ class ConstraintSolver:
                 subject=instance_id,
             )
 
-        return center, size_value
+        return center, size_value, axis_dof
 
     def _run_between_positions(
         self,
@@ -812,7 +820,7 @@ class ConstraintSolver:
                 if axis in centers:
                     continue
                 explicit = component.size[AXIS_ORDER[axis]]
-                center_value, size_value = self._resolve_axis_state(
+                center_value, size_value, _ = self._resolve_axis_state(
                     component,
                     axis,
                     axis_states[axis],
@@ -1069,6 +1077,7 @@ class ConstraintSolver:
                     template_id=base.template_id,
                     origin="clone",
                 )
+                diagnostics.degrees_of_freedom[new_id] = diagnostics.degrees_of_freedom.get(base.instance_id, 0)
         return created
 
     def _mirror(
@@ -1132,6 +1141,7 @@ class ConstraintSolver:
                 template_id=base.template_id,
                 origin="clone",
             )
+            diagnostics.degrees_of_freedom[new_id] = diagnostics.degrees_of_freedom.get(base.instance_id, 0)
         return created
 
     def _translate(
@@ -1193,6 +1203,7 @@ class ConstraintSolver:
                 template_id=base.template_id,
                 origin="clone",
             )
+            diagnostics.degrees_of_freedom[new_id] = diagnostics.degrees_of_freedom.get(base.instance_id, 0)
         return created
 
     def _apply_boolean(
@@ -1404,6 +1415,8 @@ class ConstraintSolver:
             subject_axes = _axes_from_pos(clause.subject)
             target_axes = {axis: sign for axis, sign in _axes_from_pos(clause.target.pos)}
             passed = True
+            tolerance = clause.tolerance if clause.tolerance is not None else 0.0
+            on_fail = (clause.on_fail or "error").lower()
             for axis, subject_sign in subject_axes:
                 target_sign = target_axes.get(axis, subject_sign)
                 subject_coord = resolver.axis_coordinate("self", axis, subject_sign, frame=clause.target.frame)
@@ -1414,20 +1427,22 @@ class ConstraintSolver:
                     frame=clause.target.frame,
                 )
                 if object_coord is None:
-                    diagnostics.add_error(
-                        f"check references unknown target '{clause.target.ref}'",
-                        subject=clause.target.ref,
-                    )
+                    diagnostics.add_error(f"check references unknown target '{clause.target.ref}'", subject=clause.target.ref)
                     passed = False
                     continue
                 if subject_coord is None:
-                    subject_coord = object_coord
-                if abs(subject_coord - object_coord) > 1e-3:
-                    diagnostics.add_error(
-                        f"check failed between '{clause.subject}' and '{clause.target.ref}' on axis {axis}",
-                        subject=clause.target.ref,
+                    subject_coord = 0.0
+                delta = abs(subject_coord - object_coord)
+                if delta > tolerance:
+                    message = (
+                        f"check failed between '{clause.subject}' and '{clause.target.ref}' on axis {axis} "
+                        f"(delta {delta:.3f} > tolerance {tolerance:.3f})"
                     )
-                    passed = False
+                    if on_fail == "warn":
+                        diagnostics.add_warning(message, subject=clause.target.ref)
+                    elif on_fail != "ignore":
+                        diagnostics.add_error(message, subject=clause.target.ref)
+                    passed = passed and on_fail == "ignore"
             result_text = "PASS" if passed else "FAIL"
             diagnostics.check_results.append(f"{result_text}: {clause.subject}->{clause.target.ref}")
 
