@@ -38,6 +38,26 @@ Crucially, axis-maps may be *partial*, *complete*, or *intentionally over-constr
 
 ---
 
+## Example (Pond relationship specs)
+
+This project uses axis-maps as the primary placement primitive. A typical block sets faces and centers against other components and datums, with frame-aware positioning and explicit offsets:
+
+```yaml
+components:
+  - id: joist
+    class: IfcBeam
+    size: [47, 150, null]
+    relate:
+      +x: { ref: rim_west, pos: +x, frame: local }
+      -x: { ref: rim_east, pos: -x, frame: local, gap: 10 }
+      cy: { ref: deck_frame, pos: cy }
+      +z: { ref: datum_top, pos: +z }
+```
+
+Each key (`+x`, `-x`, `cy`, `+z`) names the subject axis; the value names a target (`ref`), the target position (`pos`), an optional `frame`, and per-axis `gap`/`offset`. Missing size on `z` will be inferred from opposing `+z/-z` relations elsewhere or validated if explicitly provided.
+
+---
+
 ## Partial Constraints as a First-Class Feature
 
 Most modelling systems implicitly assume that geometry should be fully solved to a single rigid transform. Axis-maps reject this assumption.
