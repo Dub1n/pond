@@ -87,7 +87,7 @@ array:
 ## IFC & Materials
 
 - Provide `class` and `ifc.predefined_type` where applicable (beams/joists/slabs/openings). Materials map to `diagramming/materials.py`.
-- Repeated beams/members/slabs emit mapped items and type definitions; missing predefined types/material usages are linted and validated at export time, and openings propagate to cloned hosts.
+- Repeated beams/members/slabs emit mapped items and type definitions; missing predefined types/material usages are linted and validated at export time, and openings propagate to cloned hosts. Metadata flows into class-aligned property sets (e.g., `Pset_BeamCommon`, `Pset_SlabCommon`) alongside any custom `ifc.psets` you declare.
 - Metadata (labels, views, psets) flows into glTF/IFC exports.
 
 ## Run & Validate

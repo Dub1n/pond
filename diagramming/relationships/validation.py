@@ -129,6 +129,7 @@ def _ifc_model_errors(primitives: Sequence[NeutralPrimitive]) -> List[str]:
     try:
         from diagramming.planner.exporters import IfcExporter
         import ifcopenshell
+        from ifcopenshell.util import element as ifc_element_utils
     except Exception as exc:  # pragma: no cover - dependency guard
         return [f"IFC validation skipped: {exc}"]
 
@@ -184,6 +185,7 @@ def _ifc_model_errors(primitives: Sequence[NeutralPrimitive]) -> List[str]:
     template_counts: Dict[str, int] = {}
     template_for_guid: Dict[str, str] = {}
     prim_by_id = {prim.id: prim for prim in primitives}
+    prim_by_guid = {prim.guid: prim for prim in primitives if prim.guid}
     id_for_guid = {prim.guid: prim.id for prim in primitives if prim.guid}
     expected_void_pairs = set()
     for prim in primitives:
@@ -239,6 +241,24 @@ def _ifc_model_errors(primitives: Sequence[NeutralPrimitive]) -> List[str]:
 
         if type_name == "IfcOpeningElement" and element not in openings:
             errors.append(f"IFC validation: opening {element.GlobalId} is not linked by IfcRelVoidsElement")
+        pset_expected = {
+            "IfcBeam": "Pset_BeamCommon",
+            "IfcMember": "Pset_MemberCommon",
+            "IfcSlab": "Pset_SlabCommon",
+            "IfcFooting": "Pset_FootingCommon",
+            "IfcFastener": "Pset_FastenerCommon",
+        }.get(type_name, "Pset_ElementCommon")
+        psets = ifc_element_utils.get_psets(element, psets_only=True) if "ifc_element_utils" in locals() else {}
+        if pset_expected and pset_expected not in psets:
+            errors.append(f"IFC validation: element {element.GlobalId} missing metadata property set {pset_expected}")
+        if tag in prim_by_guid and pset_expected in psets:
+            prim = prim_by_guid[tag]
+            expected_ref = prim.metadata.get("component_id") or prim.id
+            actual_ref = psets.get(pset_expected, {}).get("Reference")
+            if expected_ref and actual_ref != expected_ref:
+                errors.append(
+                    f"IFC validation: element {element.GlobalId} should carry Reference '{expected_ref}' in {pset_expected}"
+                )
 
     actual_void_pairs = set()
     for rel in rel_voids:

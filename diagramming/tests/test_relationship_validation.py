@@ -273,5 +273,58 @@ class RelationshipValidationTests(unittest.TestCase):
                     x_coords.add(round(float(xyz[0]), 3))
         self.assertGreater(len(x_coords), 1)
 
+    def test_metadata_maps_to_class_property_sets(self) -> None:
+        spec_text = dedent(
+            """
+            schema: pond-relationship-test
+            info:
+              option: metadata-psets
+            components:
+              - id: origin
+                kind: reference
+                size: [0, 0, 0]
+              - id: beam
+                class: IfcBeam
+                size: [400, 50, 150]
+                material: timber
+                relate:
+                  cxcy: { ref: origin }
+                metadata:
+                  label: "Primary beam"
+                  description: "Beam description"
+                ifc:
+                  predefined_type: BEAM
+                  psets:
+                    - name: Pset_Test
+                      props:
+                        Foo: "Bar"
+            """
+        )
+        with TemporaryDirectory() as tmp:
+            path = Path(tmp) / "metadata-pset.yaml"
+            path.write_text(spec_text, encoding="utf-8")
+            spec = load_relationship_spec(path)
+        report = validate_relationship_spec(spec)
+        self.assertFalse(report.errors)
+        try:
+            from diagramming.planner.exporters import IfcExporter
+            import ifcopenshell
+            from ifcopenshell.util import element as ifc_element_utils
+        except Exception as exc:  # pragma: no cover - optional dependency guard
+            self.skipTest(f"ifcopenshell not available: {exc}")
+        exporter = IfcExporter()
+        with TemporaryDirectory() as tmp:
+            ifc_path = Path(tmp) / "metadata.ifc"
+            exporter.export(report.result.primitives, ifc_path)
+            model = ifcopenshell.open(ifc_path)
+        beam = next(iter(model.by_type("IfcBeam")), None)
+        self.assertIsNotNone(beam)
+        psets = ifc_element_utils.get_psets(beam, psets_only=True)
+        self.assertIn("Pset_BeamCommon", psets)
+        self.assertEqual(psets["Pset_BeamCommon"].get("Reference"), "beam")
+        self.assertEqual(psets["Pset_BeamCommon"].get("Name"), "Primary beam")
+        self.assertIn("Pset_Test", psets)
+        self.assertEqual(psets["Pset_Test"].get("Foo"), "Bar")
+
 if __name__ == "__main__":  # pragma: no cover
     unittest.main()

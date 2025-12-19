@@ -5,7 +5,7 @@ import math
 import uuid
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Dict, Iterable, List, Optional, Sequence, Tuple
+from typing import Dict, Iterable, List, Mapping, Optional, Sequence, Tuple
 
 import ifcopenshell
 import ifcopenshell.api
@@ -35,6 +35,7 @@ class TypeRecord:
     axis_representation: Optional[ifcopenshell.entity_instance] = None
     material_set: Optional[ifcopenshell.entity_instance] = None
     usage_kind: Optional[str] = None  # "profile" or "layer"
+    psets: List[ifcopenshell.entity_instance] = field(default_factory=list)
 
 
 class IfcExporter:
@@ -96,6 +97,7 @@ class IfcExporter:
             self._assign_representations(model, contexts, product, primitive, type_record)
             self._assign_materials(model, product, primitive, type_record)
             self._apply_predefined_type(product, primitive, type_record)
+            self._assign_property_sets(model, product, primitive, type_record)
 
             products_by_ref[primitive.id] = product
             base_ref = primitive.metadata.get("component_id") if primitive.metadata else None
@@ -276,6 +278,7 @@ class IfcExporter:
             )
 
         record.usage_kind, record.material_set = self._material_set_for_type(model, primitive, record.type_entity)
+        record.psets = self._property_sets_for_type(model, type_entity, primitive)
         self._type_cache[key] = record
         return record
 
@@ -346,6 +349,30 @@ class IfcExporter:
                 type="IfcMaterial",
                 material=material,
             )
+
+    def _assign_property_sets(
+        self,
+        model,
+        product,
+        primitive: NeutralPrimitive,
+        type_record: Optional[TypeRecord],
+    ) -> None:
+        for pset in (type_record.psets if type_record else ()):
+            ifcopenshell.api.run("pset.assign_pset", model, products=[product], pset=pset)
+        auto_pset_name, auto_props = self._auto_pset(primitive)
+        if auto_pset_name and auto_props:
+            pset = ifcopenshell.api.run("pset.add_pset", model, product=product, name=auto_pset_name)
+            ifcopenshell.api.run("pset.edit_pset", model, pset=pset, properties=auto_props)
+        user_psets = []
+        if primitive.ifc and isinstance(primitive.ifc, dict):
+            user_psets = primitive.ifc.get("psets") or []
+        for entry in user_psets:
+            name = entry.get("name")
+            props = entry.get("props") or {}
+            if not name or not isinstance(props, Mapping):
+                continue
+            pset = ifcopenshell.api.run("pset.add_pset", model, product=product, name=name)
+            ifcopenshell.api.run("pset.edit_pset", model, pset=pset, properties=props)
 
     def _apply_predefined_type(
         self,
@@ -444,6 +471,21 @@ class IfcExporter:
             material=material,
         )
         return None, material
+
+    def _property_sets_for_type(
+        self,
+        model,
+        type_entity: Optional[ifcopenshell.entity_instance],
+        primitive: NeutralPrimitive,
+    ) -> List[ifcopenshell.entity_instance]:
+        if type_entity is None:
+            return []
+        pset_name, props = self._auto_pset(primitive)
+        if not pset_name or not props:
+            return []
+        pset = ifcopenshell.api.run("pset.add_pset", model, product=type_entity, name=pset_name)
+        ifcopenshell.api.run("pset.edit_pset", model, pset=pset, properties=props)
+        return [pset]
 
     # ------------------------------------------------------------------ #
     def _axis_representation(
@@ -568,6 +610,7 @@ class IfcExporter:
                 if rep:
                     ifcopenshell.api.run("geometry.assign_representation", model, product=opening, representation=rep)
                 self._assign_spatial(model, opening, storey)
+                self._assign_property_sets(model, opening, void_prim, None)
                 rel = model.createIfcRelVoidsElement(
                     self._guid(f"relvoid::{host_id}::{void_id}"),
                     RelatingBuildingElement=host_product,
@@ -849,6 +892,8 @@ class IfcExporter:
             "ifcbeam": "IfcBeamType",
             "ifcmember": "IfcMemberType",
             "ifcslab": "IfcSlabType",
+            "ifcfooting": "IfcFootingType",
+            "ifcfastener": "IfcFastenerType",
         }
         return mapping.get(class_name.lower())
 
@@ -869,6 +914,35 @@ class IfcExporter:
         file.header.file_name.authorization = "Nobody"
         file.header.file_description.description = ("ViewDefinition[ReferenceView]",)
         return file
+
+    def _auto_pset(self, primitive: NeutralPrimitive) -> Tuple[Optional[str], Dict[str, object]]:
+        class_lower = (primitive.class_name or "").lower()
+        mapping = {
+            "ifcbeam": "Pset_BeamCommon",
+            "ifcmember": "Pset_MemberCommon",
+            "ifcslab": "Pset_SlabCommon",
+            "ifcfooting": "Pset_FootingCommon",
+            "ifcfastener": "Pset_FastenerCommon",
+        }
+        pset_name = mapping.get(class_lower, "Pset_ElementCommon")
+        metadata = primitive.metadata or {}
+        props: Dict[str, object] = {}
+        reference = metadata.get("component_id") or primitive.id
+        if reference:
+            props["Reference"] = reference
+        label = metadata.get("label") or metadata.get("id") or primitive.id
+        if label:
+            props["Name"] = label
+        description = metadata.get("description")
+        if description:
+            props["Description"] = description
+        elevation = metadata.get("elevation")
+        if elevation is not None:
+            props["Elevation"] = elevation
+        material = primitive.material
+        if material:
+            props["Material"] = material
+        return pset_name, props
 
     def _tessellate(self, primitive: NeutralPrimitive) -> tuple[list[list[float]], list[Sequence[int]]]:
         if primitive.solid is not None:

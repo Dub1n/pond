@@ -10,7 +10,7 @@
 - [x] Collision and boolean robustness: resolve collision hot-spots (e.g., Option C pad/joist overlaps), stabilise boolean cutouts for rotated arrays; make collision severity configurable alongside env. (Progress: footing ignores stick even with overrides; boolean cutouts track cloned placements/rotations; collision ignore/severity covered by fixtures.)
 - [ ] Helper parity cleanup: strip `relate_from`/assemblies from docs/code or implement them; fail fast when declared until supported.
 - [x] Implement mirror operation (plane normal + point) with right-handed frame handling; add lint/tests.
-- [ ] Expand metadata mapping to align with IFC classes (carry-over from Phase 3 backlog).
+- [x] Expand metadata mapping to align with IFC classes (carry-over from Phase 3 backlog). (Progress: class-aligned property sets emitted from metadata/custom psets; validated alongside mapping table.)
 
 ## Phase 4 prep checklist (status captured here; source file archived)
 

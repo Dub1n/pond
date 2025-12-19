@@ -33,7 +33,7 @@ python scripts/build_diagrams.py --spec diagrams/specs/deck-framing.yaml --optio
 
 - Deck framing plans/sections (see `diagrams/specs/deck-framing.yaml`) with responsive SVG output, legends, and synchronized plan/section slices derived from the canonical 3D scene.
 - Attachment details (`diagrams/specs/edge-attachments.yaml`) with variant-specific parameters.
-- 3D deliverables for downstream tools: glTF/GLB with component metadata, IFC 4.3 Reference View (mm/deg units, Model/Axis/Body contexts, mapped items/types, material usages, and cloned RelVoids), optional STEP/OBJ, and orthographic snapshots for quick QA.
+- 3D deliverables for downstream tools: glTF/GLB with component metadata, IFC 4.3 Reference View (mm/deg units, Model/Axis/Body contexts, mapped items/types, class-aligned property sets from metadata, material usages, and cloned RelVoids), optional STEP/OBJ, and orthographic snapshots for quick QA.
 
 ## Usage tips and gotchas
 
