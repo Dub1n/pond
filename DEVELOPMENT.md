@@ -38,7 +38,7 @@ flowchart TD
 
 - Schema loader: axis-map `relate` entries keyed by subject axes with `ref`/`pos`/`gap`/`offset`/`mode`; frames (`world`/`local`/`component:<id>`) are applied during placement, including `flush` expansion. Center tokens (`cx`, `cy`, `cz`, `~x`, etc.) are valid in keys/targets. `flush` sugar expands to axis-map entries (`faces: all` default; scalar or per-face inset). `place` embeds per-placement axis-maps directly (no nested `relate`).
 - Arrays: `array` (alias `run_between`) accepts component/reference targets and axis-map `start`/`end` blocks; `orient: along_run` aligns local +X to the 3D span and can infer/interpolate size from paired faces. Multi-axis tokens (e.g., `-x+y`) anchor true points in `mode: point` (default).
-- Components: solids or `kind: reference` anchors; references default missing axes to 0. Missing component size axes infer from relation pairs; conflicts lint unless matched. Aggregate selectors (`id`, `id.original`, `id.clones`) are accepted wherever component lists appear. Typed `operations`: `rotate`, `mirror`, `translate`, `boolean`; rotation remaps numbered instances. `relate_from` and assemblies parse but do not expand (planned removal/reevaluation).
+- Components: solids or `kind: reference` anchors; references default missing axes to 0. Missing component size axes infer from relation pairs; conflicts lint unless matched. Aggregate selectors (`id`, `id.original`, `id.clones`) are accepted wherever component lists appear. Typed `operations`: `rotate`, `mirror`, `translate`, `boolean`; rotation remaps numbered instances.
 - Constraint solver: expands placements/arrays/selectors into explicit instances with deterministic GUID seeds. Resolves axis-map relations with size inference, applies run spans, executes typed operations, and reports OCC collisions (severity via `DIAGRAM_RELATIONSHIPS_COLLISIONS`). Diagnostics capture errors/warnings and shallow DOF notes; checks assert coordinate equality only (no tolerance/on_fail).
 - Planner/renderers: RelationshipPlanner projects plan footprints and section slices from solver primitives, deriving dimension polylines from solved extents. GeometryBundle carries polygons/polylines, legend data, and the canonical `trimesh.Scene`; SVG renderer consumes bundles, PNG via cairosvg when available.
 - Exporters: glTF/GLB via tessellated solids with metadata in `extras` (mm→m); IFC 4.3 Reference View with Model/Axis/Body contexts, class/predefined-type/material mapping, mapped items/types for repeated members, openings via `IfcRelVoidsElement` (propagated to clones), deterministic GUIDs; STEP/OBJ reuse CadQuery solids. `scripts/build_diagrams.py` orchestrates exports; `scripts/lint_specs.py` runs schema + solver + IFC validation and emits mesh digests.
@@ -57,7 +57,7 @@ Pulled from the latest implementation review:
 
 - Frames are honoured for axis-map/flush; monitor non-orthogonal use until richer DOF/tolerance handling lands.
 - Checks enforce equality only; `tolerance`/`on_fail` semantics are not honoured.
-- Helper coverage is limited to axis-map `relate`/`flush`/`place` plus `array`/`run_between`; `relate_from` and assemblies parse but do not expand.
+- Helper coverage is limited to axis-map `relate`/`flush`/`place` plus `array`/`run_between`; `relate_from` and assemblies have been removed.
 - IFC mapping table enforcement now covers predefined type/material usage, mapped items/types, and cloned openings across exporter/lint/validation.
 - Collision reporting exists, but DOF counts and richer diagnostics are shallow.
 
@@ -101,7 +101,7 @@ flowchart LR
 - Do prefer axis-map relates, `flush`, and `array` spans over manual coordinates; use center tokens for symmetric anchors.
 - Do keep specs and materials in sync; add new material keys to `diagramming/materials.py`.
 - Do document new helpers/ops with fixtures and update `DEVELOPMENT.md`/`architecture-spec.md` when behaviour changes.
-- Don't rely on `relate_from`/assemblies until implemented; fail fast if you see them slip into specs.
+- `relate_from` and assemblies have been removed to reduce surface area; specs should stick to axis-map `relate`/`flush`/`place` and `array`.
 - Don't hand-edit generated artefacts; regenerate outputs instead.
 
 ## Notes on legacy path

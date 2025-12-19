@@ -500,12 +500,6 @@ class BooleanOperation(Operation):
 
 
 @dataclass(slots=True)
-class AssemblyCall:
-    template: str
-    args: Dict[str, Any] = field(default_factory=dict)
-
-
-@dataclass(slots=True)
 class ViewPlane:
     axis: str
     coordinate: float
@@ -533,7 +527,6 @@ class RelationshipDiagramSpec:
     planes: Dict[str, DatumPlane]
     bundles: Dict[str, DatumBundle]
     components: Tuple[RelationshipComponent, ...]
-    assemblies: Tuple[AssemblyCall, ...]
     views: Dict[str, ViewConfig]
     checks: Tuple[AxisRelation, ...] = ()
     operations: Tuple[Operation, ...] = ()
@@ -560,7 +553,7 @@ def _parse_spec(data: MutableMapping[str, Any], *, source: Path) -> Relationship
     dimensions = DimensionResolver.from_mapping(data.get("dimensions"))
     datums, planes, bundles = _parse_datums(data.get("datums", {}), dimensions)
     checks = tuple(_parse_axis_map(data.get("checks", {}), dimensions))
-    components, assemblies = _parse_components(data.get("components", []), dimensions)
+    components = _parse_components(data.get("components", []), dimensions)
     views = _parse_views(data.get("views", {}), dimensions)
     operations = tuple(_parse_operations(data.get("operations", ()), dimensions))
     return RelationshipDiagramSpec(
@@ -571,7 +564,6 @@ def _parse_spec(data: MutableMapping[str, Any], *, source: Path) -> Relationship
         planes=planes,
         bundles=bundles,
         components=components,
-        assemblies=assemblies,
         views=views,
         checks=checks,
         operations=operations,
@@ -708,20 +700,16 @@ def _parse_size(raw: Any, dimensions: DimensionResolver) -> Tuple[Optional[float
 def _parse_components(
     data: Sequence[Any],
     dimensions: DimensionResolver,
-) -> Tuple[Tuple[RelationshipComponent, ...], Tuple[AssemblyCall, ...]]:
+) -> Tuple[RelationshipComponent, ...]:
     if not isinstance(data, Sequence):
         raise SchemaError("components must be a list")
     components: List[RelationshipComponent] = []
-    assemblies: List[AssemblyCall] = []
     for entry in data:
         if not isinstance(entry, Mapping):
             raise SchemaError("component entries must be mappings")
-        if "use" in entry:
-            assemblies.append(_parse_assembly(entry))
-            continue
         components.append(_parse_component(entry, dimensions))
     _ensure_unique_ids(components)
-    return tuple(components), tuple(assemblies)
+    return tuple(components)
 
 
 def _parse_component(data: Mapping[str, Any], dimensions: DimensionResolver) -> RelationshipComponent:
@@ -982,16 +970,6 @@ def _parse_place(data: Any, dimensions: DimensionResolver) -> List[Placement]:
         relations = tuple(_parse_axis_map(axis_map_payload, dimensions))
         placements.append(Placement(id=str(place_id), relations=relations))
     return placements
-
-
-def _parse_assembly(data: Mapping[str, Any]) -> AssemblyCall:
-    template = data.get("use")
-    if template is None:
-        raise SchemaError("assembly entries require 'use'")
-    args_raw = data.get("with", {}) or {}
-    if not isinstance(args_raw, Mapping):
-        raise SchemaError("assembly 'with' block must be a mapping")
-    return AssemblyCall(template=str(template), args=dict(args_raw))
 
 
 def _ensure_unique_ids(components: Sequence[RelationshipComponent]) -> None:
