@@ -31,6 +31,7 @@ GUID_NAMESPACE = uuid.UUID("6c7b3d9e-4f21-4b06-9fbf-2a6e2d6a8b2c")
 AxisName = str
 MM_TO_METERS = 0.001
 OrientationMatrix = Tuple[Tuple[float, float, float], Tuple[float, float, float], Tuple[float, float, float]]
+FRAME_ALIGNMENT_THRESHOLD = 0.995
 IDENTITY_ORIENTATION: OrientationMatrix = (
     (1.0, 0.0, 0.0),
     (0.0, 1.0, 0.0),
@@ -187,6 +188,14 @@ def _normalise_vector(vec: Tuple[float, float, float]) -> Tuple[float, float, fl
     return (vec[0] / length, vec[1] / length, vec[2] / length)
 
 
+def _dominant_world_axis(vector: Tuple[float, float, float]) -> Tuple[str, int, float]:
+    magnitudes = [abs(val) for val in vector]
+    idx = int(np.argmax(magnitudes))
+    axis = ("x", "y", "z")[idx]
+    sign = 1 if vector[idx] >= 0 else -1
+    return axis, sign, magnitudes[idx]
+
+
 @dataclass(slots=True)
 class Diagnostic:
     level: str
@@ -338,6 +347,11 @@ class ReferenceResolver:
                 return getattr(state, "orientation", IDENTITY_ORIENTATION)
         return IDENTITY_ORIENTATION
 
+    def world_axis_for(self, frame: str, ref: str, axis: str) -> Tuple[str, int, float]:
+        orientation = self._frame_orientation(frame, ref)
+        axis_vec = _axis_vector(orientation, axis)
+        return _dominant_world_axis(axis_vec)
+
     def coords_for_ref(self, ref: str) -> Optional[Dict[str, float]]:
         if ref in self.component_states:
             pos = self.component_states[ref].transform.position
@@ -357,41 +371,40 @@ class ReferenceResolver:
         axis: str,
         sign: int,
         frame: str = "world",
+        *,
+        mapped_axis: Optional[str] = None,
+        mapped_sign: Optional[int] = None,
     ) -> Optional[float]:
+        world_axis, world_sign, _ = self.world_axis_for(frame, ref, axis)
+        if mapped_axis is not None:
+            world_axis = mapped_axis
+        if mapped_sign is not None:
+            world_sign = mapped_sign
+        world_idx = AXIS_ORDER[world_axis]
         if ref in self.component_states:
             state = self.component_states[ref]
-            idx = AXIS_ORDER[axis]
-            orientation = self._frame_orientation(frame, ref)
-            axis_vec = _axis_vector(orientation, axis)
             base = state.transform.position
-            offset = 0.0 if sign == 0 else _half_size(state.size, axis) * float(sign)
-            point = (
-                base[0] + axis_vec[0] * offset,
-                base[1] + axis_vec[1] * offset,
-                base[2] + axis_vec[2] * offset,
-            )
-            if sign == 0:
-                return base[idx]
-            return point[idx]
+            offset = 0.0 if sign == 0 else _half_size(state.size, axis) * float(sign * world_sign)
+            return base[world_idx] + offset
 
         if ref in self.datum_bundles:
             bundle = self.datum_bundles[ref]
             origin = bundle["origin"]
             span = bundle["span"]
-            if axis not in origin:
+            if world_axis not in origin and axis not in origin:
                 return None
-            base = origin.get(axis, 0.0)
+            base = origin.get(world_axis, origin.get(axis, 0.0))
             if sign >= 0:
-                return base + span.get(f"+{axis}", span.get(axis, 0.0))
+                return base + span.get(f"+{world_axis}", span.get(world_axis, span.get(axis, 0.0)))
             return base
 
         if ref in self.datum_planes:
             coords = self.datum_planes[ref]
-            return coords.get(axis, None)
+            return coords.get(world_axis, coords.get(axis, None))
 
         if ref in self.datum_points:
             coords = self.datum_points[ref]
-            return coords.get(axis, None)
+            return coords.get(world_axis, coords.get(axis, None))
 
         return None
 
@@ -412,6 +425,8 @@ class ConstraintSolver:
         self.collision_mode = collision_handling_mode()
         self.fail_on_warn = fail_on_warn()
         self.collision_ignore = collision_ignore_classes()
+        self._frame_warning_cache: set[str] = set()
+        self._frame_summary: Dict[Tuple[str, str, str], set[str]] = {}
 
     def solve(self) -> SolveResult:
         diagnostics = SolveDiagnostics()
@@ -443,6 +458,7 @@ class ConstraintSolver:
         self._evaluate_checks(resolver, diagnostics)
 
         primitives = tuple(item.primitive for item in solved)
+        self._emit_frame_summaries(diagnostics)
         self._detect_collisions(primitives, diagnostics)
         if self.fail_on_warn:
             diagnostics.escalate_warnings()
@@ -528,6 +544,7 @@ class ConstraintSolver:
                 "y": AxisState(),
                 "z": AxisState(),
             }
+            size_axis_map: Dict[str, str] = {"x": "x", "y": "y", "z": "z"}
             for axis, value in instance.get("preset_axes", {}).items():
                 axis_states[axis].center = value
                 axis_states[axis].locked_center = True
@@ -540,6 +557,7 @@ class ConstraintSolver:
                     resolver,
                     diagnostics,
                     instance_id=instance["id"],
+                    axis_size_map=size_axis_map,
                 )
 
             size = list(component.size)
@@ -551,7 +569,8 @@ class ConstraintSolver:
 
             dof_count = 0
             for axis in ("x", "y", "z"):
-                explicit = size[AXIS_ORDER[axis]]
+                size_axis = size_axis_map.get(axis, axis)
+                explicit = size[AXIS_ORDER[size_axis]]
                 state = axis_states[axis]
                 center_value, size_value, axis_dof = self._resolve_axis_state(
                     component,
@@ -561,6 +580,7 @@ class ConstraintSolver:
                     diagnostics,
                     allow_default_zero=component.kind == "reference",
                     instance_id=instance["id"],
+                    size_axis=size_axis,
                 )
                 dof_count += axis_dof
                 final_center[axis] = center_value
@@ -667,7 +687,9 @@ class ConstraintSolver:
         diagnostics: SolveDiagnostics,
         *,
         instance_id: str,
-    ) -> None:
+        axis_size_map: Optional[Dict[str, str]] = None,
+    ) -> set[str]:
+        touched_axes: set[str] = set()
         subject_axes = _axes_from_pos(relation.subject)
         mode = (relation.target.mode or "point").lower()
         max_axes = {"plane": 1, "edge": 2}.get(mode, None)
@@ -682,6 +704,21 @@ class ConstraintSolver:
             target_axes.setdefault(axis, set()).add(sign)
 
         for axis, subject_sign in subject_axes:
+            world_axis, world_sign, alignment = resolver.world_axis_for(relation.target.frame, relation.target.ref, axis)
+            if axis_size_map is not None:
+                current_axis = axis_size_map.get(world_axis)
+                if current_axis is None or current_axis == world_axis:
+                    axis_size_map[world_axis] = axis
+            if alignment < FRAME_ALIGNMENT_THRESHOLD:
+                message = (
+                    f"component '{component.id}' relation '{relation.subject}' using frame '{relation.target.frame}' on '{relation.target.ref}' "
+                    f"maps local {axis} to world {world_axis} (alignment {alignment:.3f}); gaps/offsets use projected axis"
+                )
+                if message not in self._frame_warning_cache:
+                    self._frame_warning_cache.add(message)
+                    diagnostics.add_warning(message, subject=instance_id)
+                summary_key = (component.id, relation.target.frame, relation.target.ref)
+                self._frame_summary.setdefault(summary_key, set()).add(f"{axis}->{world_axis} ({alignment:.3f})")
             target_sign = subject_sign
             if axis in target_axes:
                 if subject_sign in target_axes[axis]:
@@ -691,17 +728,25 @@ class ConstraintSolver:
                 else:
                     # Fall back to the first explicit sign provided on the target
                     target_sign = sorted(target_axes[axis])[0]
-            coord = resolver.axis_coordinate(relation.target.ref, axis, target_sign, frame=relation.target.frame)
+            coord = resolver.axis_coordinate(
+                relation.target.ref,
+                axis,
+                target_sign,
+                frame=relation.target.frame,
+                mapped_axis=world_axis,
+                mapped_sign=world_sign,
+            )
             if coord is None:
                 diagnostics.add_error(
                     f"component '{component.id}' relation references unknown target '{relation.target.ref}'",
                     subject=component.id,
                 )
                 continue
-            offset = self._axis_amount_for(axis, subject_sign, relation.target.offset)
-            gap = self._axis_amount_for(axis, subject_sign, relation.target.gap)
-            adjusted = coord + offset + gap * (subject_sign if subject_sign != 0 else 0)
-            state = axis_states[axis]
+            offset_amount = self._axis_amount_for(axis, subject_sign, relation.target.offset)
+            gap_amount = self._axis_amount_for(axis, subject_sign, relation.target.gap)
+            gap_direction = subject_sign * world_sign if subject_sign != 0 else 0
+            adjusted = coord + offset_amount * world_sign + gap_amount * gap_direction
+            state = axis_states[world_axis]
             if subject_sign == 0:
                 if state.center is not None and abs(state.center - adjusted) > 1e-6 and not state.locked_center:
                     diagnostics.add_error(
@@ -712,7 +757,9 @@ class ConstraintSolver:
                     state.center = adjusted
             else:
                 state.faces[subject_sign] = adjusted
+            touched_axes.add(world_axis)
         self._enforce_relation_mode(component, relation, axis_states, diagnostics, instance_id=instance_id)
+        return touched_axes
 
     def _enforce_relation_mode(
         self,
@@ -757,7 +804,9 @@ class ConstraintSolver:
         *,
         allow_default_zero: bool,
         instance_id: str,
+        size_axis: Optional[str] = None,
     ) -> Tuple[float, float, int]:
+        size_axis = size_axis or axis
         center = state.center
         size_value = explicit_size
         pos_plus = state.faces.get(1)
@@ -777,7 +826,7 @@ class ConstraintSolver:
 
         if size_value is not None and inferred_size is not None and abs(size_value - inferred_size) > 1e-6:
             diagnostics.add_error(
-                f"component '{component.id}' size on {axis} conflicts with inferred span ({size_value:.3f} vs {inferred_size:.3f})",
+                f"component '{component.id}' size on {size_axis} conflicts with inferred span ({size_value:.3f} vs {inferred_size:.3f})",
                 subject=instance_id,
             )
         if size_value is None and inferred_size is not None:
@@ -806,7 +855,7 @@ class ConstraintSolver:
 
         if size_value <= 0 and component.kind != "reference":
             diagnostics.add_warning(
-                f"component '{component.id}' has non-positive size on axis {axis}",
+                f"component '{component.id}' has non-positive size on axis {size_axis}",
                 subject=instance_id,
             )
 
@@ -821,23 +870,41 @@ class ConstraintSolver:
     ) -> List[Dict[str, Any]]:
         component = plan.component
 
+        def warn_frame(message: str) -> None:
+            if message in self._frame_warning_cache:
+                return
+            self._frame_warning_cache.add(message)
+            diagnostics.add_warning(message)
+
         def _resolved_axes(relations: Tuple[AxisRelation, ...], label: str) -> Tuple[Dict[str, float], Dict[str, float]]:
             constrained: set[str] = set()
             centers: Dict[str, float] = {}
             sizes: Dict[str, float] = {}
 
             axis_states = {axis: AxisState() for axis in ("x", "y", "z")}
+            size_axis_map: Dict[str, str] = {"x": "x", "y": "y", "z": "z"}
             for relation in relations:
                 subject_axes = _axes_from_pos(relation.subject)
                 if relation.target.mode == "point" and len(subject_axes) > 1:
                     target_axes = {axis: sign for axis, sign in _axes_from_pos(relation.target.pos)}
                     for axis, subject_sign in subject_axes:
+                        world_axis, world_sign, alignment = resolver.world_axis_for(relation.target.frame, relation.target.ref, axis)
+                        if alignment < FRAME_ALIGNMENT_THRESHOLD:
+                            warn_message = (
+                                f"component '{component.id}' relation '{relation.subject}' using frame '{relation.target.frame}' on '{relation.target.ref}' "
+                                f"maps local {axis} to world {world_axis} (alignment {alignment:.3f}); gaps/offsets use projected axis"
+                            )
+                            warn_frame(warn_message)
+                            summary_key = (component.id, relation.target.frame, relation.target.ref)
+                            self._frame_summary.setdefault(summary_key, set()).add(f"{axis}->{world_axis} ({alignment:.3f})")
                         target_sign = target_axes.get(axis, subject_sign)
                         coord = resolver.axis_coordinate(
                             relation.target.ref,
                             axis,
                             target_sign,
                             frame=relation.target.frame,
+                            mapped_axis=world_axis,
+                            mapped_sign=world_sign,
                         )
                         if coord is None:
                             diagnostics.add_error(
@@ -847,26 +914,30 @@ class ConstraintSolver:
                             continue
                         offset = self._axis_amount_for(axis, subject_sign, relation.target.offset)
                         gap = self._axis_amount_for(axis, subject_sign, relation.target.gap)
-                        adjusted = coord + offset + gap * (subject_sign if subject_sign != 0 else 0)
-                        constrained.add(axis)
-                        centers[axis] = adjusted
+                        adjusted = coord + offset * world_sign + gap * (subject_sign * world_sign if subject_sign != 0 else 0)
+                        constrained.add(world_axis)
+                        current_axis = size_axis_map.get(world_axis)
+                        if current_axis is None or current_axis == world_axis:
+                            size_axis_map[world_axis] = axis
+                        centers[world_axis] = adjusted
                     continue
 
-                for axis, _ in subject_axes:
-                    constrained.add(axis)
-                self._apply_axis_relation(
+                touched = self._apply_axis_relation(
                     component,
                     axis_states,
                     relation,
                     resolver,
                     diagnostics,
                     instance_id=label,
+                    axis_size_map=size_axis_map,
                 )
+                constrained.update(touched)
 
             for axis in constrained:
                 if axis in centers:
                     continue
-                explicit = component.size[AXIS_ORDER[axis]]
+                size_axis = size_axis_map.get(axis, axis)
+                explicit = component.size[AXIS_ORDER[size_axis]]
                 center_value, size_value, _ = self._resolve_axis_state(
                     component,
                     axis,
@@ -875,6 +946,7 @@ class ConstraintSolver:
                     diagnostics,
                     allow_default_zero=False,
                     instance_id=label,
+                    size_axis=size_axis,
                 )
                 centers[axis] = center_value
                 sizes[axis] = size_value
@@ -1477,12 +1549,32 @@ class ConstraintSolver:
             on_fail = (clause.on_fail or "error").lower()
             for axis, subject_sign in subject_axes:
                 target_sign = target_axes.get(axis, subject_sign)
-                subject_coord = resolver.axis_coordinate("self", axis, subject_sign, frame=clause.target.frame)
+                world_axis, world_sign, alignment = resolver.world_axis_for(clause.target.frame, clause.target.ref, axis)
+                if alignment < FRAME_ALIGNMENT_THRESHOLD:
+                    message = (
+                        f"check '{clause.subject}' using frame '{clause.target.frame}' on '{clause.target.ref}' maps local {axis} "
+                        f"to world {world_axis} (alignment {alignment:.3f}); gaps/offsets use projected axis"
+                    )
+                    if message not in self._frame_warning_cache:
+                        self._frame_warning_cache.add(message)
+                        diagnostics.add_warning(message, subject=clause.target.ref)
+                    summary_key = (f"check:{clause.subject}", clause.target.frame, clause.target.ref)
+                    self._frame_summary.setdefault(summary_key, set()).add(f"{axis}->{world_axis} ({alignment:.3f})")
+                subject_coord = resolver.axis_coordinate(
+                    "self",
+                    axis,
+                    subject_sign,
+                    frame=clause.target.frame,
+                    mapped_axis=world_axis,
+                    mapped_sign=world_sign,
+                )
                 object_coord = resolver.axis_coordinate(
                     clause.target.ref,
                     axis,
                     target_sign,
                     frame=clause.target.frame,
+                    mapped_axis=world_axis,
+                    mapped_sign=world_sign,
                 )
                 if object_coord is None:
                     diagnostics.add_error(f"check references unknown target '{clause.target.ref}'", subject=clause.target.ref)
@@ -1490,7 +1582,11 @@ class ConstraintSolver:
                     continue
                 if subject_coord is None:
                     subject_coord = 0.0
-                delta = abs(subject_coord - object_coord)
+                offset_amount = self._axis_amount_for(axis, subject_sign, clause.target.offset)
+                gap_amount = self._axis_amount_for(axis, subject_sign, clause.target.gap)
+                gap_direction = subject_sign * world_sign if subject_sign != 0 else 0
+                adjusted_target = object_coord + offset_amount * world_sign + gap_amount * gap_direction
+                delta = abs(subject_coord - adjusted_target)
                 if delta > tolerance:
                     message = (
                         f"check failed between '{clause.subject}' and '{clause.target.ref}' on axis {axis} "
@@ -1506,6 +1602,20 @@ class ConstraintSolver:
 
     def _build_scene(self, primitives: Sequence[NeutralPrimitive]) -> trimesh.Scene:
         return build_scene_from_primitives(primitives)
+
+    def _emit_frame_summaries(self, diagnostics: SolveDiagnostics) -> None:
+        for key, mappings in sorted(self._frame_summary.items()):
+            if not mappings:
+                continue
+            component_id, frame, ref = key
+            mapping_text = ", ".join(sorted(mappings))
+            message = (
+                f"frame '{frame}' on '{ref}' projection summary for '{component_id}': {mapping_text}"
+            )
+            if message in self._frame_warning_cache:
+                continue
+            self._frame_warning_cache.add(message)
+            diagnostics.add_warning(message, subject=component_id if component_id else None)
 
     def _detect_collisions(self, primitives: Sequence[NeutralPrimitive], diagnostics: SolveDiagnostics) -> None:
         if self.collision_mode == "ignore":

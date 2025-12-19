@@ -5,7 +5,7 @@ from tempfile import TemporaryDirectory
 from textwrap import dedent
 import unittest
 
-from diagramming.relationships import canonical_pos_token, lint_relationship_spec, load_relationship_spec
+from diagramming.relationships import SchemaError, canonical_pos_token, lint_relationship_spec, load_relationship_spec
 
 
 class RelationshipSchemaTests(unittest.TestCase):
@@ -84,6 +84,80 @@ class RelationshipSchemaTests(unittest.TestCase):
             spec = load_relationship_spec(path)
         errors = lint_relationship_spec(spec)
         self.assertTrue(any("unknown selector" in err for err in errors))
+
+    def test_loader_resolves_datums_and_dimension_expressions(self) -> None:
+        spec_text = dedent(
+            """
+            schema: pond-relationship-test
+            info:
+              option: datums
+            dimensions:
+              base: 100
+              offsets:
+                dx: base / 2
+                dz: base + 20
+            datums:
+              anchor:
+                type: point
+                coordinates: { x: base, y: offsets.dx, z: offsets.dz - 10 }
+              planes:
+                top:
+                  base: { ref: anchor }
+                  normal: +z
+                  offset: offsets.dx
+              bundles:
+                grid:
+                  origin: { ref: anchor }
+                  span:
+                    +x: base * 2
+                    +y: offsets.dx * 3
+                  translate:
+                    +z: offsets.dx
+            components:
+              - id: origin
+                kind: reference
+                size: [0, 0, 0]
+            """
+        )
+        with TemporaryDirectory() as tmp:
+            path = Path(tmp) / "datums.yaml"
+            path.write_text(spec_text, encoding="utf-8")
+            spec = load_relationship_spec(path)
+
+        dims = spec.dimensions
+        self.assertAlmostEqual(dims.lookup("offsets.dx"), 50.0)
+        self.assertAlmostEqual(dims.lookup("offsets.dz"), 120.0)
+        anchor = spec.datums["anchor"]
+        self.assertAlmostEqual(anchor.coordinates["+x"], 100.0)
+        self.assertAlmostEqual(anchor.coordinates["+y"], 50.0)
+        self.assertAlmostEqual(anchor.coordinates["+z"], 110.0)
+        plane = spec.planes["top"]
+        self.assertEqual(plane.base, "anchor")
+        self.assertEqual(plane.normal, "+z")
+        self.assertAlmostEqual(plane.offset, 50.0)
+        bundle = spec.bundles["grid"]
+        self.assertEqual(bundle.origin, "anchor")
+        self.assertAlmostEqual(bundle.span["+x"], 200.0)
+        self.assertAlmostEqual(bundle.span["+y"], 150.0)
+        self.assertAlmostEqual(bundle.translate["+z"], 50.0)
+
+    def test_loader_rejects_removed_helpers_and_relate_from(self) -> None:
+        spec_text = dedent(
+            """
+            schema: pond-relationship-test
+            assemblies: {}
+            components:
+              - id: base
+                kind: reference
+                size: [0, 0, 0]
+                relate_from: seed
+            """
+        )
+        with TemporaryDirectory() as tmp:
+            path = Path(tmp) / "removed-helpers.yaml"
+            path.write_text(spec_text, encoding="utf-8")
+            with self.assertRaises(SchemaError):
+                load_relationship_spec(path)
 
 
 if __name__ == "__main__":  # pragma: no cover

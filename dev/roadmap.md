@@ -14,8 +14,8 @@
 
 ## Phase 4 prep checklist (status captured here; source file archived)
 
-- [ ] Loader covers datums/helpers/assemblies and expression dimensions to prep spec expectations.
-- [ ] Constraint solver meets prep goals (frames, DOF/tolerance-aware checks, deterministic transforms).
+- [x] Loader covers datums/helpers/assemblies and expression dimensions to prep spec expectations.
+- [x] Constraint solver meets prep goals (frames, DOF/tolerance-aware checks, deterministic transforms).
 - [x] CadQuery exporter builds solids; SVG/PNG derive from OCC projections.
 - [x] IFC exporter enforces the prep mapping table (Axis/Body, predefined type/material usage, mapped items, openings).
 - [ ] Lint/CI gating and docs/examples refreshed for the final relationship surface.
@@ -26,6 +26,8 @@
 - [ ] IFC completeness gate: fail when IFC-classed components lack predefined type/material or RelVoids/mapped items don’t propagate to clones; emit a completeness summary.
 - [x] Array guardrails: enforce `count >= 2`, deprecate legacy `run_between` name in lint/errors; keep 3D `orient: along_run`.
 - [ ] Checks/diagnostics depth: formalise warning/error surfacing for collisions and under/over-constraint; add DOF reporting. (Progress: DOF reporting in solver; tolerance/on_fail on checks; warnings emitted for remaining axes.)
+- [x] Frame projection diagnostics: add per-relation context (axis remap, frame, offsets), tolerance threshold for warnings, and optional per-frame summaries.
+- [x] Component-frame coverage: add fixtures/tests for `frame: component:<id>` placement and size-axis remapping.
 - [ ] Clone-aware linting: accept `base#n` refs, validate cloned instance IDs/selectors consistently; fail unknown clone refs.
 - [ ] Selector hygiene: lint unknown selectors and id_map/count mismatches; warn when transforms run before array expansion if that risks nondeterminism.
 - [ ] Docs/tests gate: new helpers/ops must ship with regression tests covering axis-map + IFC output; gate docs accordingly.

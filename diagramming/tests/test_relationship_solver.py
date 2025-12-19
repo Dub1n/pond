@@ -310,6 +310,128 @@ class RelationshipSolverTests(unittest.TestCase):
         self.assertAlmostEqual(orient_x[0], 0.7071067811865476, places=6)
         self.assertAlmostEqual(orient_x[1], -0.7071067811865476, places=6)
 
+    def test_frame_local_rotates_axes_between_world_directions(self) -> None:
+        spec_text = dedent(
+            """
+            schema: pond-relationship-test
+            info:
+              option: frame-rotated
+            components:
+              - id: origin
+                kind: reference
+                size: [0, 0, 0]
+              - id: frame
+                kind: reference
+                size: [200, 100, 20]
+                metadata:
+                  _rotation_z: 90
+                relate:
+                  cxcy: { ref: origin }
+                  cz: { ref: origin }
+              - id: block
+                class: IfcBeam
+                size: [40, 20, 10]
+                relate:
+                  +x: { ref: frame, pos: +x, frame: local }
+                  cx: { ref: origin }
+                  cz: { ref: origin }
+                ifc:
+                  predefined_type: BEAM
+            """
+        )
+        with TemporaryDirectory() as tmp:
+            path = Path(tmp) / "frame-rotated.yaml"
+            path.write_text(spec_text, encoding="utf-8")
+            spec = load_relationship_spec(path)
+        solver = ConstraintSolver(spec)
+        result = solver.solve()
+        block = next(comp for comp in result.components if comp.instance_id == "block")
+        self.assertAlmostEqual(block.transform.position[0], 0.0)
+        self.assertAlmostEqual(block.transform.position[1], 80.0)
+        self.assertFalse(result.diagnostics.warnings)
+
+    def test_non_axis_aligned_frame_warns_and_projects(self) -> None:
+        spec_text = dedent(
+            """
+            schema: pond-relationship-test
+            info:
+              option: frame-angled
+            components:
+              - id: origin
+                kind: reference
+                size: [0, 0, 0]
+              - id: frame
+                kind: reference
+                size: [100, 100, 20]
+                metadata:
+                  _rotation_z: 45
+                relate:
+                  cxcy: { ref: origin }
+                  cz: { ref: origin }
+              - id: block
+                class: IfcBeam
+                size: [20, 20, 10]
+                relate:
+                  +x: { ref: frame, pos: +x, frame: local }
+                  cy: { ref: origin }
+                  cz: { ref: origin }
+                ifc:
+                  predefined_type: BEAM
+            """
+        )
+        with TemporaryDirectory() as tmp:
+            path = Path(tmp) / "frame-angled.yaml"
+            path.write_text(spec_text, encoding="utf-8")
+            spec = load_relationship_spec(path)
+        solver = ConstraintSolver(spec)
+        result = solver.solve()
+        block = next(comp for comp in result.components if comp.instance_id == "block")
+        warning_texts = [warn.message for warn in result.diagnostics.warnings]
+        self.assertTrue(any("maps local x to world" in msg for msg in warning_texts))
+        self.assertTrue(any("projection summary" in msg for msg in warning_texts))
+        self.assertAlmostEqual(block.transform.position[0], 40.0)
+        self.assertAlmostEqual(block.transform.position[1], 0.0)
+
+    def test_component_frame_reuse_maps_axes(self) -> None:
+        spec_text = dedent(
+            """
+            schema: pond-relationship-test
+            info:
+              option: component-frame
+            components:
+              - id: origin
+                kind: reference
+                size: [0, 0, 0]
+              - id: host
+                kind: reference
+                size: [100, 50, 20]
+                metadata:
+                  _rotation_z: 90
+                relate:
+                  cxcy: { ref: origin }
+                  cz: { ref: origin }
+              - id: child
+                class: IfcBeam
+                size: [40, 20, 10]
+                relate:
+                  +x: { ref: host, pos: +x, frame: component:host }
+                  cx: { ref: origin }
+                  cz: { ref: origin }
+                ifc:
+                  predefined_type: BEAM
+            """
+        )
+        with TemporaryDirectory() as tmp:
+            path = Path(tmp) / "component-frame.yaml"
+            path.write_text(spec_text, encoding="utf-8")
+            spec = load_relationship_spec(path)
+        solver = ConstraintSolver(spec)
+        result = solver.solve()
+        child = next(comp for comp in result.components if comp.instance_id == "child")
+        self.assertAlmostEqual(child.transform.position[0], 0.0)
+        self.assertAlmostEqual(child.transform.position[1], 30.0)
+        self.assertFalse(any("component-frame" in warn.message for warn in result.diagnostics.warnings))
+
     def test_array_axis_maps_infer_size_and_interpolate(self) -> None:
         spec_text = dedent(
             """
@@ -957,6 +1079,35 @@ class RelationshipSolverTests(unittest.TestCase):
                 solver = ConstraintSolver(spec)
                 result = solver.solve()
         self.assertTrue(any("under-constrained" in err.message for err in result.diagnostics.errors))
+
+    def test_fail_on_warn_escalates_check_warnings(self) -> None:
+        spec_text = dedent(
+            """
+            schema: pond-relationship-test
+            info:
+              option: check-fail
+            components:
+              - id: origin
+                kind: reference
+                size: [0, 0, 0]
+            checks:
+              +x:
+                ref: origin
+                offset: 20
+                tolerance: 0
+                on_fail: warn
+            """
+        )
+        env = os.environ.copy()
+        env["DIAGRAM_RELATIONSHIPS_FAIL_ON_WARN"] = "1"
+        with TemporaryDirectory() as tmp:
+            path = Path(tmp) / "check-fail.yaml"
+            path.write_text(spec_text, encoding="utf-8")
+            with mock.patch.dict(os.environ, env, clear=True):
+                spec = load_relationship_spec(path)
+                solver = ConstraintSolver(spec)
+                result = solver.solve()
+        self.assertTrue(any("check failed" in err.message for err in result.diagnostics.errors))
 
     def test_rotate_id_map_prefers_seed_and_carries_boolean_voids(self) -> None:
         spec_text = dedent(

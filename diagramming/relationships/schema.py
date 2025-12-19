@@ -549,6 +549,9 @@ def load_relationship_spec(path: Path | str, *, require_schema_flag: bool = True
 
 def _parse_spec(data: MutableMapping[str, Any], *, source: Path) -> RelationshipDiagramSpec:
     schema_field = str(data.get("schema") or "unknown")
+    for deprecated in ("helpers", "assemblies"):
+        if deprecated in data:
+            raise SchemaError(f"{deprecated} are no longer supported; inline axis-map relations instead")
     info = _parse_info(data.get("info", {}))
     dimensions = DimensionResolver.from_mapping(data.get("dimensions"))
     datums, planes, bundles = _parse_datums(data.get("datums", {}), dimensions)
@@ -716,6 +719,8 @@ def _parse_component(data: Mapping[str, Any], dimensions: DimensionResolver) -> 
     if "id" not in data:
         raise SchemaError("component requires an id")
     comp_id = str(data["id"])
+    if "relate_from" in data:
+        raise SchemaError(f"component '{comp_id}' uses relate_from, which has been removed")
     kind = str(data.get("kind", "component")).lower()
     class_raw = data.get("class")
     class_name = normalize_ifc_class(class_raw) if class_raw else None

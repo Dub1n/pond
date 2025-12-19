@@ -25,7 +25,8 @@ python scripts/build_diagrams.py --spec diagrams/specs/deck-framing.yaml --optio
 
 ## Relationship schema highlights
 
-- Axis-map `relate` entries map subject axes (`+x`, `-x+y`, `cxcy`, `~x`, etc.) to targets with explicit `ref`/`pos`/`gap`/`offset`/`mode`. `flush` sugar expands to these entries; `place` embeds per-placement axis-maps. Frames are parsed (`world`/`local`/`component:<id>`) but solving is currently world-space only.
+- Axis-map `relate` entries map subject axes (`+x`, `-x+y`, `cxcy`, `~x`, etc.) to targets with explicit `ref`/`pos`/`gap`/`offset`/`mode`. `flush` sugar expands to these entries; `place` embeds per-placement axis-maps. Frames (`world`/`local`/`component:<id>`) are honoured during solving with size-axis remapping and contextual warnings + per-frame summaries when frames are not axis-aligned; helper/assembly blocks are rejected in favour of explicit axis-maps.
+- Datums (points/planes/bundles) resolve dimension expressions and can be referenced anywhere a `ref` is accepted.
 - Arrays use `array` (legacy alias: `run_between`) with axis-map `start`/`end` blocks; `orient: along_run` aligns +X to the span and interpolates sizes from start/end faces. Instances accept selectors (`id`, `id.original`, `id.clones`) in typed `operations` (rotate/mirror/translate/boolean); rotations remap numbered clones.
 - Components can be solids or geometry-less references (`kind: reference`). Missing sizes infer from relation pairs; conflicts lint. Checks reuse the same axis-map vocabulary, honour `tolerance` + `on_fail: warn|error|ignore`, and DOF reporting only warns when an axis remains unconstrained.
 
