@@ -30,7 +30,7 @@ Each axis-map entry may specify:
 - **Target reference** (component, instance, datum, or bundle)
 - **Target position** (axis, face, edge, point)
 - **Mode** (`plane`, `edge`, `point`)
-- **Frame** (`local`, `world`, or another component)
+- **Frame** (`local`, `world`, or another component) that governs how the mapping is interpreted
 - **Gap / offset** values
 - Optional size inference or validation behaviour
 
@@ -89,6 +89,18 @@ Signed axes also allow the same component to participate in multiple relationshi
 
 ---
 
+## Frames and projection
+
+Axis-maps are evaluated in a chosen frame. The frame determines which way “+x” points and how gaps/offsets are applied. When a frame is not axis-aligned with world space, an implementation can:
+
+- Project local axes onto world axes (e.g. local +x → world +y if rotated 90°)
+- Emit diagnostics that explain the projection and any loss of alignment
+- Summarise per-frame mappings to make transforms auditable
+
+This keeps frame semantics explicit while remaining deterministic even for rotated references.
+
+---
+
 ## Modes and Degrees of Freedom
 
 Each axis-map entry is interpreted under an explicit **mode**:
@@ -110,6 +122,8 @@ Axis-maps support size inference when paired constraints imply a span (for examp
 - Used as validation checks
 
 This allows authors to write specifications that act as *geometric proofs*: the model both derives geometry and verifies that independent statements about size and alignment are consistent.
+
+Size inference is especially powerful when arrays or helpers expand into multiple instances: a single axis-map pair on `start`/`end` can drive both placement and interpolated sizes for each generated instance.
 
 ---
 
@@ -185,6 +199,8 @@ Rather than hiding complexity, axis-maps make it inspectable and enforceable.
 Axis-maps are intentionally low-level. They are not optimised for casual discovery or direct manipulation, but for correctness, traceability, and reproducibility. Higher-level authoring aids (templates, helpers, UX sugar) are expected to *compile into* axis-maps rather than replace them.
 
 This preserves a single canonical representation of geometric intent while allowing multiple authoring experiences to coexist above it.
+
+Axis-maps are also composable: higher-level helpers (e.g. “flush all faces” sugar, named placements, or array start/end anchors) can compile directly into one or more axis-map entries without changing the underlying protocol. That makes the helper layer interchangeable while the core constraint vocabulary stays stable.
 
 ---
 
