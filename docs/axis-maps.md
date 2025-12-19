@@ -216,6 +216,23 @@ Although axis-maps are intentionally minimal, a few behaviours should stay consi
 
 ---
 
+## Implementation guidance (early-stage protocol)
+
+To make the protocol trial-friendly and comparable across implementations:
+
+- **Surface/grammar**: define the minimal shape (subject axis token, target `ref`/`pos`, optional `mode`/`frame`/`gap`/`offset`/`tolerance`/`on_fail`), allowed tokens (`+x`, `-y`, `cx`, multi-axis combos), defaults (`mode: point`, `frame: world`, `gap/offset: 0`). Units are whatever the host model uses; keep them consistent per document.
+- **Conformance expectations**:
+  - Frames: project non-axis-aligned frames; document projection and apply gaps/offsets in the projected axis.
+  - Modes/DOF: `plane` → one axis, `edge` → two, `point` → three; ignore extra subject axes with a warning.
+  - Size inference: infer size from opposing faces; treat conflicts with explicit sizes as validation errors; missing faces + missing size leaves the axis unconstrained and should be reported.
+  - Tolerance/on_fail: apply tolerance before severity; honour warn/error/ignore; allow environments to escalate warnings after evaluation.
+  - Determinism: expansion and ordering should be stable so identical inputs yield identical outputs/diagnostics.
+- **Diagnostics**: emit warnings/errors when frames are projected, modes are over-specified, sizes conflict, or axes remain unconstrained; include per-frame summaries when projections occur.
+- **Test vectors**: include a tiny, portable set of axis-maps (single-axis, dual-axis, full cube, array start/end) with expected resolved centers/sizes to sanity-check implementations.
+- **Open questions**: note any deliberate gaps (e.g. how to handle arbitrary rotations beyond projection, or how over-constraint is surfaced) so trial users can provide feedback rather than guess.
+
+---
+
 ## Summary
 
 The axis-map is a small but powerful abstraction: a declarative mapping between axes that captures placement, orientation, constraint, and validation intent in a single, uniform form. By elevating this concept to a first-class schema element, the system enables deterministic geometry generation that is explainable, automatable, and suitable for both human and machine authorship.
