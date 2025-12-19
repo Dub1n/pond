@@ -204,6 +204,18 @@ Axis-maps are also composable: higher-level helpers (e.g. “flush all faces” 
 
 ---
 
+## Semantics to keep consistent across implementations
+
+Although axis-maps are intentionally minimal, a few behaviours should stay consistent so adapters can faithfully map into other constraint systems:
+
+- **Frames and projection**: interpret subject axes in the declared frame (`world`, `local`, or another component). If the frame is not axis-aligned, project local axes onto world axes; apply gaps/offsets in the projected direction and surface diagnostics to explain the mapping.
+- **Modes and DOF**: `plane` constrains one axis, `edge` constrains two, and `point` constrains three; extra subject axes may be ignored with a warning. Use this to reason about remaining degrees of freedom rather than forcing full mates.
+- **Size inference**: when opposing faces on an axis are constrained, infer size; if an explicit size disagrees, treat it as a validation error. Missing size + missing faces leaves the axis unconstrained (report as such). Arrays can reuse these spans to interpolate inferred sizes along a run.
+- **Tolerance and severity**: when comparing subject/target coordinates, apply `tolerance` before deciding pass/fail, and honour `on_fail: warn|error|ignore`. If an environment promotes warnings, escalate after collecting results.
+- **Composition**: helpers such as `flush` or array `start`/`end` anchors should expand into explicit axis-map entries so the canonical shape remains stable.
+
+---
+
 ## Summary
 
 The axis-map is a small but powerful abstraction: a declarative mapping between axes that captures placement, orientation, constraint, and validation intent in a single, uniform form. By elevating this concept to a first-class schema element, the system enables deterministic geometry generation that is explainable, automatable, and suitable for both human and machine authorship.
