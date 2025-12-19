@@ -240,6 +240,7 @@ class IfcExporter:
 
         type_class = self._type_class_for(primitive.class_name)
         record = TypeRecord()
+        type_entity = None
         if type_class:
             predefined = None
             if primitive.ifc and isinstance(primitive.ifc, dict):
@@ -278,7 +279,7 @@ class IfcExporter:
             )
 
         record.usage_kind, record.material_set = self._material_set_for_type(model, primitive, record.type_entity)
-        record.psets = self._property_sets_for_type(model, type_entity, primitive)
+        record.psets = self._property_sets_for_type(model, record.type_entity, primitive)
         self._type_cache[key] = record
         return record
 
