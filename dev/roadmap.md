@@ -8,7 +8,7 @@
 - [x] Rename `run_between` to `array`, add guardrails (`count >= 2`, warn/error on single spans), and retain 3D `orient: along_run` support.
 - [x] IFC discipline: enforce mapping table (entity + predefined type + material usage + mapped items) in lint/solver/export; ensure propagation to clones/voids; add fixtures. (Progress: exporter/lint/validation enforce predefined/material/mapped items/types; RelVoids follow clones; fixtures cover mapped items and openings.)
 - [x] Collision and boolean robustness: resolve collision hot-spots (e.g., Option C pad/joist overlaps), stabilise boolean cutouts for rotated arrays; make collision severity configurable alongside env. (Progress: footing ignores stick even with overrides; boolean cutouts track cloned placements/rotations; collision ignore/severity covered by fixtures.)
-- [ ] Helper parity cleanup: strip `relate_from`/assemblies from docs/code or implement them; fail fast when declared until supported.
+- [x] Helper parity cleanup: `relate_from`/assemblies removed from code/docs; specs fail fast if they appear.
 - [x] Implement mirror operation (plane normal + point) with right-handed frame handling; add lint/tests.
 - [x] Expand metadata mapping to align with IFC classes (carry-over from Phase 3 backlog). (Progress: class-aligned property sets emitted from metadata/custom psets; validated alongside mapping table.)
 
