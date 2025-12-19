@@ -1,15 +1,24 @@
 # Pond deck diagramming
 
-Relationship-first Python engine that turns declarative YAML specs into plan/section SVGs, PNG snapshots, and interoperable 3D exports (glTF/IFC/STEP/OBJ). Relationship builds are on by default (`schema: pond-relationship*`, `DIAGRAM_RELATIONSHIPS=1`) and fall back to the legacy planner only when explicitly disabled.
+a compiler that takes a semantic, relationship-first spec and produces a deterministic 3D scene + derived views
 
-```mermaid
-flowchart LR
-  Spec[Deck/attachment spec (YAML)] --> Loader[Schema loader \n + relationship solver]
-  Loader --> Planner[Planner & renderers]
-  Planner --> SVG[Plan/section SVG \n + optional PNG]
-  Loader --> Solids[CadQuery solids]
-  Solids --> Exports[glTF/GLB, IFC, STEP/OBJ \n + orthographic snapshot]
-```
+---
+
+this project is a **text-first, deterministic geometry compiler** for small to medium structural systems.
+
+designs are authored as compact, semantic YAML specifications that describe *what components exist* and *how they relate to one another*. those specifications are resolved into a single authoritative 3D scene, from which all downstream artefacts are derived: plan and section SVGs, PNG snapshots, and interoperable 3D formats including glTF, IFC, and STEP/OBJ. given the same spec, the build output is reproducible and deterministic.
+
+the system is intentionally **not interactive CAD**. it is designed for contexts where intent, traceability, and repeatability matter more than direct manipulation. instead of positioning geometry by absolute coordinates, authors declare explicit spatial relationships: faces flush to planes, members spanning between references, arrays distributed across a defined run. sizes may be inferred where appropriate, conflicts are linted, and under- or over-constrained geometry is reported explicitly. changes propagate through the constraint graph in a predictable way, making it possible to understand *why* geometry moved, not just that it did.
+
+because the source format is small, declarative, and human-readable, it supports workflows that are difficult or impractical in traditional CAD and BIM tools. specifications can be read directly in a text editor, reviewed and diffed in version control, and regenerated without relying on hidden state or binary project files. the verbose outputs (IFC, glTF, STEP) are treated as compiled artefacts rather than authoring surfaces.
+
+the project is also well suited to **language-model-assisted geometry generation**. large language models are unreliable at producing pixel graphics or ad-hoc SVG, but perform well when constrained to a strict, symbolic grammar. the relationship-first schema provides such a grammar: it limits ambiguity, enforces consistency through linting and validation, and makes incorrect outputs fail loudly rather than degrade silently. this enables reliable generation of accurate, adjustable diagrams and scenes from semantic descriptions, and supports rapid exploration of design variants where visualisation helps surface issues that are not obvious from prose alone.
+
+in addition, the tool is designed to integrate cleanly into **automated and CI-driven workflows**. specifications are deterministic, parameterisable, and inexpensive to rebuild, making them suitable for batch generation, regression testing of geometry, validation gates, and programmatic mutation (for example, sweeping dimensions or options via the CLI). unlike most CAD tooling, no interactive session is required, and results can be validated and exported entirely from the command line.
+
+outputs are intended to be consumed by other tools for inspection, analysis, or refinement. this project focuses on occupying the narrow but important layer between **semantic design intent** and **concrete, portable geometry**, and on making that layer explicit, reproducible, and resistant to accidental drift.
+
+if you need rapid freeform sketching, interactive CAD is a better fit. if you need a small, auditable specification that can be generated, reviewed, validated, and rebuilt into trustworthy geometry, this tool is designed for that purpose.
 
 ## Quick start
 
@@ -25,7 +34,7 @@ python scripts/build_diagrams.py --spec diagrams/specs/deck-framing.yaml --optio
 
 ## Relationship schema highlights
 
-- Axis-map `relate` entries map subject axes (`+x`, `-x+y`, `cxcy`, `~x`, etc.) to targets with explicit `ref`/`pos`/`gap`/`offset`/`mode`. `flush` sugar expands to these entries; `place` embeds per-placement axis-maps. Frames (`world`/`local`/`component:<id>`) are honoured during solving with size-axis remapping and contextual warnings + per-frame summaries when frames are not axis-aligned; helper/assembly blocks are rejected in favour of explicit axis-maps.
+- Axis-map - an explicit axis-level constraint between components: `relate` entries map subject axes (`+x`, `-x+y`, `cxcy`, `~x`, etc.) to targets with explicit `ref`/`pos`/`gap`/`offset`/`mode`. `flush` sugar expands to these entries; `place` embeds per-placement axis-maps. Frames (`world`/`local`/`component:<id>`) are honoured during solving with size-axis remapping and contextual warnings + per-frame summaries when frames are not axis-aligned; helper/assembly blocks are rejected in favour of explicit axis-maps.
 - Datums (points/planes/bundles) resolve dimension expressions and can be referenced anywhere a `ref` is accepted.
 - Arrays use `array` (legacy alias: `run_between`) with axis-map `start`/`end` blocks; `orient: along_run` aligns +X to the span and interpolates sizes from start/end faces. Instances accept selectors (`id`, `id.original`, `id.clones`) in typed `operations` (rotate/mirror/translate/boolean); rotations remap numbered clones.
 - Components can be solids or geometry-less references (`kind: reference`). Missing sizes infer from relation pairs; conflicts lint. Checks reuse the same axis-map vocabulary, honour `tolerance` + `on_fail: warn|error|ignore`, and DOF reporting only warns when an axis remains unconstrained.
