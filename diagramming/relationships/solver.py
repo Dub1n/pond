@@ -939,6 +939,12 @@ class ConstraintSolver:
                 "span": span,
             }
 
+        constrained_axes = {
+            axis
+            for axis, info in axis_info.items()
+            if info["face_plus"] is not None or info["face_minus"] is not None or info["center"] is not None
+        }
+
         def _axis_anchor(axis: str) -> Tuple[Optional[float], int]:
             info = axis_info[axis]
             face_minus = info["face_minus"]
@@ -1011,6 +1017,9 @@ class ConstraintSolver:
         size_overrides: Dict[str, float] = {}
 
         for axis in ("x", "y", "z"):
+            if axis not in repeat_axes and axis not in constrained_axes:
+                axis_centers[axis] = [None]
+                continue
             info = axis_info[axis]
             anchor, sign = _axis_anchor(axis)
             repeat_spec = array.repeat.get(axis)
@@ -1144,7 +1153,14 @@ class ConstraintSolver:
                     valid = True
                     for axis, coord in constraints.items():
                         dir_axis = direction_components.get(axis, 0.0)
-                        origin_axis = origin.get(axis, 0.0)
+                        origin_axis = origin.get(axis)
+                        if origin_axis is None:
+                            diagnostics.add_error(
+                                f"component '{component.id}' array.through requires an anchor on {axis}",
+                                subject=plan.id,
+                            )
+                            valid = False
+                            break
                         if abs(dir_axis) < 1e-9:
                             if abs(origin_axis - coord) > 1e-6:
                                 valid = False
@@ -1169,9 +1185,16 @@ class ConstraintSolver:
         for x in xs:
             for y in ys:
                 for z in zs:
+                    axis_values: Dict[str, float] = {}
+                    if x is not None:
+                        axis_values["x"] = x
+                    if y is not None:
+                        axis_values["y"] = y
+                    if z is not None:
+                        axis_values["z"] = z
                     instances.append(
                         {
-                            "axis_values": {"x": x, "y": y, "z": z},
+                            "axis_values": axis_values,
                             "size_overrides": size_overrides,
                         }
                     )
