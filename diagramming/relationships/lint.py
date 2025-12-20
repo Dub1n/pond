@@ -3,13 +3,13 @@ from __future__ import annotations
 from typing import List, Set
 
 from .schema import (
+    ArraySpec,
     AxisRelation,
     BooleanOperation,
     MirrorOperation,
     RelationshipComponent,
     RelationshipDiagramSpec,
     RotateOperation,
-    RunBetweenSpec,
     TranslateOperation,
 )
 from .solver import ConstraintSolver
@@ -117,9 +117,9 @@ def _lint_component(
             context=f"component '{component.id}'",
         )
 
-    run_between = component.run_between
-    if run_between:
-        _lint_run_between(run_between, component, known_ids, datum_points, datum_planes, datum_bundles, errors)
+    array = component.array
+    if array:
+        _lint_array(array, component, known_ids, datum_points, datum_planes, datum_bundles, errors)
 
     for void in component.voids:
         if void not in known_ids:
@@ -156,14 +156,15 @@ def _axis_coverage(component: RelationshipComponent) -> Set[str]:
         for relation in placement.relations:
             for axis, _ in _axes_from_pos(relation.subject):
                 axes.add(axis)
-    run_between = component.run_between
-    if run_between:
-        for relation in run_between.start_relations:
+    array = component.array
+    if array:
+        for relation in array.relations:
             for axis, _ in _axes_from_pos(relation.subject):
                 axes.add(axis)
-        for relation in run_between.end_relations:
-            for axis, _ in _axes_from_pos(relation.subject):
-                axes.add(axis)
+        for through in array.through:
+            for relation in through.relations:
+                for axis, _ in _axes_from_pos(relation.subject):
+                    axes.add(axis)
     return axes
 
 
@@ -189,8 +190,8 @@ def _lint_axis_relation(
         errors.append(f"{context} mode 'edge' requires two-axis subject (got '{relation.subject}')")
 
 
-def _lint_run_between(
-    run_between: RunBetweenSpec,
+def _lint_array(
+    array: ArraySpec,
     component: RelationshipComponent,
     component_ids: Set[str],
     datum_points: Set[str],
@@ -198,14 +199,10 @@ def _lint_run_between(
     datum_bundles: Set[str],
     errors: List[str],
 ) -> None:
-    label = run_between.source or "array"
-    if not run_between.start_relations:
-        errors.append(f"component '{component.id}' {label} requires a start axis-map")
-    if (run_between.count and run_between.count > 1 or run_between.pitch) and not run_between.end_relations:
-        errors.append(f"component '{component.id}' {label} requires an end axis-map when using count/pitch")
-    if run_between.count is not None and run_between.count < 2:
-        errors.append(f"component '{component.id}' {label} count must be >= 2 (got {run_between.count})")
-    for relation in tuple(run_between.start_relations) + tuple(run_between.end_relations):
+    label = array.source or "array"
+    if not array.relations:
+        errors.append(f"component '{component.id}' {label} requires axis-map relations")
+    for relation in array.relations:
         _lint_axis_relation(
             relation,
             component_ids=component_ids,
@@ -215,8 +212,20 @@ def _lint_run_between(
             errors=errors,
             context=f"component '{component.id}' {label}",
         )
-    if run_between.orient not in {"preserve_axes", "along_run"}:
-        errors.append(f"component '{component.id}' {label} uses unsupported orient '{run_between.orient}'")
+    for through in array.through:
+        for relation in through.relations:
+            _lint_axis_relation(
+                relation,
+                component_ids=component_ids,
+                datum_points=datum_points,
+                datum_planes=datum_planes,
+                datum_bundles=datum_bundles,
+                errors=errors,
+                context=f"component '{component.id}' {label}.through",
+            )
+    for axis, spec in array.repeat.items():
+        if spec.count is not None and spec.count < 1:
+            errors.append(f"component '{component.id}' {label} repeat.{axis} count must be >= 1")
 
 
 def _lint_operation(operation: object, *, known_ids: Set[str], errors: List[str]) -> None:

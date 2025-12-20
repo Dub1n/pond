@@ -16,8 +16,8 @@ dimensions:
     joist_depth: 150
     beam_width: 47
     beam_height: 150
-    corner_diagonal_length_outer: 1768
-    corner_diagonal_length_inner: 481
+    corner_diagonal_length_outer: 1480.6816
+    corner_diagonal_length_inner: 414.3646
     corner_tie_spacing: 500
     decking_overhang: 90
   finishes:
@@ -183,23 +183,21 @@ components:
     material: timber
     label: "47x75mm Joist (outer) | backspan + 250mm cantilever"
     label_id: "J"
-    # X set by relate, Y/Z driven via run_between axis-map (faces, no manual inset needed)
+    # X set by relate, Y/Z driven via array axis-map (faces, no manual inset needed)
     relate:
       -x: { ref: outer_beam_west, pos: +x }
       +z: { ref: joist_top, pos: +z }
-    run_between:
-      start:
-        +y:
-          ref: opening_frame
-          pos: +y
-          offset: decking_overhang
-      end:
-        -y:
-          ref: opening_frame
-          pos: -y
-          offset: -decking_overhang
-      count: 2
-      include_seed: true
+    array:
+      -y:
+        ref: opening_frame
+        pos: +y
+        offset: decking_overhang
+      +y:
+        ref: opening_frame
+        pos: -y
+        offset: -decking_overhang
+      repeat:
+        y: { count: 2 }
     ifc:
       predefined_type: JOIST
 
@@ -215,39 +213,33 @@ components:
     relate:
       -x: { ref: outer_beam_west, pos: +x }
       +z: { ref: joist_top, pos: +z }
-    run_between:
-      start:
-        +y:
-          ref: opening_frame
-          pos: +y
-          offset: decking_overhang - (pond_span - 2 * cantilever_inner) / 6
-      end:
-        -y:
-          ref: opening_frame
-          pos: -y
-          offset: -decking_overhang + (pond_span - 2 * cantilever_inner) / 6
-      count: 5
-      include_seed: true
+    array:
+      -y:
+        ref: opening_frame
+        pos: +y
+        offset: decking_overhang - (pond_span - 2 * cantilever_inner) / 6
+      +y:
+        ref: opening_frame
+        pos: -y
+        offset: -decking_overhang + (pond_span - 2 * cantilever_inner) / 6
+      repeat:
+        y: { count: 5 }
     ifc:
       predefined_type: JOIST
 
-  - id: corner_diagonal_outer_nw
+  - id: corner_diagonal_deck_to_inner_nw
     class: IfcBeam
     size: [corner_diagonal_length_outer, joist_width, joist_depth]
     material: joist
-    label: "47x75mm Joist from deck corner to pond corner | 1768mm"
-    label_id: "C"
+    label: "47x75mm Joist from deck corner to inner beam corner | 1481mm"
+    label_id: "C1"
     relate:
       +z: { ref: joist_top, pos: +z }
-    run_between:
-      # Single-instance run_between uses start/end axis-map to land faces without inset
-      start:
-        -x+y: { ref: deck_frame, pos: -x+y }
-      end:
-        -x+y: { ref: opening_frame, pos: -x+y }
-      count: 1
-      include_seed: true
-      orient: along_run
+    array:
+      -x:  { ref: outer_beam_west, pos: +x }
+      +x: { ref: inner_beam_west, pos: -x }
+      -y: { ref: outer_beam_south, pos: +y }
+      +y: { ref: inner_beam_south, pos: -y }
     ifc:
       predefined_type: JOIST
 
@@ -301,22 +293,20 @@ components:
         offset: cantilever_inner
       +z: { ref: joist_top, pos: +z }
 
-  - id: corner_diagonal_inner_nw
+  - id: corner_diagonal_inner_to_opening_nw
     class: IfcBeam
     size: [corner_diagonal_length_inner, joist_width, joist_depth]
     material: joist
-    label: "47x75mm Joist across cantilever corner | 481mm"
-    label_id: "C"
+    label: "47x75mm Joist from inner beam corner to pond opening corner | 414mm"
+    label_id: "C2"
     relate:
       +z: { ref: joist_top, pos: +z }
-    run_between:
-      start:
-        -x+y: { ref: opening_frame, pos: -x+y }
-      end:
-        -x+y: { ref: overhang_tip_nw, pos: -x+y }
-      count: 1
-      include_seed: true
-      orient: along_run
+    array:
+      -x: { ref: inner_beam_west, pos: +x, mode: plane }
+      +x: { ref: opening_frame, pos: -x }
+      cy: { ref: inner_beam_south, pos: +y, mode: plane }
+      through:
+        - cy: { ref: opening_frame, pos: -y, mode: plane }
     ifc:
       predefined_type: JOIST
 
@@ -451,9 +441,9 @@ operations:
       - pad_outer_corner_nw
       - pad_run2_west
       - pad_run6_west
-      - corner_diagonal_outer_nw
+      - corner_diagonal_deck_to_inner_nw
       - overhang_tip_nw
-      - corner_diagonal_inner_nw
+      - corner_diagonal_inner_to_opening_nw
       - corner_diagonal_inner_span_check_nw
       - corner_tie_horizontal_nw
       - corner_tie_vertical_nw
@@ -470,9 +460,9 @@ operations:
       pad_outer_corner_nw: [pad_outer_corner_nw, pad_outer_corner_sw, pad_outer_corner_se, pad_outer_corner_ne]
       pad_run2_west: [pad_run2_west, pad_run2_south, pad_run2_east, pad_run2_north]
       pad_run6_west: [pad_run6_west, pad_run6_south, pad_run6_east, pad_run6_north]
-      corner_diagonal_outer_nw: [corner_diagonal_outer_nw, corner_diagonal_sw_outer, corner_diagonal_se_outer, corner_diagonal_ne_outer]
+      corner_diagonal_deck_to_inner_nw: [corner_diagonal_deck_to_inner_nw, corner_diagonal_sw_deck_to_inner, corner_diagonal_se_deck_to_inner, corner_diagonal_ne_deck_to_inner]
       overhang_tip_nw: [overhang_tip_nw, overhang_tip_sw, overhang_tip_se, overhang_tip_ne]
-      corner_diagonal_inner_nw: [corner_diagonal_inner_nw, corner_diagonal_inner_sw, corner_diagonal_inner_se, corner_diagonal_inner_ne]
+      corner_diagonal_inner_to_opening_nw: [corner_diagonal_inner_to_opening_nw, corner_diagonal_inner_to_opening_sw, corner_diagonal_inner_to_opening_se, corner_diagonal_inner_to_opening_ne]
       corner_diagonal_inner_span_check_nw: [corner_diagonal_inner_span_check_nw, corner_diagonal_inner_span_check_sw, corner_diagonal_inner_span_check_se, corner_diagonal_inner_span_check_ne]
       corner_tie_horizontal_nw: [corner_tie_horizontal_nw, corner_tie_horizontal_sw, corner_tie_horizontal_se, corner_tie_horizontal_ne]
       corner_tie_vertical_nw: [corner_tie_vertical_nw, corner_tie_vertical_sw, corner_tie_vertical_se, corner_tie_vertical_ne]

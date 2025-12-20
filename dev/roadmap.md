@@ -2,6 +2,10 @@
 
 ## Active / near-term
 
+- [!] Enable placements to reference rotated/mirrored clones (resolve axis-map refs to op outputs so specs can anchor to clone faces). Definition of done: `dev/reports/attachments/option-c.yaml` builds successfully when C2 start references `inner_beam_south` and `inner_beam_west` clone faces.
+- [x] Array rework: replace start/end run_between with axis-map `array` + `repeat`/`through` semantics (array space, per-axis repetition, through checks, overlap guards). Definition of done: schema/solver/lint/tests/docs updated; existing arrays migrated; new `docs/array.md` aligned.
+- [!] Add optional `orient` field on `relate` (e.g. `span`), and consider options for explicit vectors or `component_id` frames to define orientation basis.
+- [ ] Allow `frame: <component_id>` shorthand (reserve `world`/`local`; keep legacy `component:<id>` accepted during transition).
 - [x] Implement frame-aware placement (subject/object frames, frame on `flush`), preserving gaps and size inference when transforming frames.
 - [x] Enforce `mode: plane|edge|point`, honour `tolerance`/`on_fail`, and improve DOF reporting; add fail-on-warn paths for collisions/under/over-constraint. (Progress: lint enforces mode shapes; solver trims extra axes per mode, reports DOF, and fail-on-warn can promote under-constraint warnings; checks honour tolerance/on_fail.)
 - [x] Finalise selector/clone semantics (template vs placement IDs, id_map remapping, metadata/IFC propagation to clones); lint `base#n` and selectors consistently. (Progress: id_map length lint, selector warnings, clone metadata/IFC/material propagation. Remaining: ✅ enforce `base#n` validity, deterministic template/placement remap, IFC/void propagation to clones, selector/id_map fixtures.)
@@ -27,7 +31,7 @@
 - [x] Array guardrails: enforce `count >= 2`, deprecate legacy `run_between` name in lint/errors; keep 3D `orient: along_run`.
 - [ ] Checks/diagnostics depth: formalise warning/error surfacing for collisions and under/over-constraint; add DOF reporting. (Progress: DOF reporting in solver; tolerance/on_fail on checks; warnings emitted for remaining axes.)
 - [x] Frame projection diagnostics: add per-relation context (axis remap, frame, offsets), tolerance threshold for warnings, and optional per-frame summaries.
-- [x] Component-frame coverage: add fixtures/tests for `frame: component:<id>` placement and size-axis remapping.
+- [x] Component-frame coverage: add fixtures/tests for `frame: <component_id>` placement and size-axis remapping.
 - [ ] Clone-aware linting: accept `base#n` refs, validate cloned instance IDs/selectors consistently; fail unknown clone refs.
 - [ ] Selector hygiene: lint unknown selectors and id_map/count mismatches; warn when transforms run before array expansion if that risks nondeterminism.
 - [ ] Docs/tests gate: new helpers/ops must ship with regression tests covering axis-map + IFC output; gate docs accordingly.

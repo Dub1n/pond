@@ -16,10 +16,11 @@ from .schema import (
     AxisMapTarget,
     BooleanOperation,
     MirrorOperation,
+    Operation,
+    ArraySpec,
     RelationshipComponent,
     RelationshipDiagramSpec,
     RotateOperation,
-    RunBetweenSpec,
     TranslateOperation,
     canonical_pos_token,
 )
@@ -302,12 +303,18 @@ class SolveResult:
 
 
 @dataclass(slots=True)
+class OperationState:
+    operation: Operation
+    processed: set[str] = field(default_factory=set)
+
+
+@dataclass(slots=True)
 class InstancePlan:
     id: str
     template_id: str
     component: RelationshipComponent
     relations: Tuple[AxisRelation, ...]
-    run_between: Optional[RunBetweenSpec]
+    array: Optional[ArraySpec]
     origin: str = "original"
     seed_id: Optional[str] = None
 
@@ -435,8 +442,9 @@ class ConstraintSolver:
 
         plans = self._expand_components()
         pending = list(plans)
+        pending_ops = [OperationState(operation=operation) for operation in self.spec.operations]
 
-        while pending:
+        while pending or pending_ops:
             progressed = False
             for plan in list(pending):
                 if not self._can_resolve(plan, component_states):
@@ -445,15 +453,32 @@ class ConstraintSolver:
                 solved.extend(solved_instances)
                 pending.remove(plan)
                 progressed = True
+            if pending_ops:
+                op_state = pending_ops[0]
+                solved, applied, completed = self._apply_operation_state(
+                    op_state,
+                    solved,
+                    component_states,
+                    diagnostics,
+                    pending,
+                )
+                if applied or completed:
+                    progressed = True
+                if completed:
+                    pending_ops.pop(0)
             if not progressed:
                 for plan in pending:
                     diagnostics.add_error(
                         f"component '{plan.id}' could not resolve references for placement",
                         subject=plan.id,
                     )
+                if pending_ops:
+                    diagnostics.add_error(
+                        f"operation '{pending_ops[0].operation.type}' could not resolve references for targets",
+                        subject=pending_ops[0].operation.type,
+                    )
                 break
 
-        solved = self._apply_operations(solved, component_states, diagnostics)
         resolver = ReferenceResolver(component_states, self.datum_points, self.datum_planes, self.datum_bundles)
         self._evaluate_checks(resolver, diagnostics)
 
@@ -479,7 +504,7 @@ class ConstraintSolver:
                         template_id=component.id,
                         component=component,
                         relations=relations,
-                        run_between=component.run_between,
+                        array=component.array,
                         origin="original",
                         seed_id=component.id,
                     )
@@ -495,7 +520,7 @@ class ConstraintSolver:
                         template_id=component.id,
                         component=component,
                         relations=relations,
-                        run_between=component.run_between,
+                        array=component.array,
                         origin="original",
                         seed_id=placement.id,
                     )
@@ -507,10 +532,13 @@ class ConstraintSolver:
         refs: List[str] = []
         for relation in plan.relations:
             refs.append(relation.target.ref)
-        run_between = plan.run_between
-        if run_between:
-            for relation in tuple(run_between.start_relations) + tuple(run_between.end_relations):
+        array = plan.array
+        if array:
+            for relation in array.relations:
                 refs.append(relation.target.ref)
+            for through in array.through:
+                for relation in through.relations:
+                    refs.append(relation.target.ref)
         for ref in refs:
             if resolver.coords_for_ref(ref) is None and ref not in component_states:
                 return False
@@ -644,19 +672,17 @@ class ConstraintSolver:
         base_rotation: float,
         diagnostics: SolveDiagnostics,
     ) -> List[Dict[str, Any]]:
-        run_between = plan.run_between
-        if run_between is None:
+        array = plan.array
+        if array is None:
             return [
                 {"id": plan.id, "orientation": base_orientation, "preset_axes": {}, "origin": plan.origin},
             ]
-        positions = self._run_between_positions(plan, run_between, resolver, diagnostics)
+        positions = self._array_positions(plan, array, resolver, diagnostics)
         instances: List[Dict[str, Any]] = []
         for idx, pos in enumerate(positions):
             name = plan.id if idx == 0 else f"{plan.id}#{idx}"
-            origin_kind = "original" if idx == 0 and run_between.include_seed else "clone"
+            origin_kind = "original" if idx == 0 else "clone"
             orientation = base_orientation
-            if run_between.orient == "along_run":
-                orientation = _orientation_from_direction(pos.get("direction", (1.0, 0.0, 0.0)), twist_deg=base_rotation)
             instances.append(
                 {
                     "id": name,
@@ -861,178 +887,294 @@ class ConstraintSolver:
 
         return center, size_value, axis_dof
 
-    def _run_between_positions(
+    def _array_positions(
         self,
         plan: InstancePlan,
-        clause: RunBetweenSpec,
+        array: ArraySpec,
         resolver: ReferenceResolver,
         diagnostics: SolveDiagnostics,
     ) -> List[Dict[str, Any]]:
         component = plan.component
+        axis_states = {axis: AxisState() for axis in ("x", "y", "z")}
+        size_axis_map: Dict[str, str] = {"x": "x", "y": "y", "z": "z"}
 
-        def warn_frame(message: str) -> None:
-            if message in self._frame_warning_cache:
-                return
-            self._frame_warning_cache.add(message)
-            diagnostics.add_warning(message)
+        for relation in array.relations:
+            self._apply_axis_relation(
+                component,
+                axis_states,
+                relation,
+                resolver,
+                diagnostics,
+                instance_id=plan.id,
+                axis_size_map=size_axis_map,
+            )
 
-        def _resolved_axes(relations: Tuple[AxisRelation, ...], label: str) -> Tuple[Dict[str, float], Dict[str, float]]:
-            constrained: set[str] = set()
-            centers: Dict[str, float] = {}
-            sizes: Dict[str, float] = {}
+        repeat_axes = set(array.repeat.keys())
+        explicit_sizes: Dict[str, Optional[float]] = {}
+        for axis in ("x", "y", "z"):
+            size_axis = size_axis_map.get(axis, axis)
+            explicit_sizes[axis] = component.size[AXIS_ORDER[size_axis]]
 
-            axis_states = {axis: AxisState() for axis in ("x", "y", "z")}
-            size_axis_map: Dict[str, str] = {"x": "x", "y": "y", "z": "z"}
-            for relation in relations:
+        axis_info: Dict[str, Dict[str, Optional[float]]] = {}
+        for axis in ("x", "y", "z"):
+            state = axis_states[axis]
+            face_plus = state.faces.get(1)
+            face_minus = state.faces.get(-1)
+            center = state.center
+            span = None
+            if face_plus is not None and face_minus is not None:
+                span = abs(face_plus - face_minus)
+            elif axis not in repeat_axes:
+                if explicit_sizes[axis] is not None:
+                    span = explicit_sizes[axis]
+                elif center is not None:
+                    if face_plus is not None:
+                        span = abs((face_plus - center) * 2)
+                    elif face_minus is not None:
+                        span = abs((center - face_minus) * 2)
+            axis_info[axis] = {
+                "face_plus": face_plus,
+                "face_minus": face_minus,
+                "center": center,
+                "span": span,
+            }
+
+        def _axis_anchor(axis: str) -> Tuple[Optional[float], int]:
+            info = axis_info[axis]
+            face_minus = info["face_minus"]
+            face_plus = info["face_plus"]
+            if face_minus is not None:
+                return face_minus, 1
+            if face_plus is not None:
+                return face_plus, -1
+            return info["center"], 1
+
+        through_points: List[Dict[str, float]] = []
+        for through in array.through:
+            constraints: Dict[str, float] = {}
+            for relation in through.relations:
                 subject_axes = _axes_from_pos(relation.subject)
-                if relation.target.mode == "point" and len(subject_axes) > 1:
-                    target_axes = {axis: sign for axis, sign in _axes_from_pos(relation.target.pos)}
-                    for axis, subject_sign in subject_axes:
-                        world_axis, world_sign, alignment = resolver.world_axis_for(relation.target.frame, relation.target.ref, axis)
-                        if alignment < FRAME_ALIGNMENT_THRESHOLD:
-                            warn_message = (
-                                f"component '{component.id}' relation '{relation.subject}' using frame '{relation.target.frame}' on '{relation.target.ref}' "
-                                f"maps local {axis} to world {world_axis} (alignment {alignment:.3f}); gaps/offsets use projected axis"
-                            )
-                            warn_frame(warn_message)
-                            summary_key = (component.id, relation.target.frame, relation.target.ref)
-                            self._frame_summary.setdefault(summary_key, set()).add(f"{axis}->{world_axis} ({alignment:.3f})")
-                        target_sign = target_axes.get(axis, subject_sign)
-                        coord = resolver.axis_coordinate(
-                            relation.target.ref,
-                            axis,
-                            target_sign,
-                            frame=relation.target.frame,
-                            mapped_axis=world_axis,
-                            mapped_sign=world_sign,
+                target_axes = {axis: sign for axis, sign in _axes_from_pos(relation.target.pos)}
+                for axis, subject_sign in subject_axes:
+                    world_axis, world_sign, _ = resolver.world_axis_for(relation.target.frame, relation.target.ref, axis)
+                    target_sign = target_axes.get(axis, subject_sign)
+                    coord = resolver.axis_coordinate(
+                        relation.target.ref,
+                        axis,
+                        target_sign,
+                        frame=relation.target.frame,
+                        mapped_axis=world_axis,
+                        mapped_sign=world_sign,
+                    )
+                    if coord is None:
+                        diagnostics.add_error(
+                            f"component '{component.id}' array.through references unknown target '{relation.target.ref}'",
+                            subject=plan.id,
                         )
-                        if coord is None:
+                        continue
+                    offset_amount = self._axis_amount_for(axis, subject_sign, relation.target.offset)
+                    gap_amount = self._axis_amount_for(axis, subject_sign, relation.target.gap)
+                    gap_direction = subject_sign * world_sign if subject_sign != 0 else 0
+                    adjusted = coord + offset_amount * world_sign + gap_amount * gap_direction
+                    existing = constraints.get(world_axis)
+                    if existing is not None and abs(existing - adjusted) > 1e-6:
+                        diagnostics.add_error(
+                            f"component '{component.id}' array.through has conflicting constraints on {world_axis}",
+                            subject=plan.id,
+                        )
+                    constraints[world_axis] = adjusted
+            if constraints:
+                through_points.append(constraints)
+
+        direction_components: Dict[str, float] = {}
+        for axis in ("x", "y", "z"):
+            anchor, sign = _axis_anchor(axis)
+            span = axis_info[axis]["span"]
+            repeat_spec = array.repeat.get(axis)
+            component_length = 0.0
+            if axis in repeat_axes:
+                count = repeat_spec.count if repeat_spec else None
+                pitch = repeat_spec.pitch if repeat_spec else None
+                if span is not None:
+                    component_length = span * sign
+                elif count is not None and pitch is not None and count > 1:
+                    component_length = pitch * (count - 1) * sign
+            direction_components[axis] = component_length
+
+            if abs(direction_components[axis]) < 1e-6 and through_points and anchor is not None:
+                through_axis = through_points[0].get(axis)
+                if through_axis is not None:
+                    direction_components[axis] = through_axis - anchor
+
+        origin: Dict[str, float] = {}
+        axis_centers: Dict[str, List[float]] = {}
+        size_overrides: Dict[str, float] = {}
+
+        for axis in ("x", "y", "z"):
+            info = axis_info[axis]
+            anchor, sign = _axis_anchor(axis)
+            repeat_spec = array.repeat.get(axis)
+            size_value = explicit_sizes[axis]
+
+            if size_value is None and axis in repeat_axes:
+                count = repeat_spec.count if repeat_spec else None
+                if count is None or count > 1:
+                    diagnostics.add_error(
+                        f"component '{component.id}' array repeat requires explicit size on {axis}",
+                        subject=plan.id,
+                    )
+                    size_value = 0.0
+
+            if axis in repeat_axes:
+                count = repeat_spec.count if repeat_spec else None
+                pitch = repeat_spec.pitch if repeat_spec else None
+                span = info["span"]
+                if size_value is None and span is not None and count == 1:
+                    size_value = span
+
+                if size_value is None:
+                    size_value = 0.0
+
+                if pitch is not None and pitch < size_value:
+                    diagnostics.add_error(
+                        f"component '{component.id}' array repeat.{axis} pitch {pitch:.3f} overlaps size {size_value:.3f}",
+                        subject=plan.id,
+                    )
+                if count is None and pitch is not None:
+                    if span is None:
+                        diagnostics.add_error(
+                            f"component '{component.id}' array repeat.{axis} requires count when span is undefined",
+                            subject=plan.id,
+                        )
+                        count = 1
+                    else:
+                        available = span - size_value
+                        if available < 0:
                             diagnostics.add_error(
-                                f"component '{component.id}' relation references unknown target '{relation.target.ref}'",
-                                subject=component.id,
+                                f"component '{component.id}' array span on {axis} is smaller than size",
+                                subject=plan.id,
                             )
+                            available = 0.0
+                        count = int(available // pitch) + 1
+                        occupied = size_value + (count - 1) * pitch
+                        if abs(occupied - span) > 1e-6:
+                            diagnostics.add_warning(
+                                f"component '{component.id}' array repeat.{axis} does not align to span",
+                                subject=plan.id,
+                            )
+                if count is not None and pitch is None:
+                    if count <= 1:
+                        pitch = 0.0
+                    else:
+                        if span is None:
+                            diagnostics.add_error(
+                                f"component '{component.id}' array repeat.{axis} requires span for count without pitch",
+                                subject=plan.id,
+                            )
+                            pitch = 0.0
+                        else:
+                            available = span - size_value
+                            if available < 0:
+                                diagnostics.add_error(
+                                    f"component '{component.id}' array span on {axis} is smaller than size",
+                                    subject=plan.id,
+                                )
+                                available = 0.0
+                            pitch = available / max(count - 1, 1)
+                if count is None:
+                    count = 1
+                if pitch is None:
+                    pitch = 0.0
+
+                if span is not None and count > 1:
+                    occupied = size_value + (count - 1) * pitch
+                    if pitch and abs(occupied - span) > 1e-6:
+                        diagnostics.add_warning(
+                            f"component '{component.id}' array repeat.{axis} does not align to span",
+                            subject=plan.id,
+                        )
+                    if occupied - span > 1e-6:
+                        diagnostics.add_error(
+                            f"component '{component.id}' array repeat.{axis} exceeds span (occupied {occupied:.3f} vs span {span:.3f})",
+                            subject=plan.id,
+                        )
+
+                if anchor is None and info["center"] is None:
+                    diagnostics.add_error(
+                        f"component '{component.id}' array repeat.{axis} is missing an anchor",
+                        subject=plan.id,
+                    )
+                    anchor_center = 0.0
+                elif anchor is not None:
+                    anchor_center = anchor + sign * (size_value / 2)
+                else:
+                    anchor_center = info["center"] or 0.0
+
+                axis_centers[axis] = [anchor_center + sign * (pitch * i) for i in range(count)]
+                origin[axis] = axis_centers[axis][0] if axis_centers[axis] else anchor_center
+                size_overrides[axis] = size_value
+                continue
+
+            size_axis = size_axis_map.get(axis, axis)
+            center_value, size_value, _ = self._resolve_axis_state(
+                component,
+                axis,
+                axis_states[axis],
+                explicit_sizes[axis],
+                diagnostics,
+                allow_default_zero=component.kind == "reference",
+                instance_id=plan.id,
+                size_axis=size_axis,
+            )
+            axis_centers[axis] = [center_value]
+            origin[axis] = center_value
+            if explicit_sizes[axis] is None and size_value is not None:
+                size_overrides[axis] = size_value
+
+        if array.through:
+            direction = (direction_components["x"], direction_components["y"], direction_components["z"])
+            if abs(direction[0]) + abs(direction[1]) + abs(direction[2]) < 1e-9:
+                diagnostics.add_error(
+                    f"component '{component.id}' array.through requires a non-zero direction vector",
+                    subject=plan.id,
+                )
+            else:
+                for constraints in through_points:
+                    t_value: Optional[float] = None
+                    valid = True
+                    for axis, coord in constraints.items():
+                        dir_axis = direction_components.get(axis, 0.0)
+                        origin_axis = origin.get(axis, 0.0)
+                        if abs(dir_axis) < 1e-9:
+                            if abs(origin_axis - coord) > 1e-6:
+                                valid = False
+                                break
                             continue
-                        offset = self._axis_amount_for(axis, subject_sign, relation.target.offset)
-                        gap = self._axis_amount_for(axis, subject_sign, relation.target.gap)
-                        adjusted = coord + offset * world_sign + gap * (subject_sign * world_sign if subject_sign != 0 else 0)
-                        constrained.add(world_axis)
-                        current_axis = size_axis_map.get(world_axis)
-                        if current_axis is None or current_axis == world_axis:
-                            size_axis_map[world_axis] = axis
-                        centers[world_axis] = adjusted
-                    continue
+                        t_candidate = (coord - origin_axis) / dir_axis
+                        if t_value is None:
+                            t_value = t_candidate
+                        elif abs(t_candidate - t_value) > 1e-6:
+                            valid = False
+                            break
+                    if not valid:
+                        diagnostics.add_error(
+                            f"component '{component.id}' array.through does not intersect array direction",
+                            subject=plan.id,
+                        )
 
-                touched = self._apply_axis_relation(
-                    component,
-                    axis_states,
-                    relation,
-                    resolver,
-                    diagnostics,
-                    instance_id=label,
-                    axis_size_map=size_axis_map,
-                )
-                constrained.update(touched)
-
-            for axis in constrained:
-                if axis in centers:
-                    continue
-                size_axis = size_axis_map.get(axis, axis)
-                explicit = component.size[AXIS_ORDER[size_axis]]
-                center_value, size_value, _ = self._resolve_axis_state(
-                    component,
-                    axis,
-                    axis_states[axis],
-                    explicit,
-                    diagnostics,
-                    allow_default_zero=False,
-                    instance_id=label,
-                    size_axis=size_axis,
-                )
-                centers[axis] = center_value
-                sizes[axis] = size_value
-            return centers, sizes
-
-        start_centers, start_sizes = _resolved_axes(clause.start_relations, f"{plan.id}@start")
-        end_relations = clause.end_relations if clause.end_relations else clause.start_relations
-        end_centers, end_sizes = _resolved_axes(end_relations, f"{plan.id}@end")
-
-        axes_present = set(start_centers.keys()) | set(end_centers.keys())
-        if not axes_present:
-            axes_present = {"x", "y", "z"}
-
-        start_point = {axis: start_centers.get(axis, 0.0) for axis in ("x", "y", "z")}
-        end_point = {axis: end_centers.get(axis, start_point[axis]) for axis in ("x", "y", "z")}
-
-        direction = (
-            end_point["x"] - start_point["x"],
-            end_point["y"] - start_point["y"],
-            end_point["z"] - start_point["z"],
-        )
-        length = math.sqrt(direction[0] ** 2 + direction[1] ** 2 + direction[2] ** 2)
-        if length <= 1e-6:
-            diagnostics.add_error(
-                f"component '{plan.id}' {clause.source} has zero-length span",
-                subject=plan.id,
-            )
-            length = 1.0
-
-        unit = (direction[0] / length, direction[1] / length, direction[2] / length)
-        inset_start = clause.inset_start or 0.0
-        inset_end = clause.inset_end or 0.0
-        effective_length = max(length - inset_start - inset_end, 0.0)
-
-        positions: List[float] = []
-        count = clause.count
-        if count is not None and count < 2:
-            diagnostics.add_warning(
-                f"component '{plan.id}' {clause.source} count should be >= 2 (got {count})",
-                subject=plan.id,
-            )
-        if count == 1:
-            positions = [inset_start + effective_length / 2]
-            if not clause.include_seed:
-                positions = []
-        elif count:
-            total = max(count, 1)
-            step = effective_length / max(total - 1, 1)
-            positions = [inset_start + step * i for i in range(total)]
-            if not clause.include_seed and positions:
-                positions = positions[1:]
-        elif clause.pitch:
-            step = clause.pitch
-            current = 0.0
-            idx = 0
-            while current <= effective_length + 1e-6:
-                if clause.include_seed or idx > 0:
-                    positions.append(inset_start + current)
-                elif clause.include_seed is False and idx == 0 and step > 0:
-                    pass
-                current += step or effective_length or 1.0
-                idx += 1
-        else:
-            positions = [inset_start, length - inset_end]
-            if not clause.include_seed and positions:
-                positions = positions[1:]
-
+        xs = axis_centers["x"]
+        ys = axis_centers["y"]
+        zs = axis_centers["z"]
         instances: List[Dict[str, Any]] = []
-        axis_order = {"x": 0, "y": 1, "z": 2}
-        for offset in positions:
-            axis_values = {}
-            size_overrides: Dict[str, float] = {}
-            fraction = min(max(offset / length, 0.0), 1.0) if length > 1e-6 else 0.0
-            for axis in axes_present:
-                axis_values[axis] = start_point.get(axis, 0.0) + unit[axis_order[axis]] * offset
-                start_size = start_sizes.get(axis)
-                end_size = end_sizes.get(axis, start_size)
-                if start_size is not None and end_size is not None:
-                    size_overrides[axis] = start_size + (end_size - start_size) * fraction
-            instances.append(
-                {
-                    "axis_values": axis_values,
-                    "direction": direction,
-                    "size_overrides": size_overrides,
-                }
-            )
+        for x in xs:
+            for y in ys:
+                for z in zs:
+                    instances.append(
+                        {
+                            "axis_values": {"x": x, "y": y, "z": z},
+                            "size_overrides": size_overrides,
+                        }
+                    )
         return instances
 
     # ------------------------------------------------------------------ #
@@ -1110,16 +1252,146 @@ class ConstraintSolver:
             return solved
         result = list(solved)
         for operation in self.spec.operations:
-            index = self._selector_index(result)
-            if isinstance(operation, RotateOperation):
-                result.extend(self._rotate(operation, result, component_states, diagnostics, index))
-            elif isinstance(operation, MirrorOperation):
-                result.extend(self._mirror(operation, result, component_states, diagnostics, index))
-            elif isinstance(operation, TranslateOperation):
-                result.extend(self._translate(operation, result, component_states, diagnostics, index))
-            elif isinstance(operation, BooleanOperation):
-                self._apply_boolean(operation, result, diagnostics, index)
+            result = self._apply_operation(operation, result, component_states, diagnostics)
         return result
+
+    def _apply_operation(
+        self,
+        operation: Operation,
+        solved: List[SolvedComponent],
+        component_states: Dict[str, ComponentState],
+        diagnostics: SolveDiagnostics,
+    ) -> List[SolvedComponent]:
+        result = list(solved)
+        index = self._selector_index(result)
+        if isinstance(operation, RotateOperation):
+            result.extend(self._rotate(operation, result, component_states, diagnostics, index))
+        elif isinstance(operation, MirrorOperation):
+            result.extend(self._mirror(operation, result, component_states, diagnostics, index))
+        elif isinstance(operation, TranslateOperation):
+            result.extend(self._translate(operation, result, component_states, diagnostics, index))
+        elif isinstance(operation, BooleanOperation):
+            self._apply_boolean(operation, result, diagnostics, index)
+        return result
+
+    def _apply_operation_state(
+        self,
+        op_state: OperationState,
+        solved: List[SolvedComponent],
+        component_states: Dict[str, ComponentState],
+        diagnostics: SolveDiagnostics,
+        pending: Sequence[InstancePlan],
+    ) -> Tuple[List[SolvedComponent], bool, bool]:
+        operation = op_state.operation
+        if isinstance(operation, BooleanOperation):
+            return self._apply_boolean_state(operation, solved, diagnostics, pending)
+        if isinstance(operation, (RotateOperation, MirrorOperation, TranslateOperation)):
+            return self._apply_clone_operation_state(
+                operation,
+                op_state,
+                solved,
+                component_states,
+                diagnostics,
+                pending,
+            )
+        return solved, False, True
+
+    def _apply_clone_operation_state(
+        self,
+        operation: RotateOperation | MirrorOperation | TranslateOperation,
+        op_state: OperationState,
+        solved: List[SolvedComponent],
+        component_states: Dict[str, ComponentState],
+        diagnostics: SolveDiagnostics,
+        pending: Sequence[InstancePlan],
+    ) -> Tuple[List[SolvedComponent], bool, bool]:
+        if isinstance(operation, RotateOperation) and self._reference_coordinates(operation.about, component_states) is None:
+            return solved, False, False
+        if not operation.targets:
+            if pending:
+                return solved, False, False
+            return self._apply_full_clone_operation(operation, solved, component_states, diagnostics)
+        index = self._selector_index(solved)
+        selected_ids: List[str] = []
+        for selector in operation.targets:
+            selected_ids.extend(self._resolve_selector(selector, index))
+        if not selected_ids:
+            if self._selectors_pending(operation.targets, pending):
+                return solved, False, False
+            diagnostics.add_error(f"{operation.type} operation matched no components for targets {operation.targets}")
+            return solved, False, True
+        unprocessed = [instance_id for instance_id in selected_ids if instance_id not in op_state.processed]
+        if not unprocessed:
+            if self._selectors_pending(operation.targets, pending):
+                return solved, False, False
+            return solved, False, True
+        if isinstance(operation, RotateOperation):
+            created = self._rotate(operation, solved, component_states, diagnostics, index, selected_ids=unprocessed)
+        elif isinstance(operation, MirrorOperation):
+            created = self._mirror(operation, solved, component_states, diagnostics, index, selected_ids=unprocessed)
+        else:
+            created = self._translate(operation, solved, component_states, diagnostics, index, selected_ids=unprocessed)
+        op_state.processed.update(unprocessed)
+        op_state.processed.update(item.instance_id for item in created)
+        return solved + created, bool(unprocessed), False
+
+    def _apply_full_clone_operation(
+        self,
+        operation: RotateOperation | MirrorOperation | TranslateOperation,
+        solved: List[SolvedComponent],
+        component_states: Dict[str, ComponentState],
+        diagnostics: SolveDiagnostics,
+    ) -> Tuple[List[SolvedComponent], bool, bool]:
+        result = self._apply_operation(operation, solved, component_states, diagnostics)
+        return result, result != solved, True
+
+    def _apply_boolean_state(
+        self,
+        operation: BooleanOperation,
+        solved: List[SolvedComponent],
+        diagnostics: SolveDiagnostics,
+        pending: Sequence[InstancePlan],
+    ) -> Tuple[List[SolvedComponent], bool, bool]:
+        index = self._selector_index(solved)
+        target_ids = self._resolve_selector(operation.target, index)
+        if not target_ids:
+            if self._selectors_pending((operation.target,), pending):
+                return solved, False, False
+            diagnostics.add_error(f"boolean target '{operation.target}' matched no components")
+            return solved, False, True
+        subtract_ids: List[str] = []
+        for selector in operation.subtract:
+            subtract_ids.extend(self._resolve_selector(selector, index))
+        if not subtract_ids:
+            if self._selectors_pending(operation.subtract, pending):
+                return solved, False, False
+            diagnostics.add_error(
+                f"boolean subtract list {operation.subtract} matched no components for target '{operation.target}'"
+            )
+            return solved, False, True
+        self._apply_boolean(operation, solved, diagnostics, index)
+        return solved, True, True
+
+    def _selectors_pending(self, selectors: Sequence[str], pending: Sequence[InstancePlan]) -> bool:
+        pending_ids = self._pending_selector_ids(pending)
+        for selector in selectors:
+            if self._selector_waits_on_pending(selector, pending_ids):
+                return True
+        return False
+
+    def _pending_selector_ids(self, pending: Sequence[InstancePlan]) -> set[str]:
+        pending_ids: set[str] = set()
+        for plan in pending:
+            pending_ids.add(plan.id)
+            pending_ids.add(plan.template_id)
+        return pending_ids
+
+    def _selector_waits_on_pending(self, selector: str, pending_ids: set[str]) -> bool:
+        base = selector
+        if selector.endswith(".original") or selector.endswith(".clones"):
+            base = selector.rsplit(".", 1)[0]
+        base = base.split("#", 1)[0]
+        return base in pending_ids
 
     def _rotate(
         self,
@@ -1128,12 +1400,16 @@ class ConstraintSolver:
         component_states: Dict[str, ComponentState],
         diagnostics: SolveDiagnostics,
         index: Dict[str, Dict[str, set[str]]],
+        *,
+        selected_ids: Optional[Sequence[str]] = None,
     ) -> List[SolvedComponent]:
         created: List[SolvedComponent] = []
-        targets = op.targets or list(index.keys())
-        selected_ids: List[str] = []
-        for selector in targets:
-            selected_ids.extend(self._resolve_selector(selector, index))
+        if selected_ids is None:
+            targets = op.targets or list(index.keys())
+            selected_ids_list: List[str] = []
+            for selector in targets:
+                selected_ids_list.extend(self._resolve_selector(selector, index))
+            selected_ids = selected_ids_list
         if not selected_ids:
             diagnostics.add_error(f"rotate operation matched no components for targets {op.targets}")
             return created
@@ -1208,12 +1484,16 @@ class ConstraintSolver:
         component_states: Dict[str, ComponentState],
         diagnostics: SolveDiagnostics,
         index: Dict[str, Dict[str, set[str]]],
+        *,
+        selected_ids: Optional[Sequence[str]] = None,
     ) -> List[SolvedComponent]:
         created: List[SolvedComponent] = []
-        selected_ids: List[str] = []
-        targets = op.targets or list(index.keys())
-        for selector in targets:
-            selected_ids.extend(self._resolve_selector(selector, index))
+        if selected_ids is None:
+            selected_ids_list: List[str] = []
+            targets = op.targets or list(index.keys())
+            for selector in targets:
+                selected_ids_list.extend(self._resolve_selector(selector, index))
+            selected_ids = selected_ids_list
         if not selected_ids:
             diagnostics.add_error(f"mirror operation matched no components for targets {op.targets}")
             return created
@@ -1274,12 +1554,16 @@ class ConstraintSolver:
         component_states: Dict[str, ComponentState],
         diagnostics: SolveDiagnostics,
         index: Dict[str, Dict[str, set[str]]],
+        *,
+        selected_ids: Optional[Sequence[str]] = None,
     ) -> List[SolvedComponent]:
         created: List[SolvedComponent] = []
-        selected_ids: List[str] = []
-        targets = op.targets or list(index.keys())
-        for selector in targets:
-            selected_ids.extend(self._resolve_selector(selector, index))
+        if selected_ids is None:
+            selected_ids_list: List[str] = []
+            targets = op.targets or list(index.keys())
+            for selector in targets:
+                selected_ids_list.extend(self._resolve_selector(selector, index))
+            selected_ids = selected_ids_list
         if not selected_ids:
             diagnostics.add_error(f"translate operation matched no components for targets {op.targets}")
             return created

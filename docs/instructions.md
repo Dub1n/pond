@@ -16,7 +16,7 @@ Use this as a quick-reference when editing relationship-first specs (schema `pon
 
 ## Axis-Map Relate (core shape)
 
-Frames (`frame: world|local|component:<id>`) are honoured during placement; axis-map and `flush` relations follow the chosen frame while keeping gaps/offsets and size inference intact. Non-axis-aligned frames emit contextual warnings and a per-frame summary showing how local axes were projected.
+Frames (`frame: world|local|<component_id>`, with `world`/`local` reserved) are honoured during placement; axis-map and `flush` relations follow the chosen frame while keeping gaps/offsets and size inference intact. Non-axis-aligned frames emit contextual warnings and a per-frame summary showing how local axes were projected.
 
 Each entry maps subject axes to a target:
 
@@ -28,7 +28,7 @@ relate:
     gap: 10                 # scalar or per-axis map (e.g., {+x: 5})
     offset: {cy: -50}       # scalar or per-axis map; center tokens allowed
     mode: plane             # plane|edge|point (default point)
-    frame: world            # world|local|component:<id>
+    frame: world            # world|local|<component_id>
 ```
 
 Tips:
@@ -49,23 +49,21 @@ place:
     +z: { ref: pad_top, pos: +z }
 ```
 
-- `array` (alias `run_between`) lays out arrays along a span using axis-map `start`/`end` (same shape as `relate`; single axis is fine):
+- `array` (alias `run_between`) lays out arrays using an axis-map for the array space and a `repeat` block for per-axis repetition:
 
 ```yaml
 array:
-  start:
-    +y: { ref: frame, pos: +y }
-  end:
-    -y: { ref: frame, pos: -y }
-  count: 7
-  include_seed: true
-  orient: along_run
+  -y: { ref: frame, pos: +y }
+  +y: { ref: frame, pos: -y }
+  repeat:
+    y: { count: 7 }
 ```
 
-- Axes only present on one side apply to all clones; missing axes fall back to the component’s `relate`. When start/end provide face pairs, sizes are inferred and interpolated along the span, so no manual insets are needed to land faces on references.
-- Arrays expect `count >= 2`; count=1 yields a lint error and solver warning—use a plain placement when you only need a single instance.
-- Use `frame: component:<id>` when you need a relation to borrow another component’s orientation instead of the target’s local axes.
-- For corner-to-corner spans (e.g. diagonals), multi-axis keys like `-x+y` in `array.start/end` are treated as point anchors when `mode: point` (the default), so the span is based on the actual corner point rather than drifting due to face/size assumptions.
+- The axis-map defines the array space; `repeat` defines how many instances along each axis. Without `repeat`, an array is a single instance and behaves like a placement constraint.
+- Axes not listed in `repeat` must match the span implied by the array axis-map (or infer from it if size is null). Axes in `repeat` are excluded from size-vs-span checks.
+- Use `through` blocks inside `array` for direction checks; they do not infer size.
+- Use `frame: <component_id>` when you need a relation to borrow another component’s orientation instead of the target’s local axes. Component ids cannot be `world` or `local`.
+- For corner-to-corner spans (e.g. diagonals), multi-axis keys like `-x+y` in `array` are treated as point anchors when `mode: point` (the default), so the span is based on the actual corner point rather than drifting due to face/size assumptions.
 - You can reference run instances directly (e.g. `joist_run_west#1`) anywhere a `ref` is accepted.
 
 ## Operations & Selectors

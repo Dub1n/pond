@@ -163,12 +163,10 @@ class RelationshipValidationTests(unittest.TestCase):
                   cy: { ref: origin }
                   cz: { ref: origin }
                 array:
-                  start:
-                    +y: { ref: origin, offset: -600 }
-                  end:
-                    +y: { ref: origin, offset: 600 }
-                  count: 3
-                  include_seed: true
+                  -y: { ref: origin, offset: -600 }
+                  +y: { ref: origin, offset: 600 }
+                  repeat:
+                    y: { count: 3 }
                 ifc:
                   predefined_type: BEAM
             """

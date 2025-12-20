@@ -153,13 +153,10 @@ class RelationshipSolverTests(unittest.TestCase):
                   cy: { ref: origin }
                   cz: { ref: origin }
                 array:
-                  start:
-                    +x: { ref: start, pos: +x }
-                  end:
-                    +x: { ref: end, pos: +x }
-                  count: 2
-                  include_seed: true
-                  orient: along_run
+                  -x: { ref: start, pos: +x }
+                  +x: { ref: end, pos: +x }
+                  repeat:
+                    x: { count: 2 }
                 ifc:
                   predefined_type: BEAM
             """
@@ -173,7 +170,7 @@ class RelationshipSolverTests(unittest.TestCase):
         runners = [comp for comp in result.components if comp.component.id == "runner"]
         xs = sorted([comp.transform.position[0] for comp in runners])
         self.assertEqual(len(runners), 2)
-        self.assertAlmostEqual(xs[0], -50.0)
+        self.assertAlmostEqual(xs[0], 50.0)
         self.assertAlmostEqual(xs[1], 950.0)
         for comp in runners:
             self.assertAlmostEqual(comp.transform.rotation[2], 0.0)
@@ -215,12 +212,12 @@ class RelationshipSolverTests(unittest.TestCase):
         self.assertAlmostEqual(beam.transform.position[0], -550.0)
         self.assertAlmostEqual(beam.primitive.size[0], 100.0)
 
-    def test_array_orients_to_span_direction(self) -> None:
+    def test_array_through_checks_direction(self) -> None:
         spec_text = dedent(
             """
             schema: pond-relationship-test
             info:
-              option: run-between-direction
+              option: array-through
             components:
               - id: origin
                 kind: reference
@@ -242,13 +239,12 @@ class RelationshipSolverTests(unittest.TestCase):
                   cx: { ref: origin }
                   cz: { ref: origin }
                 array:
-                  start:
-                    +y: { ref: start, pos: +y }
-                  end:
-                    +y: { ref: end, pos: +y }
-                  count: 1
-                  include_seed: true
-                  orient: along_run
+                  -y: { ref: start, pos: +y }
+                  +y: { ref: end, pos: +y }
+                  through:
+                    - cy: { ref: origin, pos: cy, mode: plane }
+                  repeat:
+                    y: { count: 1 }
                 ifc:
                   predefined_type: BEAM
             """
@@ -259,11 +255,9 @@ class RelationshipSolverTests(unittest.TestCase):
             spec = load_relationship_spec(path)
         solver = ConstraintSolver(spec)
         result = solver.solve()
+        self.assertEqual(result.diagnostics.errors, [])
         runner = next(comp for comp in result.components if comp.component.id == "runner")
-        orient_x = runner.transform.orientation[0]
-        self.assertAlmostEqual(orient_x[0], 0.0, places=6)
-        self.assertAlmostEqual(orient_x[1], 1.0, places=6)
-        self.assertAlmostEqual(runner.transform.position[1], 475.0)
+        self.assertAlmostEqual(runner.transform.position[1], 25.0)
 
     def test_array_multi_axis_point_anchors_center_on_span_midpoint(self) -> None:
         spec_text = dedent(
@@ -286,13 +280,8 @@ class RelationshipSolverTests(unittest.TestCase):
                 relate:
                   cz: { ref: origin }
                 array:
-                  start:
-                    -x+y: { ref: frame, pos: -x+y }
-                  end:
-                    +x-y: { ref: frame, pos: +x-y }
-                  count: 1
-                  include_seed: true
-                  orient: along_run
+                  -x+y: { ref: frame, pos: -x+y, mode: point }
+                  +x-y: { ref: frame, pos: +x-y, mode: point }
                 ifc:
                   predefined_type: BEAM
             """
@@ -306,9 +295,6 @@ class RelationshipSolverTests(unittest.TestCase):
         runner = next(comp for comp in result.components if comp.component.id == "runner")
         self.assertAlmostEqual(runner.transform.position[0], 0.0, places=6)
         self.assertAlmostEqual(runner.transform.position[1], 0.0, places=6)
-        orient_x = runner.transform.orientation[0]
-        self.assertAlmostEqual(orient_x[0], 0.7071067811865476, places=6)
-        self.assertAlmostEqual(orient_x[1], -0.7071067811865476, places=6)
 
     def test_frame_local_rotates_axes_between_world_directions(self) -> None:
         spec_text = dedent(
@@ -459,15 +445,8 @@ class RelationshipSolverTests(unittest.TestCase):
                   cy: { ref: origin }
                   cz: { ref: origin }
                 array:
-                  start:
-                    -x: { ref: start, pos: +x }
-                    +x: { ref: start, pos: +x, offset: 200 }
-                  end:
-                    -x: { ref: end, pos: +x }
-                    +x: { ref: end, pos: +x, offset: 200 }
-                  count: 2
-                  include_seed: true
-                  orient: along_run
+                  -x: { ref: start, pos: +x }
+                  +x: { ref: start, pos: +x, offset: 200 }
                 ifc:
                   predefined_type: BEAM
             """
@@ -478,14 +457,9 @@ class RelationshipSolverTests(unittest.TestCase):
             spec = load_relationship_spec(path)
         solver = ConstraintSolver(spec)
         result = solver.solve()
-        runners = [comp for comp in result.components if comp.component.id == "runner"]
-        xs = sorted([comp.transform.position[0] for comp in runners])
-        sizes = sorted([comp.primitive.size[0] for comp in runners])
-        self.assertEqual(len(runners), 2)
-        self.assertAlmostEqual(xs[0], 100.0)
-        self.assertAlmostEqual(xs[1], 1100.0)
-        self.assertAlmostEqual(sizes[0], 200.0)
-        self.assertAlmostEqual(sizes[1], 200.0)
+        runner = next(comp for comp in result.components if comp.component.id == "runner")
+        self.assertAlmostEqual(runner.transform.position[0], 100.0)
+        self.assertAlmostEqual(runner.primitive.size[0], 200.0)
 
     def test_run_between_alias_is_preserved(self) -> None:
         spec_text = dedent(
@@ -514,13 +488,10 @@ class RelationshipSolverTests(unittest.TestCase):
                   cy: { ref: origin }
                   cz: { ref: origin }
                 run_between:
-                  start:
-                    +x: { ref: start, pos: +x }
-                  end:
-                    +x: { ref: end, pos: +x }
-                  count: 2
-                  include_seed: true
-                  orient: along_run
+                  -x: { ref: start, pos: +x }
+                  +x: { ref: end, pos: +x }
+                  repeat:
+                    x: { count: 2 }
                 ifc:
                   predefined_type: BEAM
             """
@@ -534,7 +505,7 @@ class RelationshipSolverTests(unittest.TestCase):
         runners = [comp for comp in result.components if comp.component.id == "runner"]
         self.assertEqual(len(runners), 2)
 
-    def test_array_count_guardrail_warns_on_single_span(self) -> None:
+    def test_array_repeat_pitch_warns_on_span_mismatch(self) -> None:
         spec_text = dedent(
             """
             schema: pond-relationship-test
@@ -561,13 +532,10 @@ class RelationshipSolverTests(unittest.TestCase):
                   cy: { ref: origin }
                   cz: { ref: origin }
                 array:
-                  start:
-                    +x: { ref: start, pos: +x }
-                  end:
-                    +x: { ref: end, pos: +x }
-                  count: 1
-                  include_seed: true
-                  orient: along_run
+                  -x: { ref: start, pos: +x }
+                  +x: { ref: end, pos: +x }
+                  repeat:
+                    x: { count: 3, pitch: 60 }
                 ifc:
                   predefined_type: BEAM
             """
@@ -580,8 +548,8 @@ class RelationshipSolverTests(unittest.TestCase):
         result = solver.solve()
         runners = [comp for comp in result.components if comp.component.id == "runner"]
         warning_texts = [warning.message for warning in result.diagnostics.warnings]
-        self.assertEqual(len(runners), 1)
-        self.assertTrue(any("count should be >= 2" in msg for msg in warning_texts))
+        self.assertEqual(len(runners), 3)
+        self.assertTrue(any("does not align to span" in msg for msg in warning_texts))
 
     def test_rotate_clones_preserve_ifc_metadata(self) -> None:
         spec_text = dedent(
@@ -618,6 +586,55 @@ class RelationshipSolverTests(unittest.TestCase):
         self.assertEqual(clone.primitive.material, "timber")
         self.assertEqual(clone.primitive.metadata.get("material"), "timber")
         self.assertEqual(clone.primitive.ifc.get("predefined_type"), "BEAM")
+
+    def test_placements_can_reference_rotated_clones(self) -> None:
+        spec_text = dedent(
+            """
+            schema: pond-relationship-test
+            info:
+              option: op-placement
+            components:
+              - id: origin
+                kind: reference
+                size: [0, 0, 0]
+              - id: beam
+                class: IfcBeam
+                size: [100, 10, 10]
+                relate:
+                  cx: { ref: origin, offset: 50 }
+                  cy: { ref: origin }
+                  cz: { ref: origin }
+                ifc:
+                  predefined_type: BEAM
+              - id: brace
+                class: IfcBeam
+                size: [20, 10, 10]
+                relate:
+                  cy: { ref: origin }
+                  cz: { ref: origin, offset: 20 }
+                place:
+                  - id: brace_a
+                    cx: { ref: beam_south, pos: cx }
+                ifc:
+                  predefined_type: BEAM
+            operations:
+              - type: rotate
+                about: { ref: origin, axis: +z }
+                count: 2
+                include_seed: true
+                id_map:
+                  beam: [beam, beam_south]
+            """
+        )
+        with TemporaryDirectory() as tmp:
+            path = Path(tmp) / "op-placement.yaml"
+            path.write_text(spec_text, encoding="utf-8")
+            spec = load_relationship_spec(path)
+        solver = ConstraintSolver(spec)
+        result = solver.solve()
+        self.assertEqual(result.diagnostics.errors, [])
+        brace = next(comp for comp in result.components if comp.instance_id == "brace_a")
+        self.assertAlmostEqual(brace.transform.position[0], -50.0)
 
     def test_footing_collisions_are_ignored(self) -> None:
         spec_text = dedent(

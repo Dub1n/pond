@@ -420,6 +420,25 @@ class RunBetweenSpec:
 
 
 @dataclass(slots=True)
+class RepeatAxisSpec:
+    count: Optional[int] = None
+    pitch: Optional[float] = None
+
+
+@dataclass(slots=True)
+class ThroughSpec:
+    relations: Tuple[AxisRelation, ...]
+
+
+@dataclass(slots=True)
+class ArraySpec:
+    relations: Tuple[AxisRelation, ...]
+    through: Tuple[ThroughSpec, ...] = ()
+    repeat: Dict[str, RepeatAxisSpec] = field(default_factory=dict)
+    source: str = "array"
+
+
+@dataclass(slots=True)
 class IfcPset:
     name: str
     props: Dict[str, Any]
@@ -456,7 +475,7 @@ class RelationshipComponent:
     material: Optional[str] = None
     metadata: Dict[str, Any] = field(default_factory=dict)
     relations: Tuple[AxisRelation, ...] = ()
-    run_between: Optional[RunBetweenSpec] = None
+    array: Optional[ArraySpec] = None
     place: Tuple[Placement, ...] = ()
     ifc: Optional[IfcMetadata] = None
     voids: Tuple[str, ...] = ()
@@ -760,7 +779,7 @@ def _parse_component(data: Mapping[str, Any], dimensions: DimensionResolver) -> 
     run_between_raw = data.get("run_between")
     if array_raw is not None and run_between_raw is not None:
         raise SchemaError(f"component '{comp_id}' cannot specify both array and run_between")
-    run_between = _parse_run_between(array_raw, dimensions, source="array") if array_raw is not None else _parse_run_between(run_between_raw, dimensions)
+    array = _parse_array(array_raw, dimensions, source="array") if array_raw is not None else _parse_array(run_between_raw, dimensions, source="run_between")
     place = tuple(_parse_place(data.get("place", ()), dimensions))
     description = str(data["description"]) if "description" in data else None
     material = str(data["material"]) if data.get("material") is not None else None
@@ -775,7 +794,7 @@ def _parse_component(data: Mapping[str, Any], dimensions: DimensionResolver) -> 
         material=material,
         metadata=metadata,
         relations=relations,
-        run_between=run_between,
+        array=array,
         place=place,
         ifc=ifc_block,
         voids=tuple(voids),
@@ -904,39 +923,66 @@ def _parse_flush(payload: Any, dimensions: DimensionResolver) -> List[AxisRelati
     return relations
 
 
-def _parse_run_between(payload: Any, dimensions: DimensionResolver, *, source: str = "run_between") -> Optional[RunBetweenSpec]:
+def _parse_repeat(payload: Any, dimensions: DimensionResolver) -> Dict[str, RepeatAxisSpec]:
+    if payload is None:
+        return {}
+    if not isinstance(payload, Mapping):
+        raise SchemaError("array.repeat must be a mapping when provided")
+    repeat: Dict[str, RepeatAxisSpec] = {}
+    for axis, entry in payload.items():
+        axis_name = str(axis).lower()
+        if axis_name not in {"x", "y", "z"}:
+            raise SchemaError(f"array.repeat axis '{axis}' is not supported")
+        if not isinstance(entry, Mapping):
+            raise SchemaError(f"array.repeat.{axis} must be a mapping")
+        count_raw = entry.get("count")
+        pitch_raw = entry.get("pitch")
+        count = int(count_raw) if count_raw is not None else None
+        pitch = _resolve_optional_number(pitch_raw, dimensions)
+        if count is None and pitch is None:
+            raise SchemaError(f"array.repeat.{axis} must include count or pitch")
+        repeat[axis_name] = RepeatAxisSpec(count=count, pitch=pitch)
+    return repeat
+
+
+def _parse_through(payload: Any, dimensions: DimensionResolver) -> Tuple[ThroughSpec, ...]:
+    if payload is None:
+        return tuple()
+    blocks: List[Mapping[str, Any]] = []
+    if isinstance(payload, Mapping):
+        blocks.append(payload)
+    elif isinstance(payload, Sequence) and not isinstance(payload, (str, bytes)):
+        for entry in payload:
+            if not isinstance(entry, Mapping):
+                raise SchemaError("array.through entries must be mappings")
+            blocks.append(entry)
+    else:
+        raise SchemaError("array.through must be a mapping or list of mappings")
+    through: List[ThroughSpec] = []
+    for block in blocks:
+        relations = tuple(_parse_axis_map(block, dimensions))
+        if not relations:
+            raise SchemaError("array.through entries must include axis-map relations")
+        through.append(ThroughSpec(relations=relations))
+    return tuple(through)
+
+
+def _parse_array(payload: Any, dimensions: DimensionResolver, *, source: str = "array") -> Optional[ArraySpec]:
     if payload is None:
         return None
     if not isinstance(payload, Mapping):
         raise SchemaError(f"{source} must be a mapping")
-    start_raw = payload.get("start")
-    end_raw = payload.get("end")
-    if start_raw is None:
-        raise SchemaError(f"{source} requires a start axis-map")
-    if not isinstance(start_raw, Mapping):
-        raise SchemaError(f"{source}.start must be a mapping")
-    if end_raw is not None and not isinstance(end_raw, Mapping):
-        raise SchemaError(f"{source}.end must be a mapping when provided")
-    orient = str(payload.get("orient", "preserve_axes"))
-    count = payload.get("count")
-    pitch = payload.get("pitch")
-    if (count is not None or pitch is not None) and end_raw is None:
-        raise SchemaError(f"{source} with count/pitch requires an end axis-map")
-    inset = payload.get("inset", {}) or {}
-    inset_start = _resolve_optional_number(inset.get("start"), dimensions) if isinstance(inset, Mapping) else None
-    inset_end = _resolve_optional_number(inset.get("end"), dimensions) if isinstance(inset, Mapping) else None
-    include_seed = bool(payload.get("include_seed", False))
-    return RunBetweenSpec(
-        start_relations=tuple(_parse_axis_map(start_raw, dimensions)),
-        end_relations=tuple(_parse_axis_map(end_raw, dimensions)) if end_raw is not None else tuple(),
-        orient=orient,
-        count=int(count) if count is not None else None,
-        pitch=_resolve_optional_number(pitch, dimensions),
-        inset_start=inset_start,
-        inset_end=inset_end,
-        include_seed=include_seed,
-        source=source,
-    )
+    if "start" in payload or "end" in payload:
+        raise SchemaError(f"{source} no longer supports start/end; use axis-map entries instead")
+    if "count" in payload or "pitch" in payload or "orient" in payload:
+        raise SchemaError(f"{source} no longer supports top-level count/pitch/orient; use repeat")
+    repeat = _parse_repeat(payload.get("repeat"), dimensions)
+    through = _parse_through(payload.get("through"), dimensions)
+    axis_map_payload = {k: v for k, v in payload.items() if k not in {"repeat", "through"}}
+    relations = tuple(_parse_axis_map(axis_map_payload, dimensions))
+    if not relations:
+        raise SchemaError(f"{source} requires at least one axis-map relation")
+    return ArraySpec(relations=relations, through=through, repeat=repeat, source=source)
 
 
 def _parse_axis_target(data: Mapping[str, Any], dimensions: DimensionResolver) -> AxisMapTarget:
@@ -1133,6 +1179,7 @@ def _parse_views(data: Any, dimensions: DimensionResolver) -> Dict[str, ViewConf
 __all__ = [
     "AxisMapTarget",
     "AxisRelation",
+    "ArraySpec",
     "BooleanOperation",
     "DatumBundle",
     "DatumPlane",
@@ -1143,11 +1190,12 @@ __all__ = [
     "MirrorOperation",
     "Placement",
     "PosToken",
+    "RepeatAxisSpec",
     "RelationshipComponent",
     "RelationshipDiagramSpec",
     "RotateOperation",
-    "RunBetweenSpec",
     "SchemaError",
+    "ThroughSpec",
     "TranslateOperation",
     "canonical_pos_token",
     "load_relationship_spec",
