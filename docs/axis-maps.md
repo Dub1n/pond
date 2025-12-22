@@ -40,7 +40,7 @@ Crucially, axis-maps may be *partial*, *complete*, or *intentionally over-constr
 
 ## Example (Pond relationship specs)
 
-This project uses axis-maps as the primary placement primitive. The excerpt below follows the current relationship-first schema (the same shape used in `dev/reports/attachments/option-c.yaml`) and shows orphan point/edge/plane references, three styles of component `relate` blocks, and an array that interpolates a missing size axis.
+This project uses axis-maps as the primary placement primitive. The excerpt below follows the current relationship-first schema (the same shape used in `dev/option-c.yaml`) and shows orphan point/edge/plane references, three styles of component `relate` blocks, and an array that interpolates a missing size axis.
 
 ```yaml
 schema: pond-relationship-example

@@ -2,7 +2,7 @@
 
 ## Active / near-term
 
-- [!] Enable placements to reference rotated/mirrored clones (resolve axis-map refs to op outputs so specs can anchor to clone faces). Definition of done: `dev/reports/attachments/option-c.yaml` builds successfully when C2 start references `inner_beam_south` and `inner_beam_west` clone faces.
+- [!] Enable placements to reference rotated/mirrored clones (resolve axis-map refs to op outputs so specs can anchor to clone faces). Definition of done: `dev/option-c.yaml` builds successfully when C2 start references `inner_beam_south` and `inner_beam_west` clone faces.
 - [x] Array rework: replace start/end run_between with axis-map `array` + `repeat`/`through` semantics (array space, per-axis repetition, through checks, overlap guards). Definition of done: schema/solver/lint/tests/docs updated; existing arrays migrated; new `docs/array.md` aligned.
 - [!] Add optional `orient` field on `relate` (e.g. `span`), and consider options for explicit vectors or `component_id` frames to define orientation basis.
 - [ ] Allow `frame: <component_id>` shorthand (reserve `world`/`local`; keep legacy `component:<id>` accepted during transition).

@@ -1,6 +1,6 @@
 # Design C placements
 
-Positions along the outer/inner beams for option C from `dev/reports/attachments/option-c.yaml`.
+Positions along the outer/inner beams for option C from `dev/option-c.yaml`.
 Offsets are measured from the deck-frame +Y (north) face along the beam toward -Y.
 Values are in mm; apply the same offsets on every side (rotated).
 

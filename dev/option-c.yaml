@@ -183,21 +183,23 @@ components:
     material: timber
     label: "47x75mm Joist (outer) | backspan + 250mm cantilever"
     label_id: "J"
-    # X set by relate, Y/Z driven via array axis-map (faces, no manual inset needed)
+    # X set by relate, Y/Z driven via run_between axis-map (faces, no manual inset needed)
     relate:
       -x: { ref: outer_beam_west, pos: +x }
       +z: { ref: joist_top, pos: +z }
-    array:
-      -y:
-        ref: opening_frame
-        pos: +y
-        offset: decking_overhang
-      +y:
-        ref: opening_frame
-        pos: -y
-        offset: -decking_overhang
-      repeat:
-        y: { count: 2 }
+    run_between:
+      start:
+        +y:
+          ref: opening_frame
+          pos: +y
+          offset: decking_overhang
+      end:
+        -y:
+          ref: opening_frame
+          pos: -y
+          offset: -decking_overhang
+      count: 2
+      include_seed: true
     ifc:
       predefined_type: JOIST
 
@@ -213,17 +215,19 @@ components:
     relate:
       -x: { ref: outer_beam_west, pos: +x }
       +z: { ref: joist_top, pos: +z }
-    array:
-      -y:
-        ref: opening_frame
-        pos: +y
-        offset: decking_overhang - (pond_span - 2 * cantilever_inner) / 6
-      +y:
-        ref: opening_frame
-        pos: -y
-        offset: -decking_overhang + (pond_span - 2 * cantilever_inner) / 6
-      repeat:
-        y: { count: 5 }
+    run_between:
+      start:
+        +y:
+          ref: opening_frame
+          pos: +y
+          offset: decking_overhang - (pond_span - 2 * cantilever_inner) / 6
+      end:
+        -y:
+          ref: opening_frame
+          pos: -y
+          offset: -decking_overhang + (pond_span - 2 * cantilever_inner) / 6
+      count: 5
+      include_seed: true
     ifc:
       predefined_type: JOIST
 
@@ -235,11 +239,17 @@ components:
     label_id: "C1"
     relate:
       +z: { ref: joist_top, pos: +z }
-    array:
-      -x:  { ref: outer_beam_west, pos: +x }
-      +x: { ref: inner_beam_west, pos: -x }
-      -y: { ref: outer_beam_south, pos: +y }
-      +y: { ref: inner_beam_south, pos: -y }
+    run_between:
+      # Single-instance run_between uses start/end axis-map to land faces without inset
+      start:
+        -x:  { ref: outer_beam_west, pos: +x }
+        cy: { ref: outer_beam_south, pos: +y }
+      end:
+        +x: { ref: inner_beam_west, pos: -x }
+        cy: { ref: inner_beam_south, pos: -y }
+      count: 1
+      include_seed: true
+      orient: along_run
     ifc:
       predefined_type: JOIST
 
@@ -301,12 +311,16 @@ components:
     label_id: "C2"
     relate:
       +z: { ref: joist_top, pos: +z }
-    array:
-      -x: { ref: inner_beam_west, pos: +x, mode: plane }
-      +x: { ref: opening_frame, pos: -x }
-      cy: { ref: inner_beam_south, pos: +y, mode: plane }
-      through:
-        - cy: { ref: opening_frame, pos: -y, mode: plane }
+    run_between:
+      start:
+        -x: { ref: inner_beam_west, pos: +x, mode: plane }
+        cy: { ref: inner_beam_south, pos: +y, mode: plane }
+      end:
+        +x: { ref: opening_frame, pos: -x }
+        cy: { ref: opening_frame, pos: -y }
+      count: 1
+      include_seed: true
+      orient: along_run
     ifc:
       predefined_type: JOIST
 
