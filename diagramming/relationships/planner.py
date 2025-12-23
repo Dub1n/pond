@@ -7,6 +7,7 @@ import math
 import numpy as np
 from shapely.affinity import affine_transform, rotate as shapely_rotate, translate as shapely_translate
 from shapely.geometry import MultiPoint, Polygon as ShapelyPolygon, box as shapely_box
+from shapely.ops import unary_union
 
 from ..materials import apply_material_class
 from ..planner.bundle import GeometryBundle, PolygonFeature
@@ -30,7 +31,7 @@ class RelationshipPlannedView:
 
 
 class RelationshipPlanner:
-    def __init__(self, spec: RelationshipDiagramSpec, solved: SolveResult) -> None:
+    def __init__(self, spec: RelationshipDiagramSpec, solved: SolveResult, *, show_all_views: bool = False) -> None:
         self.spec = spec
         self.solved = solved
         key = spec.info.option.lower() if spec.info.option else "relationship"
@@ -38,6 +39,8 @@ class RelationshipPlanner:
         self._footprints = self._build_footprint_map(solved.primitives)
         self._primitive_index = {prim.id: prim for prim in solved.primitives}
         self._template_refs = self._build_template_reference_map(solved.primitives)
+        self._show_all_views = show_all_views
+        self._all_view_names = tuple(spec.views.keys()) if spec.views else ("plan", "section")
 
     def plan(self) -> List[RelationshipPlannedView]:
         plan_features = list(self._footprint_features(self.solved.primitives))
@@ -77,6 +80,8 @@ class RelationshipPlanner:
         footprints = self._footprints
         prim_index = self._primitive_index
         for primitive in primitives:
+            if (primitive.class_name or "").lower() == "ifcopeningelement":
+                continue
             shape = footprints.get(primitive.id)
             if shape is None or shape.is_empty:
                 continue
@@ -104,6 +109,13 @@ class RelationshipPlanner:
                 outer = tuple(polygon.exterior.coords)
                 holes = tuple(tuple(ring.coords) for ring in polygon.interiors)
                 feature_id = primitive.id if idx == 0 else f"{primitive.id}#{idx}"
+                views = self._all_view_names
+                if not self._show_all_views:
+                    views = (
+                        tuple(metadata.get("views"))
+                        if metadata.get("views")
+                        else tuple(self.spec.views.keys()) if self.spec.views else ("plan",)
+                    )
                 feature = PolygonFeature(
                     id=feature_id,
                     outer=outer,
@@ -116,9 +128,7 @@ class RelationshipPlanner:
                     label_id=metadata.get("label_id"),
                     metadata=metadata.copy(),
                     shape=polygon,
-                    views=tuple(metadata.get("views"))
-                    if metadata.get("views")
-                    else tuple(self.spec.views.keys()) if self.spec.views else ("plan",),
+                    views=views,
                 )
                 yield feature
 
@@ -240,9 +250,37 @@ class RelationshipPlanner:
         section_features: List[PolygonFeature] = []
 
         for primitive in primitives:
+            if (primitive.class_name or "").lower() == "ifcopeningelement":
+                continue
             metadata = primitive.metadata or {}
-            views = tuple(metadata.get("views")) if metadata.get("views") else ("section",)
-            for polygon in self._slice_primitive(primitive, origin, normal, plane.axis):
+            if self._show_all_views:
+                views = self._all_view_names
+            else:
+                views = tuple(metadata.get("views")) if metadata.get("views") else ()
+            slice_polygons = self._slice_primitive(primitive, origin, normal, plane.axis)
+            if primitive.voids:
+                void_shapes: List[ShapelyPolygon] = []
+                for void_id in primitive.voids:
+                    void_prim = self._primitive_index.get(void_id)
+                    if void_prim is None:
+                        continue
+                    void_shapes.extend(self._slice_primitive(void_prim, origin, normal, plane.axis))
+                if void_shapes:
+                    void_union = unary_union(void_shapes)
+                    if not void_union.is_empty:
+                        clipped: List[ShapelyPolygon] = []
+                        for polygon in slice_polygons:
+                            diff = polygon.difference(void_union)
+                            if diff.is_empty:
+                                continue
+                            if isinstance(diff, ShapelyPolygon):
+                                clipped.append(diff)
+                            else:
+                                clipped.extend(
+                                    geom for geom in getattr(diff, "geoms", ()) if isinstance(geom, ShapelyPolygon)
+                                )
+                        slice_polygons = clipped
+            for polygon in slice_polygons:
                 segment_index = per_feature_segment.get(primitive.id, 0)
                 per_feature_segment[primitive.id] = segment_index + 1
                 section_features.append(

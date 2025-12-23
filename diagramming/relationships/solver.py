@@ -2852,20 +2852,6 @@ def mesh_from_primitive(primitive: NeutralPrimitive, *, to_meters: bool = True) 
             if converted:
                 vertices = converted
             mesh_mm = trimesh.Trimesh(vertices=np.array(vertices), faces=np.array(faces), process=False)
-            rotation = primitive.transform.rotation
-            if any(rotation):
-                try:
-                    rot = trimesh.transformations.euler_matrix(
-                        math.radians(rotation[0]),
-                        math.radians(rotation[1]),
-                        math.radians(rotation[2]),
-                        axes="sxyz",
-                    )
-                    mesh_mm.apply_transform(rot)
-                except Exception:
-                    pass
-            pos = primitive.transform.position
-            mesh_mm.apply_translation((pos[0], pos[1], pos[2]))
             primitive.mesh = mesh_mm.copy()
             mesh = mesh_mm.copy()
             if to_meters:

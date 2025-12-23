@@ -46,7 +46,8 @@ flowchart TD
 ## Spec authoring notes
 
 - Specs in `diagrams/specs/` (for example `diagrams/specs/option-c.yaml`) set per-option metadata (`title`, `aria_label`, variant parameters) and a spec-level `scale` for comfortable sizing.
-- Views may declare slicing planes (`views.<name>.plane.axis`/`coordinate`) for sections; only components listing the view name are included. Per-view overrides (`pad`, `scale`, `background`) tighten layout without affecting siblings.
+- Views may declare slicing planes (`views.<name>.plane.axis`/`coordinate`) for sections; section views include only components listing the view name unless `--show-all` is set. Per-view overrides (`pad`, `scale`, `background`) tighten layout without affecting siblings.
+- `IfcOpeningElement` voids are subtracted from plan/section geometry; openings themselves are not rendered as filled components.
 - Components accept `height`, `material`, and `metadata.elevation` to drive 2.5D geometry and colour palettes; omit to keep planar. Legends auto-generate from labels across plan/section views.
 - Operations (`rotate`, `mirror`, `translate`, `boolean`) run in spec order as soon as their inputs resolve; set `include_generated: true` only when transforming previously created clones. Boolean operations are declared under `operations` and are reflected in plan cutouts via the solver.
 - Keep specs declarative: use axis-map relates and `array` spans for placement; prefer center tokens to avoid conflicting inference. Use `relate.orient` when you need an explicit basis rather than multi-ref inference. See `docs/instructions.md` for concise axis-map examples.
@@ -114,7 +115,7 @@ flowchart LR
 
 - Install/venv: `python3 -m venv .venv && source .venv/bin/activate && python3 -m pip install -r requirements.txt`.
 - Lint: `python scripts/lint_specs.py` (runs solver + IFC validation, selector/coverage checks, collision reporting, mesh digests). `--ci` enforces fail-on-warn gating.
-- Build: `python scripts/build_diagrams.py --spec diagrams/specs/option-c.yaml --option C --outdir diagrams/output --force` with flags `--no-png`, `--no-gltf`, `--no-ifc`, `--gltf-format gltf`, `--orthographic`; `--step`/`--obj` emit additional exports when the CadQuery solver is active.
+- Build: `python scripts/build_diagrams.py --spec diagrams/specs/option-c.yaml --option C --outdir diagrams/output --force` with flags `--no-png`, `--no-gltf`, `--no-ifc`, `--gltf-format gltf`, `--orthographic`, `--show-all`; `--step`/`--obj` emit additional exports when the CadQuery solver is active.
 - Baseline freshness: `./.venv/bin/python scripts/baseline_render_check.py --fresh-check` whenever you inspect rendered output; include a short note (“baseline render check passed…”) in logs.
 - Tests: `python -m unittest discover`. Useful spot checks: `scripts/check_water_area.py <spec> --view plan` (water coverage sanity).
 

@@ -28,6 +28,7 @@ class RelationshipPlannerTests(unittest.TestCase):
                 class: IfcSlab
                 size: [1200, 800, 50]
                 material: decking
+                views: [section]
                 relate:
                   +x+y-x-y: { ref: frame, pos: +x+y-x-y }
                   +z: { ref: origin, pos: +z }
@@ -64,6 +65,48 @@ class RelationshipPlannerTests(unittest.TestCase):
         section_polygons = [feature for feature in section.bundle.polygons if feature.id.startswith("slab@section")]
         self.assertTrue(section_polygons)
         self.assertEqual(section_polygons[0].views, ("section",))
+
+    def test_show_all_views_includes_untagged_section(self) -> None:
+        spec_text = dedent(
+            """
+            schema: pond-relationship-test
+            info:
+              option: planner-all
+            components:
+              - id: origin
+                kind: reference
+                size: [0, 0, 0]
+              - id: slab
+                class: IfcSlab
+                size: [1200, 800, 50]
+                material: decking
+                relate:
+                  cxcy: { ref: origin }
+                  -z: { ref: origin }
+            views:
+              plan:
+                title: Plan
+                renders: [svg]
+              section:
+                title: Section
+                plane:
+                  axis: y
+                  coordinate: 0
+            """
+        )
+        with TemporaryDirectory() as tmp:
+            path = Path(tmp) / "planner-all.yaml"
+            path.write_text(spec_text, encoding="utf-8")
+            spec = load_relationship_spec(path)
+        solver = ConstraintSolver(spec)
+        solved = solver.solve()
+        self.assertTrue(solved.diagnostics.ok)
+
+        planner = RelationshipPlanner(spec, solved, show_all_views=True)
+        planned_views = planner.plan()
+        section = next(view for view in planned_views if view.view == "section")
+        section_polygons = [feature for feature in section.bundle.polygons if feature.id.startswith("slab@section")]
+        self.assertTrue(section_polygons)
 
     def test_boolean_cutouts_follow_placements(self) -> None:
         spec_text = dedent(

@@ -116,6 +116,11 @@ def parse_args(argv: Optional[List[str]] = None) -> argparse.Namespace:
         help="Output size (pixels) for the orthographic PNG (default: 1024).",
     )
     parser.add_argument(
+        "--show-all",
+        action="store_true",
+        help="Include all components in every rendered view (ignores per-component view tags).",
+    )
+    parser.add_argument(
         "--no-ifc",
         action="store_true",
         help="Skip IFC export.",
@@ -202,7 +207,7 @@ def main(argv: Optional[List[str]] = None) -> int:
             for diag in solve_result.diagnostics.errors:
                 print(f"{spec_path.name}: error: {diag.message}", file=sys.stderr)
             return 1
-        planner = RelationshipPlanner(relationship_spec, solve_result)
+        planner = RelationshipPlanner(relationship_spec, solve_result, show_all_views=args.show_all)
         planned_views = planner.plan()
         spec_name = spec_path.stem
         print(f"Building relationship-first spec {spec_name} from {spec_path}")
