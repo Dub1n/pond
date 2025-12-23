@@ -1,9 +1,19 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Sequence, Tuple
+from typing import Literal, Sequence, Tuple
 
-from ..schema.components import Alignment
+Alignment = Literal[
+    "center",
+    "north",
+    "north_east",
+    "east",
+    "south_east",
+    "south",
+    "south_west",
+    "west",
+    "north_west",
+]
 
 
 @dataclass(frozen=True)
