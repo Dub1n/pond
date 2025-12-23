@@ -4,7 +4,7 @@
 
 - [x] Enable placements to reference rotated/mirrored clones (resolve axis-map refs to op outputs so specs can anchor to clone faces). Definition of done: `dev/option-c.yaml` builds successfully when C1/C2 use clone refs directly. See `dev/tasks/enable-clone-axis-map-refs.md`.
 - [x] Array rework: replace start/end run_between with axis-map `array` + `repeat`/`through` semantics (array space, per-axis repetition, through checks, overlap guards). Definition of done: schema/solver/lint/tests/docs updated; existing arrays migrated; new `docs/array.md` aligned.
-- [!] Add optional `orient` field on `relate` (e.g. `span`), and consider options for explicit vectors or `component_id` frames to define orientation basis.
+- [x] Add optional `orient` field on `relate` and `array` to define explicit instance basis (`vector` + optional `axis`/`twist`, or `frame` inheritance with roll) and bypass inferred orientation when provided.
 - [x] Make `array` the canonical placement block (single-instance arrays replace `relate`) and enforce mutual exclusivity in schema/lint/docs.
 - [x] Define repeat direction vectors (`"x,y,z"`) with per-repeat `frame: world|local|<component_id>` semantics; document array-derived local frame rules.
 - [x] Extend axis-map entries to accept multiple refs per subject axis for non-orthogonal placement (multi-ref axis-maps).
