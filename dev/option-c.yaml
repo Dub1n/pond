@@ -20,6 +20,7 @@ dimensions:
     corner_diagonal_length_inner: 480.8326
     corner_tie_spacing: 500
     decking_overhang: 90
+    J2_offset: -decking_overhang + ((pond_span - 2 * cantilever_inner) / 6)
   finishes:
     deck_thickness: 28
   site:
@@ -36,8 +37,7 @@ components:
   - id: structure_level
     kind: reference
     size: [1, 1, 0]
-    relate:
-      cz: { ref: origin }
+    relate: { cz: { ref: origin } }
 
   - id: deck_frame
     kind: reference
@@ -53,14 +53,13 @@ components:
       - pond_span - 2 * cantilever_inner
       - pond_span - 2 * cantilever_inner
       - 0
-    relate:  # optional; omitted axes default to origin for references
+    relate:
       cxcy: { ref: pond_frame }  # tie to pond_frame center; size + relate both define X/Y
 
   - id: water_surface
     kind: reference
     size: [1, 1, 0]
-    relate:  # only Z matters; X/Y default to origin for references
-      cz: { ref: structure_level, offset: -pad_height }
+    relate: { cz: { ref: structure_level, offset: -pad_height } } # only Z matters; X/Y default to origin for references
 
   - id: water_bottom
     kind: reference
@@ -71,26 +70,22 @@ components:
   - id: pad_top
     kind: reference
     size: [1, 1, 0]
-    relate:  # only Z matters; X/Y default to origin for references
-      cz: { ref: structure_level }
+    relate: { cz: { ref: structure_level } }
 
   - id: joist_top
     kind: reference
     size: [1, 1, 0]
-    relate:  # only Z matters; X/Y default to origin for references
-      cz: { ref: structure_level, offset: joist_depth }
+    relate: { cz: { ref: structure_level, offset: joist_depth } }
 
   - id: deck_surface_plane
     kind: reference
     size: [1, 1, 0]
-    relate:  # only Z matters; X/Y default to origin for references
-      cz: { ref: joist_top, offset: deck_thickness }
+    relate: { cz: { ref: joist_top, offset: deck_thickness } }
 
   - id: soil_frame
     kind: reference
     size: [deck_span + pad_size, deck_span + pad_size, 0]
-    relate:
-      cxcy: { ref: origin }
+    relate: { cxcy: { ref: origin } }
 
   # Components
   - id: pond_water
@@ -104,8 +99,7 @@ components:
       +x+y-x-y: { ref: pond_frame, pos: +x+y-x-y }  # symmetric faces bound together
       +z:   { ref: water_surface, pos: +z }
       -z:   { ref: water_bottom, pos: +z }
-    ifc:
-      predefined_type: ELEMENT
+    ifc: { predefined_type: ELEMENT }
 
   - id: pond_opening
     class: IfcOpeningElement
@@ -121,12 +115,11 @@ components:
         offset:
           +x+y: -(cantilever_inner)
           -x-y: (cantilever_inner)
-      +z: { ref: deck_surface_plane, pos: +z }
+      +z: { ref: deck_surface_plane }
       -z: { ref: joist_top, pos: +z }
     metadata:
       views: [section]
-    ifc:
-      predefined_type: OPENING
+    ifc: { predefined_type: OPENING}
 
   - id: deck_surface
     class: IfcSlab
@@ -136,13 +129,12 @@ components:
     label_id: "D"
     # Size repeats the X/Y defined by relate; lint can catch drift if they ever differ
     relate:
-      +x+y-x-y: { ref: deck_frame, pos: +x+y-x-y }
+      +x+y-x-y: { ref: deck_frame }
       -z:   { ref: joist_top, pos: +z }
-      +z:   { ref: deck_surface_plane, pos: +z }
+      +z:   { ref: deck_surface_plane }
     voids:
       - ref: pond_opening
-    ifc:
-      predefined_type: FLOOR
+    ifc: { predefined_type: FLOOR}
 
   - id: outer_beam_west
     class: IfcBeam
@@ -152,12 +144,10 @@ components:
     label_id: "O"
     # Axis-map relate replaces multiple align/contact clauses
     relate:
-      -x: { ref: deck_frame, pos: -x }
-      +y-y: { ref: deck_frame, pos: +y-y }
-      +z: { ref: joist_top, pos: +z }
+      -x+y-y: { ref: deck_frame }
+      +z: { ref: joist_top }
       -z: { ref: pad_top, pos: +z }
-    ifc:
-      predefined_type: BEAM
+    ifc: { predefined_type: BEAM }
 
   - id: inner_beam_west
     class: IfcBeam
@@ -168,12 +158,10 @@ components:
     # Axis-map relate sets X/Y/Z with one block
     relate:
       +x: { ref: pond_frame, pos: -x }
-      +y: { ref: deck_frame, pos: +y, offset: -beam_width }
-      -y: { ref: deck_frame, pos: -y, offset: beam_width }
-      +z: { ref: joist_top, pos: +z }
+      -y+y: { ref: deck_frame, offset: { -y: beam_width, +y: -beam_width } }
       -z: { ref: pad_top, pos: +z }
-    ifc:
-      predefined_type: BEAM
+      +z: { ref: joist_top }
+    ifc: { predefined_type: BEAM }
 
   - id: joist_run_south_outer
     class: IfcBeam
@@ -186,20 +174,10 @@ components:
     label_id: "J"
     array:
       -y: { ref: outer_beam_south, pos: +y }
-      -x:
-        ref: opening_frame
-        pos: -x
-        offset: -decking_overhang
-      +x:
-        ref: opening_frame
-        pos: +x
-        offset: +decking_overhang
-      +z: { ref: joist_top, pos: +z }
-      repeat:
-        x:
-          count: 2
-    ifc:
-      predefined_type: JOIST
+      -x+x: { ref: opening_frame, offset: { -x: -decking_overhang, +x: decking_overhang } }
+      +z: { ref: joist_top }
+      repeat: { x: { count: 2 } }
+    ifc: { predefined_type: JOIST }
 
   - id: joist_run_south_inner
     class: IfcBeam
@@ -212,20 +190,10 @@ components:
     label_id: "J"
     array:
       -y: { ref: outer_beam_south, pos: +y }
-      -x:
-        ref: opening_frame
-        pos: -x
-        offset: -decking_overhang + ((pond_span - 2 * cantilever_inner) / 6)
-      +x:
-        ref: opening_frame
-        pos: +x
-        offset: +decking_overhang - ((pond_span - 2 * cantilever_inner) / 6)
+      -x+x: { ref: opening_frame, offset: { -x: J2_offset, +x: -J2_offset } }
       +z: { ref: joist_top, pos: +z }
-      repeat:
-        x:
-          count: 5
-    ifc:
-      predefined_type: JOIST
+      repeat: { x: { count: 5 } }
+    ifc: { predefined_type: JOIST }
 
   - id: corner_diagonal_deck_to_inner_sw
     class: IfcBeam
@@ -240,9 +208,8 @@ components:
       +xcy:
         - { ref: inner_beam_west, pos: -x }
         - { ref: inner_beam_south, pos: -y }
-      +z: { ref: joist_top, pos: +z }
-    ifc:
-      predefined_type: JOIST
+      +z: { ref: joist_top }
+    ifc: { predefined_type: JOIST }
 
   - id: corner_diagonal_inner_to_opening_sw
     class: IfcBeam
@@ -258,8 +225,7 @@ components:
         - { ref: opening_frame, pos: -x }
         - { ref: opening_frame, pos: -y }
       +z: { ref: joist_top, pos: +z }
-    ifc:
-      predefined_type: JOIST
+    ifc: { predefined_type: JOIST }
 
   - id: corner_tie_horizontal_nw
     class: IfcBeam
@@ -268,16 +234,10 @@ components:
     label: "47x75mm Corner tie to diagonal | 533mm"
     label_id: "T"
     relate:
-      -x:
-        ref: outer_beam_west
-        pos: +x
-      +y:
-        ref: deck_frame
-        pos: +y
-        offset: -corner_tie_spacing + joist_width / 2
-      +z: { ref: joist_top, pos: +z }
-    ifc:
-      predefined_type: JOIST
+      -x: { ref: outer_beam_west, pos: +x }
+      +y: { ref: deck_frame, pos: +y, offset: -corner_tie_spacing + joist_width / 2 }
+      +z: { ref: joist_top }
+    ifc: { predefined_type: JOIST }
 
   - id: corner_tie_vertical_nw
     class: IfcBeam
@@ -286,41 +246,24 @@ components:
     label: "47x75mm Corner tie to diagonal"
     label_id: "T"
     relate:
-      -x:
-        ref: deck_frame
-        pos: -x
-        offset: corner_tie_spacing - joist_width / 2
-      +y:
-        ref: outer_beam_north
-        pos: -y
-      +z: { ref: joist_top, pos: +z }
-    ifc:
-      predefined_type: JOIST
+      -x: { ref: deck_frame, pos: -x, offset: corner_tie_spacing - joist_width / 2 }
+      +y: { ref: outer_beam_north, pos: -y }
+      +z: { ref: joist_top }
+    ifc: { predefined_type: JOIST }
 
   - id: overhang_tip_nw
     kind: reference
     size: [0, 0, 0]
     relate:
-      -x:
-        ref: opening_frame
-        pos: -x
-        offset: -cantilever_inner
-      +y:
-        ref: opening_frame
-        pos: +y
-        offset: cantilever_inner
-      +z: { ref: joist_top, pos: +z }
+      -x+y: { ref: opening_frame, offset: { -x: -cantilever_inner, +y: cantilever_inner } }
+      +z: { ref: joist_top }
 
   - id: corner_diagonal_inner_span_check_nw
     kind: reference
     size: [cantilever_inner, 0, 0]
     relate:
-      +x:
-        ref: opening_frame
-        pos: -x
-      -x:
-        ref: overhang_tip_nw
-        pos: -x
+      +x: { ref: opening_frame, pos: -x }
+      -x: { ref: overhang_tip_nw, pos: -x }
       cy: { ref: opening_frame, pos: +y }
 
   - id: soil_fill
@@ -330,11 +273,9 @@ components:
     label: "Soil fill"
     views: [section]
     relate:
-      +x+y-x-y: { ref: soil_frame, pos: +x+y-x-y }
-      +z: { ref: water_surface, pos: +z }
-      -z: { ref: water_bottom, pos: +z }
-    ifc:
-      predefined_type: FLOOR
+      +x+y-x-y: { ref: soil_frame }
+      -z+z: { ref: pond_water }
+    ifc: { predefined_type: FLOOR}
 
   - id: pad_corner_nw
     class: IfcFooting
@@ -342,25 +283,23 @@ components:
     material: pad
     label: "600x600x50mm Shallow pad foundation"
     label_id: "P"
-    ifc:
-      predefined_type: PAD_FOOTING
     relate:
       +x: { ref: pond_frame, pos: -x }
       -y: { ref: pond_frame, pos: +y }
       +z: { ref: pad_top, pos: +z }
+    ifc: { predefined_type: PAD_FOOTING }
 
   - id: pad_edge_center_west
     class: IfcFooting
     size: [pad_size, pad_size, pad_height]
     material: pad
     label: "600x600x50mm Shallow pad foundation"
-    label_id: "P"
-    ifc:
-      predefined_type: PAD_FOOTING
     relate:
       +x: { ref: inner_beam_west, pos: +x }
       cy: { ref: pond_frame }
       +z: { ref: pad_top, pos: +z }
+    label_id: "P"
+    ifc: { predefined_type: PAD_FOOTING }
 
   - id: pad_outer_corner_nw
     class: IfcFooting
@@ -368,18 +307,12 @@ components:
     material: pad
     label: "600x600x50mm Shallow pad foundation"
     label_id: "P"
-    ifc:
-      predefined_type: PAD_FOOTING
     relate:
-      cx:
-        ref: deck_frame
-        pos: -x
-        offset: beam_width / 2
-      cy:
-        ref: deck_frame
-        pos: +y
-        offset: -beam_width / 2
+      cx: { ref: deck_frame, pos: -x, offset: beam_width / 2 }
+      cy: { ref: deck_frame, pos: +y, offset: -beam_width / 2 }
       +z: { ref: pad_top, pos: +z }
+    ifc: { predefined_type: PAD_FOOTING }
+
 
   - id: pad_run2_west
     class: IfcFooting
@@ -387,15 +320,11 @@ components:
     material: pad
     label: "600x600x50mm Shallow pad foundation"
     label_id: "P"
-    ifc:
-      predefined_type: PAD_FOOTING
     relate:
-      cx:
-        ref: deck_frame
-        pos: -x
-        offset: beam_width / 2
+      cx: { ref: deck_frame, pos: -x, offset: beam_width / 2 }
       cy: { ref: joist_run_west_inner }
       +z: { ref: pad_top, pos: +z }
+    ifc: { predefined_type: PAD_FOOTING }
 
   - id: pad_run6_west
     class: IfcFooting
@@ -403,15 +332,11 @@ components:
     material: pad
     label: "600x600x50mm Shallow pad foundation"
     label_id: "P"
-    ifc:
-      predefined_type: PAD_FOOTING
     relate:
-      cx:
-        ref: deck_frame
-        pos: -x
-        offset: beam_width / 2
+      cx: { ref: deck_frame, pos: -x, offset: beam_width / 2 }
       cy: { ref: joist_run_west_inner#4 }
       +z: { ref: pad_top, pos: +z }
+    ifc: { predefined_type: PAD_FOOTING }
 
   - id: joist_span_check_west
     kind: reference
