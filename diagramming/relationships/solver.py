@@ -18,6 +18,7 @@ from .schema import (
     MirrorOperation,
     Operation,
     ArraySpec,
+    OrientSpec,
     RelationshipComponent,
     RelationshipDiagramSpec,
     RotateOperation,
@@ -122,6 +123,77 @@ def _orientation_from_direction(direction: Tuple[float, float, float], twist_deg
             tuple(float(val) for val in oriented[:, 2]),
     )
     return orientation
+
+
+def _orientation_from_direction_for_axis(direction: Tuple[float, float, float], axis_token: str) -> OrientationMatrix:
+    axis = axis_token[-1]
+    sign = -1.0 if axis_token.startswith("-") else 1.0
+    primary = _normalise_vector((direction[0] * sign, direction[1] * sign, direction[2] * sign))
+    if primary == (0.0, 0.0, 0.0):
+        return IDENTITY_ORIENTATION
+    up = (0.0, 0.0, 1.0)
+    if abs(sum(a * b for a, b in zip(primary, up))) > 0.999:
+        up = (0.0, 1.0, 0.0)
+
+    if axis == "x":
+        return _orientation_from_direction(primary)
+    if axis == "y":
+        y_axis = primary
+        x_axis = _normalise_vector(
+            (
+                up[1] * y_axis[2] - up[2] * y_axis[1],
+                up[2] * y_axis[0] - up[0] * y_axis[2],
+                up[0] * y_axis[1] - up[1] * y_axis[0],
+            )
+        )
+        if x_axis == (0.0, 0.0, 0.0):
+            return IDENTITY_ORIENTATION
+        z_axis = _normalise_vector(
+            (
+                x_axis[1] * y_axis[2] - x_axis[2] * y_axis[1],
+                x_axis[2] * y_axis[0] - x_axis[0] * y_axis[2],
+                x_axis[0] * y_axis[1] - x_axis[1] * y_axis[0],
+            )
+        )
+        return (x_axis, y_axis, z_axis)
+    if axis == "z":
+        z_axis = primary
+        x_axis = _normalise_vector(
+            (
+                up[1] * z_axis[2] - up[2] * z_axis[1],
+                up[2] * z_axis[0] - up[0] * z_axis[2],
+                up[0] * z_axis[1] - up[1] * z_axis[0],
+            )
+        )
+        if x_axis == (0.0, 0.0, 0.0):
+            return IDENTITY_ORIENTATION
+        y_axis = _normalise_vector(
+            (
+                z_axis[1] * x_axis[2] - z_axis[2] * x_axis[1],
+                z_axis[2] * x_axis[0] - z_axis[0] * x_axis[2],
+                z_axis[0] * x_axis[1] - z_axis[1] * x_axis[0],
+            )
+        )
+        return (x_axis, y_axis, z_axis)
+    return IDENTITY_ORIENTATION
+
+
+def _rotate_orientation(orientation: OrientationMatrix, axis_vec: Tuple[float, float, float], angle_deg: float) -> OrientationMatrix:
+    if abs(angle_deg) <= 1e-9:
+        return orientation
+    axis = np.array(axis_vec, dtype=float)
+    norm = np.linalg.norm(axis)
+    if norm <= 1e-9:
+        return orientation
+    axis = axis / norm
+    rotation = trimesh.transformations.rotation_matrix(math.radians(angle_deg), axis)[:3, :3]
+    orientation_matrix = np.array(orientation).T
+    rotated = rotation @ orientation_matrix
+    return (
+        tuple(float(val) for val in rotated[:, 0]),
+        tuple(float(val) for val in rotated[:, 1]),
+        tuple(float(val) for val in rotated[:, 2]),
+    )
 
 
 def _reflect_point(point: Tuple[float, float, float], axis: str, coordinate: float) -> Tuple[float, float, float]:
@@ -587,6 +659,19 @@ class ConstraintSolver:
             base_orientation = _orientation_from_z_rotation(base_rotation_z)
 
         resolver = ReferenceResolver(component_states, self.datum_points, self.datum_planes, self.datum_bundles)
+        if component.orient is not None:
+            if base_rotation_z:
+                diagnostics.add_warning(
+                    f"component '{component.id}' orient overrides metadata rotation",
+                    subject=plan.id,
+                )
+            base_orientation = self._orientation_from_orient(
+                component,
+                component.orient,
+                resolver,
+                diagnostics,
+                instance_id=plan.id,
+            )
         instances = self._instances_for_plan(
             plan,
             resolver=resolver,
@@ -634,7 +719,11 @@ class ConstraintSolver:
                     axis_size_map=size_axis_map,
                 )
             relations = plan.relations + (tuple(array.relations) if array else tuple())
-            orientation_candidate = self._orientation_candidate(relations)
+            orientation_candidate = (
+                False
+                if component.orient is not None or (array is not None and array.orient is not None)
+                else self._orientation_candidate(relations)
+            )
             orientation_override = None
             center_override = None
             orientation_ok = False
@@ -769,12 +858,21 @@ class ConstraintSolver:
             return [
                 {"id": plan.id, "orientation": base_orientation, "preset_axes": {}, "origin": plan.origin},
             ]
+        array_orientation = None
+        if array.orient is not None:
+            array_orientation = self._orientation_from_orient(
+                plan.component,
+                array.orient,
+                resolver,
+                diagnostics,
+                instance_id=plan.id,
+            )
         positions = self._array_positions(plan, array, resolver, diagnostics)
         instances: List[Dict[str, Any]] = []
         for idx, pos in enumerate(positions):
             name = plan.id if idx == 0 else f"{plan.id}#{idx}"
             origin_kind = "original" if idx == 0 else "clone"
-            orientation = base_orientation
+            orientation = array_orientation or base_orientation
             instances.append(
                 {
                     "id": name,
@@ -913,6 +1011,54 @@ class ConstraintSolver:
                     subject=instance_id,
                 )
             return
+
+    def _orientation_from_orient(
+        self,
+        component: RelationshipComponent,
+        orient: OrientSpec,
+        resolver: ReferenceResolver,
+        diagnostics: SolveDiagnostics,
+        *,
+        instance_id: str,
+    ) -> OrientationMatrix:
+        axis_token = orient.axis or "+x"
+        if orient.axis is None and (orient.vector is not None or orient.twist is not None):
+            diagnostics.add_warning(
+                f"component '{component.id}' orient.axis missing; defaulting to +x",
+                subject=instance_id,
+            )
+
+        if orient.vector is None:
+            if orient.frame.startswith("component:"):
+                frame_id = orient.frame.split(":", 1)[1]
+                if frame_id not in resolver.component_states:
+                    diagnostics.add_warning(
+                        f"component '{component.id}' orient.frame references unknown component '{frame_id}'",
+                        subject=instance_id,
+                    )
+            base_orientation = resolver._frame_orientation(orient.frame, component.id)
+            if orient.twist is None:
+                if orient.axis is not None:
+                    diagnostics.add_warning(
+                        f"component '{component.id}' orient.axis has no effect without orient.twist",
+                        subject=instance_id,
+                    )
+                return base_orientation
+            axis_vec = _axis_vector(base_orientation, axis_token[-1])
+            if axis_token.startswith("-"):
+                axis_vec = (-axis_vec[0], -axis_vec[1], -axis_vec[2])
+            return _rotate_orientation(base_orientation, axis_vec, orient.twist)
+
+        direction = orient.vector
+        if orient.frame != "world":
+            direction = resolver.vector_in_world(orient.frame, component.id, direction)
+        base_orientation = _orientation_from_direction_for_axis(direction, axis_token)
+        if orient.twist is None:
+            return base_orientation
+        axis_vec = _axis_vector(base_orientation, axis_token[-1])
+        if axis_token.startswith("-"):
+            axis_vec = (-axis_vec[0], -axis_vec[1], -axis_vec[2])
+        return _rotate_orientation(base_orientation, axis_vec, orient.twist)
 
     def _resolve_axis_state(
         self,

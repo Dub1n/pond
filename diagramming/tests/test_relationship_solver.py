@@ -188,10 +188,9 @@ class RelationshipSolverTests(unittest.TestCase):
               - id: runner
                 class: IfcBeam
                 size: [100, 50, 10]
-                relate:
-                  cz: { ref: origin }
                 array:
                   cxcycz: { ref: origin, pos: cxcycz }
+                  cz: { ref: origin }
                   repeat:
                     "1,1,0": { count: 2, pitch: 100 }
                 ifc:
@@ -312,6 +311,93 @@ class RelationshipSolverTests(unittest.TestCase):
         self.assertAlmostEqual(y_axis[0], -1.0, places=5)
         self.assertAlmostEqual(y_axis[1], 0.0, places=5)
         self.assertAlmostEqual(z_axis[2], 1.0, places=5)
+
+    def test_orient_vector_sets_basis(self) -> None:
+        spec_text = dedent(
+            """
+            schema: pond-relationship-test
+            info:
+              option: orient-vector
+            components:
+              - id: origin
+                kind: reference
+                size: [0, 0, 0]
+              - id: beam
+                class: IfcBeam
+                size: [100, 50, 20]
+                relate:
+                  cxcycz: { ref: origin }
+                  orient:
+                    vector: "0,1,0"
+                ifc:
+                  predefined_type: BEAM
+            """
+        )
+        with TemporaryDirectory() as tmp:
+            path = Path(tmp) / "orient-vector.yaml"
+            path.write_text(spec_text, encoding="utf-8")
+            spec = load_relationship_spec(path)
+        solver = ConstraintSolver(spec)
+        result = solver.solve()
+        beam = next(comp for comp in result.components if comp.instance_id == "beam")
+        x_axis, y_axis, z_axis = beam.transform.orientation
+        self.assertAlmostEqual(x_axis[0], 0.0, places=5)
+        self.assertAlmostEqual(x_axis[1], 1.0, places=5)
+        self.assertAlmostEqual(y_axis[0], -1.0, places=5)
+        self.assertAlmostEqual(y_axis[1], 0.0, places=5)
+        self.assertAlmostEqual(z_axis[2], 1.0, places=5)
+
+    def test_array_orient_sets_instance_basis(self) -> None:
+        spec_text = dedent(
+            """
+            schema: pond-relationship-test
+            info:
+              option: array-orient
+            components:
+              - id: origin
+                kind: reference
+                size: [0, 0, 0]
+              - id: start
+                kind: reference
+                size: [0, 0, 0]
+                relate:
+                  cx: { ref: origin, offset: -100 }
+              - id: end
+                kind: reference
+                size: [0, 0, 0]
+                relate:
+                  cx: { ref: origin, offset: 100 }
+              - id: beam
+                class: IfcBeam
+                size: [100, 50, 20]
+                array:
+                  -x: { ref: start, pos: +x }
+                  +x: { ref: end, pos: +x }
+                  cy: { ref: origin }
+                  cz: { ref: origin }
+                  orient:
+                    vector: "0,1,0"
+                  repeat:
+                    "1,0,0": { count: 2 }
+                ifc:
+                  predefined_type: BEAM
+            """
+        )
+        with TemporaryDirectory() as tmp:
+            path = Path(tmp) / "array-orient.yaml"
+            path.write_text(spec_text, encoding="utf-8")
+            spec = load_relationship_spec(path)
+        solver = ConstraintSolver(spec)
+        result = solver.solve()
+        beams = [comp for comp in result.components if comp.component.id == "beam"]
+        self.assertEqual(len(beams), 2)
+        for beam in beams:
+            x_axis, y_axis, z_axis = beam.transform.orientation
+            self.assertAlmostEqual(x_axis[0], 0.0, places=5)
+            self.assertAlmostEqual(x_axis[1], 1.0, places=5)
+            self.assertAlmostEqual(y_axis[0], -1.0, places=5)
+            self.assertAlmostEqual(y_axis[1], 0.0, places=5)
+            self.assertAlmostEqual(z_axis[2], 1.0, places=5)
 
     def test_orientation_residual_within_tolerance(self) -> None:
         spec_text = dedent(

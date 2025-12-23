@@ -38,6 +38,7 @@ Tips:
 - Subject/pos accept multi-axis tokens, including centers (`cx`, `cy`, `cz`, `~x` etc.).
 - Axis-map refs can target rotated/mirrored clones; target faces are resolved using the clone’s
   orientation so world-aligned axes land on the nearest matching local face.
+- Use `relate.orient` to set a component basis explicitly. `vector` aligns a local axis, `frame` inherits another component’s orientation, and `axis` + `twist` can roll around the chosen axis (defaults to `+x` when omitted).
 - Use one X and one Y span when you want inference; extra face pairs can conflict with explicit sizes.
 - `flush` sugar expands to axis-map entries (`faces: all` by default, inset scalar or per-face map).
 
@@ -65,6 +66,7 @@ array:
 
 - The axis-map defines the array space; `repeat` defines how many instances along each direction. Without `repeat`, an array is a single instance and behaves like a placement constraint.
 - `array` is the canonical placement block; do not combine `array` and `relate` on the same component.
+- `array.orient` sets the orientation of each instance (same shape as `relate.orient`).
 - Use `through` blocks inside `array` for direction checks; they do not infer size.
 - Use `frame: <component_id>` when you need a relation to borrow another component’s orientation instead of the target’s local axes. Component ids cannot be `world` or `local`.
 - For corner-to-corner spans (e.g. diagonals), multi-axis keys like `-x+y` in `array` are treated as point anchors when `mode: point` (the default), so the span is based on the actual corner point rather than drifting due to face/size assumptions.

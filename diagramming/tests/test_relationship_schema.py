@@ -193,6 +193,32 @@ class RelationshipSchemaTests(unittest.TestCase):
             with self.assertRaises(SchemaError):
                 load_relationship_spec(path)
 
+    def test_loader_rejects_relate_with_array(self) -> None:
+        spec_text = dedent(
+            """
+            schema: pond-relationship-test
+            info:
+              option: relate-array
+            components:
+              - id: origin
+                kind: reference
+                size: [0, 0, 0]
+              - id: beam
+                class: IfcBeam
+                size: [100, 50, 20]
+                relate:
+                  cx: { ref: origin }
+                array:
+                  -x: { ref: origin, pos: -x }
+                  +x: { ref: origin, pos: +x }
+            """
+        )
+        with TemporaryDirectory() as tmp:
+            path = Path(tmp) / "relate-array.yaml"
+            path.write_text(spec_text, encoding="utf-8")
+            with self.assertRaises(SchemaError):
+                load_relationship_spec(path)
+
 
 if __name__ == "__main__":  # pragma: no cover
     unittest.main()

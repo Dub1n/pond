@@ -82,6 +82,18 @@ relate:
   +z: { ref: slab_top, pos: +z, mode: plane }
 ```
 
+Explicit orientation (align local +x to a vector):
+
+```yaml
+relate:
+  cxcycz: { ref: origin }
+  orient:
+    vector: "0,1,0"
+    axis: +x
+```
+
+`axis` defaults to `+x` when omitted; `twist` (degrees) rolls around that axis.
+
 Array with repeat direction vectors:
 
 ```yaml
@@ -150,6 +162,9 @@ Axis-maps are evaluated in a chosen frame. The frame determines which way “+x�
 - Summarise per-frame mappings to make transforms auditable
 
 This keeps frame semantics explicit while remaining deterministic even for rotated references.
+
+`relate.orient` may also inherit a frame’s basis directly. For example, `orient: { frame: frame_ref }`
+copies that component’s orientation, and optional `axis` + `twist` values roll around the chosen local axis.
 
 ---
 

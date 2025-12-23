@@ -56,6 +56,32 @@ array:
     "0,1,0": { count: 4 }
 ```
 
+Array with instance orientation (align local +x to a vector):
+
+```yaml
+array:
+  -x: { ref: beam_a, pos: +x }
+  +x: { ref: beam_b, pos: -x }
+  orient:
+    vector: "0,1,0"
+  repeat:
+    "1,0,0": { count: 3 }
+```
+
+Array with instance orientation inherited from a frame and rolled:
+
+```yaml
+array:
+  -x: { ref: beam_a, pos: +x }
+  +x: { ref: beam_b, pos: -x }
+  orient:
+    frame: frame_ref
+    axis: +x
+    twist: 90
+  repeat:
+    "1,0,0": { count: 3 }
+```
+
 ---
 
 ## Array axis-map (array space)
@@ -67,6 +93,7 @@ These relations define the array space (the bounding faces / anchors for the arr
 - A single face (e.g., `-x`) defines the array origin on that axis and implies direction; the array extends away from that face.
 - Center tokens (`cx`, `cy`, `cz`) can be used in the axis-map the same way as `relate`.
 - The `frame` field is accepted (world/local/component frame, with the same rules as `relate`).
+- `orient` is optional and sets the orientation of each array instance (same shape as `relate.orient`).
 
 Direction rules for single-axis anchors:
 

@@ -410,6 +410,14 @@ class AxisRelation:
 
 
 @dataclass(slots=True)
+class OrientSpec:
+    frame: FrameToken = "world"
+    vector: Optional[Tuple[float, float, float]] = None
+    axis: Optional[AxisToken] = None
+    twist: Optional[float] = None
+
+
+@dataclass(slots=True)
 class RunBetweenSpec:
     start_relations: Tuple[AxisRelation, ...]
     end_relations: Tuple[AxisRelation, ...] = ()
@@ -440,6 +448,7 @@ class ArraySpec:
     relations: Tuple[AxisRelation, ...]
     through: Tuple[ThroughSpec, ...] = ()
     repeat: Dict[str, RepeatAxisSpec] = field(default_factory=dict)
+    orient: Optional[OrientSpec] = None
     source: str = "array"
 
 
@@ -480,6 +489,7 @@ class RelationshipComponent:
     material: Optional[str] = None
     metadata: Dict[str, Any] = field(default_factory=dict)
     relations: Tuple[AxisRelation, ...] = ()
+    orient: Optional[OrientSpec] = None
     array: Optional[ArraySpec] = None
     place: Tuple[Placement, ...] = ()
     ifc: Optional[IfcMetadata] = None
@@ -745,6 +755,8 @@ def _parse_component(data: Mapping[str, Any], dimensions: DimensionResolver) -> 
     comp_id = str(data["id"])
     if "relate_from" in data:
         raise SchemaError(f"component '{comp_id}' uses relate_from, which has been removed")
+    if "relate" in data and (data.get("array") is not None or data.get("run_between") is not None):
+        raise SchemaError(f"component '{comp_id}' cannot specify both relate and array")
     kind = str(data.get("kind", "component")).lower()
     class_raw = data.get("class")
     class_name = normalize_ifc_class(class_raw) if class_raw else None
@@ -779,7 +791,12 @@ def _parse_component(data: Mapping[str, Any], dimensions: DimensionResolver) -> 
                 voids.append(str(ref))
             else:
                 voids.append(str(entry))
-    relations = tuple(_parse_axis_map(data.get("relate", {}), dimensions))
+    relate_raw = data.get("relate", {})
+    orient = None
+    if isinstance(relate_raw, Mapping) and "orient" in relate_raw:
+        orient = _parse_orient(relate_raw.get("orient"), dimensions, source="relate.orient")
+        relate_raw = {key: value for key, value in relate_raw.items() if key != "orient"}
+    relations = tuple(_parse_axis_map(relate_raw, dimensions))
     array_raw = data.get("array")
     run_between_raw = data.get("run_between")
     if array_raw is not None and run_between_raw is not None:
@@ -799,6 +816,7 @@ def _parse_component(data: Mapping[str, Any], dimensions: DimensionResolver) -> 
         material=material,
         metadata=metadata,
         relations=relations,
+        orient=orient,
         array=array,
         place=place,
         ifc=ifc_block,
@@ -983,6 +1001,27 @@ def _parse_repeat_direction(raw: str) -> Tuple[float, float, float]:
         raise SchemaError(f"array.repeat axis '{raw}' must be a numeric vector") from exc
 
 
+def _parse_direction_vector(raw: Any, dimensions: DimensionResolver, *, source: str) -> Tuple[float, float, float]:
+    if isinstance(raw, Mapping):
+        return (
+            _resolve_number(raw.get("x", 0.0), dimensions),
+            _resolve_number(raw.get("y", 0.0), dimensions),
+            _resolve_number(raw.get("z", 0.0), dimensions),
+        )
+    if isinstance(raw, Sequence) and not isinstance(raw, (str, bytes)):
+        values = list(raw)
+        if len(values) != 3:
+            raise SchemaError(f"{source} vector must have 3 entries")
+        return (
+            _resolve_number(values[0], dimensions),
+            _resolve_number(values[1], dimensions),
+            _resolve_number(values[2], dimensions),
+        )
+    if isinstance(raw, str):
+        return _parse_repeat_direction(raw)
+    raise SchemaError(f"{source} vector must be a mapping, list, or 'x,y,z' string")
+
+
 def _parse_through(payload: Any, dimensions: DimensionResolver) -> Tuple[ThroughSpec, ...]:
     if payload is None:
         return tuple()
@@ -1013,14 +1052,30 @@ def _parse_array(payload: Any, dimensions: DimensionResolver, *, source: str = "
     if "start" in payload or "end" in payload:
         raise SchemaError(f"{source} no longer supports start/end; use axis-map entries instead")
     if "count" in payload or "pitch" in payload or "orient" in payload:
-        raise SchemaError(f"{source} no longer supports top-level count/pitch/orient; use repeat")
+        if "count" in payload or "pitch" in payload:
+            raise SchemaError(f"{source} no longer supports top-level count/pitch; use repeat")
     repeat = _parse_repeat(payload.get("repeat"), dimensions)
     through = _parse_through(payload.get("through"), dimensions)
-    axis_map_payload = {k: v for k, v in payload.items() if k not in {"repeat", "through"}}
+    orient = _parse_orient(payload.get("orient"), dimensions, source=f"{source}.orient")
+    axis_map_payload = {k: v for k, v in payload.items() if k not in {"repeat", "through", "orient"}}
     relations = tuple(_parse_axis_map(axis_map_payload, dimensions))
     if not relations:
         raise SchemaError(f"{source} requires at least one axis-map relation")
-    return ArraySpec(relations=relations, through=through, repeat=repeat, source=source)
+    return ArraySpec(relations=relations, through=through, repeat=repeat, orient=orient, source=source)
+
+
+def _parse_orient(payload: Any, dimensions: DimensionResolver, *, source: str) -> Optional[OrientSpec]:
+    if payload is None:
+        return None
+    if not isinstance(payload, Mapping):
+        raise SchemaError(f"{source} must be a mapping")
+    frame = _parse_frame(payload.get("frame"))
+    vector_raw = payload.get("vector")
+    vector = _parse_direction_vector(vector_raw, dimensions, source=source) if vector_raw is not None else None
+    axis_raw = payload.get("axis")
+    axis = _canonical_axis(axis_raw) if axis_raw is not None else None
+    twist = _resolve_optional_number(payload.get("twist"), dimensions)
+    return OrientSpec(frame=frame, vector=vector, axis=axis, twist=twist)
 
 
 def _parse_axis_target(data: Mapping[str, Any], dimensions: DimensionResolver) -> AxisMapTarget:
