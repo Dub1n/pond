@@ -70,6 +70,34 @@ class RelationshipValidationTests(unittest.TestCase):
         self.assertFalse(report.errors)
         self.assertIsNotNone(report.mesh_checksum)
 
+    def test_validate_reports_degrees_of_freedom(self) -> None:
+        spec_text = dedent(
+            """
+            schema: pond-relationship-test
+            info:
+              option: dof-warnings
+            components:
+              - id: origin
+                kind: reference
+                size: [0, 0, 0]
+              - id: beam
+                class: IfcBeam
+                size: [100, 50, 20]
+                material: timber
+                relate:
+                  +x: { ref: origin, pos: +x }
+                  +y: { ref: origin, pos: +y }
+                ifc:
+                  predefined_type: BEAM
+            """
+        )
+        with TemporaryDirectory() as tmp:
+            path = Path(tmp) / "dof.yaml"
+            path.write_text(spec_text, encoding="utf-8")
+            spec = load_relationship_spec(path)
+        report = validate_relationship_spec(spec)
+        self.assertTrue(any("degrees of freedom" in warn for warn in report.warnings))
+
     def test_validate_flags_rotate_id_map_length(self) -> None:
         spec_text = dedent(
             """

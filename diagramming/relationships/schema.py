@@ -277,14 +277,20 @@ def _parse_frame(raw: Any) -> FrameToken:
     if not isinstance(raw, str):
         raise SchemaError("frame must be a string")
     raw_value = raw.strip()
+    if not raw_value:
+        raise SchemaError("frame cannot be empty")
     value = raw_value.lower()
     if value in VALID_FRAMES:
         return value
-    if value.startswith("component:") and len(raw_value.split(":", 1)[1]) > 0:
-        return raw_value
-    if raw_value:
-        return f"component:{raw_value}"
-    raise SchemaError(f"unsupported frame '{raw}'")
+    if value.startswith("component:"):
+        component_id = raw_value.split(":", 1)[1].strip()
+    else:
+        component_id = raw_value
+    if not component_id:
+        raise SchemaError("frame component id cannot be empty")
+    if component_id.lower() in VALID_FRAMES:
+        raise SchemaError(f"frame component id '{component_id}' is reserved")
+    return component_id
 
 
 def _resolve_number(value: Any, dimensions: DimensionResolver) -> float:

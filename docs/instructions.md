@@ -16,7 +16,7 @@ Use this as a quick-reference when editing relationship-first specs (schema `pon
 
 ## Axis-Map Relate (core shape)
 
-Frames (`frame: world|local|<component_id>`, with `world`/`local` reserved) are honoured during placement; axis-map and `flush` relations follow the chosen frame while keeping gaps/offsets and size inference intact. Non-axis-aligned frames emit contextual warnings and a per-frame summary showing how local axes were projected.
+Frames (`frame: world|local|<component_id>`, with `world`/`local` reserved; legacy `component:<id>` accepted) are honoured during placement; axis-map and `flush` relations follow the chosen frame while keeping gaps/offsets and size inference intact. Non-axis-aligned frames emit contextual warnings and a per-frame summary showing how local axes were projected.
 
 Each entry maps subject axes to a target:
 
@@ -69,7 +69,7 @@ array:
 - `array` is the canonical placement block; do not combine `array` and `relate` on the same component.
 - `array.orient` sets the orientation of each instance (same shape as `relate.orient`).
 - Use `through` blocks inside `array` for direction checks; they do not infer size.
-- Use `frame: <component_id>` when you need a relation to borrow another component’s orientation instead of the target’s local axes. Component ids cannot be `world` or `local`.
+- Use `frame: <component_id>` when you need a relation to borrow another component’s orientation instead of the target’s local axes (legacy `component:<id>` still works). Component ids cannot be `world` or `local`.
 - For corner-to-corner spans (e.g. diagonals), multi-axis keys like `-x+y` in `array` are treated as point anchors when `mode: point` (the default), so the span is based on the actual corner point rather than drifting due to face/size assumptions.
 - You can reference run instances directly (e.g. `joist_run_west#1`) anywhere a `ref` is accepted.
 - Repeat keys accept direction vectors (`"x,y,z"`) and shorthand axis aliases (`"x"`, `"-x"`, etc.). Unsigned axis keys inherit the array direction on that axis.
@@ -90,12 +90,12 @@ array:
 
 - Same axis-map shape under `checks:`; use `mode: plane|edge` for coplanar/colinear assertions. Checks now honour `tolerance` + `on_fail: warn|error|ignore`, apply offsets/gaps/frames, and respect `fail_on_warn` escalation.
 - Prefer checks for “this must never drift” geometry (like diagonal start/end conditions) and back them with a unit test when a bug is discovered (for example: `RelationshipSolverTests.test_array_multi_axis_point_anchors_center_on_span_midpoint`).
-- Checks accept `tolerance` and `on_fail: warn|error|ignore`; failures respect the chosen severity, and `fail_on_warn` still promotes warnings. DOF reporting warns only when an axis can’t infer a position or size (remaining DOF); providing both spans and explicit sizes is allowed as long as they agree.
+- Checks accept `tolerance` and `on_fail: warn|error|ignore`; failures respect the chosen severity, and `fail_on_warn` still promotes warnings. DOF reporting warns only when an axis can’t infer a position or size (remaining DOF) and emits per-component DOF summaries; providing both spans and explicit sizes is allowed as long as they agree.
 
 ## IFC & Materials
 
 - Provide `class` and `ifc.predefined_type` where applicable (beams/joists/slabs/openings). Materials map to `diagramming/materials.py`.
-- Repeated beams/members/slabs emit mapped items and type definitions; missing predefined types/material usages are linted and validated at export time, and openings propagate to cloned hosts. Metadata flows into class-aligned property sets (e.g., `Pset_BeamCommon`, `Pset_SlabCommon`) alongside any custom `ifc.psets` you declare.
+- Repeated beams/members/slabs emit mapped items and type definitions; missing predefined types/material usages are gated in validation, openings propagate to cloned hosts, and an IFC completeness summary reports predefined/material/clone-propagation status. Metadata flows into class-aligned property sets (e.g., `Pset_BeamCommon`, `Pset_SlabCommon`) alongside any custom `ifc.psets` you declare.
 - Metadata (labels, views, psets) flows into glTF/IFC exports.
 
 ## Run & Validate

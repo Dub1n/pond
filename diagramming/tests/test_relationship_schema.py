@@ -91,6 +91,41 @@ class RelationshipSchemaTests(unittest.TestCase):
         beam = next(comp for comp in spec.components if comp.id == "beam")
         self.assertEqual(len(beam.relations), 4)
 
+    def test_frame_shorthand_accepts_component_id(self) -> None:
+        spec_text = dedent(
+            """
+            schema: pond-relationship-test
+            info:
+              option: frame-shorthand
+            components:
+              - id: origin
+                kind: reference
+                size: [0, 0, 0]
+              - id: host
+                kind: reference
+                size: [100, 50, 20]
+                relate:
+                  cxcy: { ref: origin }
+                  cz: { ref: origin }
+              - id: child
+                class: IfcBeam
+                size: [40, 20, 10]
+                material: timber
+                relate:
+                  +x: { ref: host, pos: +x, frame: host }
+                  cy: { ref: origin }
+                  cz: { ref: origin }
+                ifc:
+                  predefined_type: BEAM
+            """
+        )
+        with TemporaryDirectory() as tmp:
+            path = Path(tmp) / "frame-shorthand.yaml"
+            path.write_text(spec_text, encoding="utf-8")
+            spec = load_relationship_spec(path)
+        child = next(comp for comp in spec.components if comp.id == "child")
+        self.assertEqual(child.relations[0].target.frame, "host")
+
     def test_lint_catches_unknown_operation_selector(self) -> None:
         spec_text = dedent(
             """

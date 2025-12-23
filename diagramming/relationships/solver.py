@@ -283,6 +283,14 @@ def _dominant_local_axis(orientation: OrientationMatrix, world_axis: str) -> Tup
     return best_axis, max(best_alignment, 0.0)
 
 
+def _frame_component_id(frame: str) -> Optional[str]:
+    if frame in {"world", "local"}:
+        return None
+    if frame.startswith("component:"):
+        return frame.split(":", 1)[1]
+    return frame
+
+
 @dataclass(slots=True)
 class Diagnostic:
     level: str
@@ -429,13 +437,13 @@ class ReferenceResolver:
     def _frame_orientation(self, frame: str, ref: str) -> OrientationMatrix:
         if frame == "world":
             return IDENTITY_ORIENTATION
-        if frame.startswith("component:"):
-            component_id = frame.split(":", 1)[1]
-            state = self.component_states.get(component_id)
-            if state is not None:
-                return getattr(state, "orientation", IDENTITY_ORIENTATION)
         if frame == "local":
             state = self.component_states.get(ref)
+            if state is not None:
+                return getattr(state, "orientation", IDENTITY_ORIENTATION)
+        component_id = _frame_component_id(frame)
+        if component_id:
+            state = self.component_states.get(component_id)
             if state is not None:
                 return getattr(state, "orientation", IDENTITY_ORIENTATION)
         return IDENTITY_ORIENTATION
@@ -1033,13 +1041,12 @@ class ConstraintSolver:
             )
 
         if orient.vector is None:
-            if orient.frame.startswith("component:"):
-                frame_id = orient.frame.split(":", 1)[1]
-                if frame_id not in resolver.component_states:
-                    diagnostics.add_warning(
-                        f"component '{component.id}' orient.frame references unknown component '{frame_id}'",
-                        subject=instance_id,
-                    )
+            frame_id = _frame_component_id(orient.frame)
+            if frame_id and frame_id not in resolver.component_states:
+                diagnostics.add_warning(
+                    f"component '{component.id}' orient.frame references unknown component '{frame_id}'",
+                    subject=instance_id,
+                )
             base_orientation = resolver._frame_orientation(orient.frame, component.id)
             if orient.twist is None:
                 if orient.axis is not None:

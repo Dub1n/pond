@@ -8,6 +8,7 @@ from typing import Dict, Iterable, List, Sequence, Tuple
 
 from shapely.geometry import Polygon as ShapelyPolygon
 
+from .ifc_rules import IFC_REQUIREMENTS
 from .planner import RelationshipPlanner
 from .solver import ConstraintSolver, NeutralPrimitive, SolveResult, mesh_from_primitive
 from .schema import MirrorOperation, RelationshipDiagramSpec, RotateOperation, TranslateOperation
@@ -33,6 +34,15 @@ class DualRenderDiff:
     match: bool
 
 
+@dataclass(slots=True)
+class IfcModelReport:
+    errors: List[str]
+    validation_available: bool
+    missing_relvoid_pairs: Tuple[str, ...] = ()
+    missing_type_templates: Tuple[str, ...] = ()
+    missing_mapped_templates: Tuple[str, ...] = ()
+
+
 def validate_relationship_spec(spec: RelationshipDiagramSpec) -> ValidationReport:
     solver = ConstraintSolver(spec)
     result = solver.solve()
@@ -40,11 +50,17 @@ def validate_relationship_spec(spec: RelationshipDiagramSpec) -> ValidationRepor
     errors = [err.message for err in result.diagnostics.errors]
     warnings = [warn.message for warn in result.diagnostics.warnings]
     warnings.extend(_operation_order_warnings(spec))
+    warnings.extend(_dof_warnings(result))
 
     if spec.checks and len(result.diagnostics.check_results) < len(spec.checks):
         errors.append("checks block did not emit results for all clauses")
 
-    errors.extend(_ifc_model_errors(result.primitives))
+    ifc_report = _ifc_model_report(result.primitives)
+    errors.extend(ifc_report.errors)
+    errors.extend(_ifc_completeness_errors(result.primitives))
+    completeness_summary = _ifc_completeness_summary(result.primitives, ifc_report)
+    if completeness_summary:
+        warnings.append(completeness_summary)
 
     checksum = mesh_checksum(result.primitives) if result.primitives else None
     return ValidationReport(result=result, errors=errors, warnings=warnings, mesh_checksum=checksum)
@@ -100,6 +116,14 @@ def _operation_order_warnings(spec: RelationshipDiagramSpec) -> List[str]:
                     "earlier transforms will not affect clones created later"
                 )
                 break
+    return warnings
+
+
+def _dof_warnings(result: SolveResult) -> List[str]:
+    warnings: List[str] = []
+    for instance_id, dof in sorted(result.diagnostics.degrees_of_freedom.items()):
+        if dof > 0:
+            warnings.append(f"component '{instance_id}' has {dof} unresolved degrees of freedom")
     return warnings
 
 
@@ -167,13 +191,82 @@ def _ring_bytes(points: Sequence[Tuple[float, float]]) -> bytes:
     return digest.digest()
 
 
-def _ifc_model_errors(primitives: Sequence[NeutralPrimitive]) -> List[str]:
+def _ifc_completeness_errors(primitives: Sequence[NeutralPrimitive]) -> List[str]:
+    errors: List[str] = []
+    for prim in primitives:
+        class_lower = (prim.class_name or "").lower()
+        requirements = IFC_REQUIREMENTS.get(class_lower)
+        if not requirements:
+            continue
+        predefined_value = None
+        if prim.ifc and isinstance(prim.ifc, dict):
+            predefined_value = prim.ifc.get("predefined_type")
+        if requirements.get("predefined") and not predefined_value:
+            errors.append(
+                f"component '{prim.id}' ({prim.class_name}) must declare ifc.predefined_type per mapping table"
+            )
+        allowed_predefined = requirements.get("allowed_predefined")
+        if allowed_predefined and predefined_value and str(predefined_value).upper() not in allowed_predefined:
+            errors.append(
+                f"component '{prim.id}' ({prim.class_name}) uses unsupported predefined_type '{predefined_value}'"
+            )
+        if requirements.get("material") and not prim.material:
+            errors.append(f"component '{prim.id}' ({prim.class_name}) must declare a material")
+    return errors
+
+
+def _ifc_completeness_summary(
+    primitives: Sequence[NeutralPrimitive],
+    report: IfcModelReport,
+) -> str | None:
+    ifc_prims = [prim for prim in primitives if (prim.class_name or "").lower() in IFC_REQUIREMENTS]
+    if not ifc_prims and not report.errors:
+        return None
+
+    missing_predefined = 0
+    missing_material = 0
+    for prim in ifc_prims:
+        class_lower = (prim.class_name or "").lower()
+        requirements = IFC_REQUIREMENTS.get(class_lower)
+        if not requirements:
+            continue
+        predefined_value = None
+        if prim.ifc and isinstance(prim.ifc, dict):
+            predefined_value = prim.ifc.get("predefined_type")
+        if requirements.get("predefined") and not predefined_value:
+            missing_predefined += 1
+        if requirements.get("material") and not prim.material:
+            missing_material += 1
+
+    summary_bits = [f"IFC completeness: {len(ifc_prims)} IFC components"]
+    if missing_predefined:
+        summary_bits.append(f"missing predefined_type: {missing_predefined}")
+    if missing_material:
+        summary_bits.append(f"missing material: {missing_material}")
+    if report.validation_available:
+        if report.missing_relvoid_pairs:
+            summary_bits.append(f"missing RelVoids: {len(report.missing_relvoid_pairs)}")
+        if report.missing_type_templates:
+            summary_bits.append(f"missing type defs: {len(report.missing_type_templates)}")
+        if report.missing_mapped_templates:
+            summary_bits.append(f"missing mapped items: {len(report.missing_mapped_templates)}")
+        if len(summary_bits) == 1:
+            summary_bits.append("clone propagation OK")
+    else:
+        summary_bits.append("clone propagation not validated (ifcopenshell unavailable)")
+    return "; ".join(summary_bits)
+
+
+def _ifc_model_report(primitives: Sequence[NeutralPrimitive]) -> IfcModelReport:
     try:
         from diagramming.planner.exporters import IfcExporter
         import ifcopenshell
         from ifcopenshell.util import element as ifc_element_utils
     except Exception as exc:  # pragma: no cover - dependency guard
-        return [f"IFC validation skipped: {exc}"]
+        return IfcModelReport(
+            errors=[f"IFC validation skipped: {exc}"],
+            validation_available=False,
+        )
 
     exporter = IfcExporter()
     with TemporaryDirectory() as tmpdir:
@@ -185,7 +278,7 @@ def _ifc_model_errors(primitives: Sequence[NeutralPrimitive]) -> List[str]:
     project = next(iter(model.by_type("IfcProject")), None)
     if project is None:
         errors.append("IFC validation: missing IfcProject")
-        return errors
+        return IfcModelReport(errors=errors, validation_available=True)
 
     units = list(getattr(project.UnitsInContext, "Units", []))
     length_units = [u for u in units if getattr(u, "UnitType", "") == "LENGTHUNIT"]
@@ -342,7 +435,13 @@ def _ifc_model_errors(primitives: Sequence[NeutralPrimitive]) -> List[str]:
     if missing_mapped:
         errors.append(f"IFC validation: repeated templates missing mapped Body representations ({', '.join(sorted(missing_mapped))})")
 
-    return errors
+    return IfcModelReport(
+        errors=errors,
+        validation_available=True,
+        missing_relvoid_pairs=tuple(sorted(missing_pairs)),
+        missing_type_templates=tuple(sorted(missing_types)),
+        missing_mapped_templates=tuple(sorted(missing_mapped)),
+    )
 
 
 __all__ = [

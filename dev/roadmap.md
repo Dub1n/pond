@@ -10,7 +10,7 @@
 - [x] Extend axis-map entries to accept multiple refs per subject axis for non-orthogonal placement (multi-ref axis-maps).
 - [x] Update schema/solver/lint/tests for non-orthogonal relate/array placement and repeat vectors; add fixtures for rotated/diagonal runs.
 - [x] Update docs/axis-maps.md with multi-ref inputs and non-grid-aligned examples; follow with a doc sweep (instructions/DEVELOPMENT).
-- [ ] Allow `frame: <component_id>` shorthand (reserve `world`/`local`; keep legacy `component:<id>` accepted during transition).
+- [x] Allow `frame: <component_id>` shorthand (reserve `world`/`local`; keep legacy `component:<id>` accepted during transition).
 - [x] Implement frame-aware placement (subject/object frames, frame on `flush`), preserving gaps and size inference when transforming frames.
 - [x] Enforce `mode: plane|edge|point`, honour `tolerance`/`on_fail`, and improve DOF reporting; add fail-on-warn paths for collisions/under/over-constraint. (Progress: lint enforces mode shapes; solver trims extra axes per mode, reports DOF, and fail-on-warn can promote under-constraint warnings; checks honour tolerance/on_fail.)
 - [x] Finalise selector/clone semantics (template vs placement IDs, id_map remapping, metadata/IFC propagation to clones); lint `base#n` and selectors consistently. (Progress: id_map length lint, selector warnings, clone metadata/IFC/material propagation. Remaining: ✅ enforce `base#n` validity, deterministic template/placement remap, IFC/void propagation to clones, selector/id_map fixtures.)
@@ -32,15 +32,15 @@
 
 ## Backlog – relationship-first hardening
 
-- [ ] IFC completeness gate: fail when IFC-classed components lack predefined type/material or RelVoids/mapped items don’t propagate to clones; emit a completeness summary.
+- [x] IFC completeness gate: fail when IFC-classed components lack predefined type/material or RelVoids/mapped items don’t propagate to clones; emit a completeness summary.
 - [x] Array guardrails: enforce `count >= 2`, deprecate legacy `run_between` name in lint/errors; keep 3D `orient: along_run`.
-- [ ] Checks/diagnostics depth: formalise warning/error surfacing for collisions and under/over-constraint; add DOF reporting. (Progress: DOF reporting in solver; tolerance/on_fail on checks; warnings emitted for remaining axes.)
+- [x] Checks/diagnostics depth: formalise warning/error surfacing for collisions and under/over-constraint; add DOF reporting. (Progress: DOF reporting in solver; tolerance/on_fail on checks; warnings emitted for remaining axes.)
 - [x] Frame projection diagnostics: add per-relation context (axis remap, frame, offsets), tolerance threshold for warnings, and optional per-frame summaries.
 - [x] Component-frame coverage: add fixtures/tests for `frame: <component_id>` placement and size-axis remapping.
 - [ ] Clone-aware linting: accept `base#n` refs, validate cloned instance IDs/selectors consistently; fail unknown clone refs.
 - [ ] Selector hygiene: lint unknown selectors and id_map/count mismatches; warn when transforms run before array expansion if that risks nondeterminism.
 - [ ] Docs/tests gate: new helpers/ops must ship with regression tests covering axis-map + IFC output; gate docs accordingly.
-- [ ] Additional diagnostics: add fail-on-warn modes and parity checks for collisions/under/over-constraint; keep DOF reporting flagged until implemented.
+- [ ] Additional diagnostics: add fail-on-warn modes and parity checks for collisions/under/over-constraint.
 
 ## Backlog – legacy teardown (Phase 4.5)
 
@@ -60,7 +60,7 @@
 - [ ] `--explain` CLI flag dumping intermediate constraint/geometry overlays (SVG/JSON) for debugging.
 - [ ] Footprint offset helpers on solids to keep reveals/tolerances declarative.
 - [ ] Selector groups and selector integration across operations/booleans; lint support.
-- [ ] DOF reporting and richer diagnostics surfaced once implemented.
+- [ ] Richer diagnostics surfaced once implemented.
 - [ ] Consider equation-style repeat keys (e.g., `y=x`) alongside vector strings.
 - [ ] Re-evaluate `relate_from`/assemblies once core axis-map is stable (decide whether to reintroduce with coverage).
 

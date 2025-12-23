@@ -15,14 +15,6 @@ from .schema import (
 from .solver import ConstraintSolver
 
 
-IFC_REQUIREMENTS = {
-    "ifcbeam": {"predefined": True, "material": True, "allowed_predefined": {"BEAM", "JOIST", "EDGEBEAM"}},
-    "ifcmember": {"predefined": True, "material": True},
-    "ifcslab": {"predefined": True, "material": True, "allowed_predefined": {"FLOOR"}},
-    "ifcopeningelement": {"predefined": True, "material": False, "allowed_predefined": {"OPENING"}},
-    "ifcfooting": {"predefined": True, "material": True},
-}
-
 
 def lint_relationship_spec(spec: RelationshipDiagramSpec) -> List[str]:
     """
@@ -76,23 +68,6 @@ def lint_relationship_spec(spec: RelationshipDiagramSpec) -> List[str]:
             datum_bundles=datum_bundles,
             errors=errors,
         )
-        for prim in result.primitives:
-            class_lower = (prim.class_name or "").lower()
-            requirements = IFC_REQUIREMENTS.get(class_lower)
-            if not requirements:
-                continue
-            predefined_value = None
-            if prim.ifc and isinstance(prim.ifc, dict):
-                predefined_value = prim.ifc.get("predefined_type")
-            if requirements.get("predefined") and not predefined_value:
-                errors.append(f"component '{prim.id}' ({prim.class_name}) is missing ifc.predefined_type")
-            allowed_predefined = requirements.get("allowed_predefined")
-            if allowed_predefined and predefined_value and str(predefined_value).upper() not in allowed_predefined:
-                errors.append(
-                    f"component '{prim.id}' ({prim.class_name}) uses unsupported predefined_type '{predefined_value}'"
-                )
-            if requirements.get("material") and not prim.material:
-                errors.append(f"component '{prim.id}' ({prim.class_name}) is missing material for IFC export")
     except Exception as exc:  # pragma: no cover - guardrail for missing deps
         errors.append(f"lint solver failed: {exc}")
 
@@ -134,20 +109,6 @@ def _lint_component(
             if axis not in axes_present:
                 errors.append(f"component '{component.id}' is missing placement on axis {axis}")
 
-    requirements = IFC_REQUIREMENTS.get(class_lower)
-    if requirements:
-        if requirements.get("predefined") and (component.ifc is None or component.ifc.predefined_type is None):
-            errors.append(
-                f"component '{component.id}' ({component.class_name}) must declare ifc.predefined_type per mapping table"
-            )
-        allowed_predefined = requirements.get("allowed_predefined")
-        if allowed_predefined and component.ifc and component.ifc.predefined_type:
-            if str(component.ifc.predefined_type).upper() not in allowed_predefined:
-                errors.append(
-                    f"component '{component.id}' ({component.class_name}) uses unsupported predefined_type '{component.ifc.predefined_type}'"
-                )
-        if requirements.get("material") and not component.material:
-            errors.append(f"component '{component.id}' ({component.class_name}) must declare a material")
 
 
 def _axis_coverage(component: RelationshipComponent) -> Set[str]:

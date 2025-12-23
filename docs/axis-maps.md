@@ -170,7 +170,7 @@ Signed axes also allow the same component to participate in multiple relationshi
 
 ## Frames and projection
 
-Axis-maps are evaluated in a chosen frame. The frame determines which way “+x” points and how gaps/offsets are applied. Component ids used as frames cannot be `world` or `local`. When a frame is not axis-aligned with world space, an implementation can:
+Axis-maps are evaluated in a chosen frame. The frame determines which way “+x” points and how gaps/offsets are applied. Component ids used as frames cannot be `world` or `local`. `frame: <component_id>` is the preferred shorthand, with legacy `component:<id>` accepted during transition. When a frame is not axis-aligned with world space, an implementation can:
 
 - Project local axes onto world axes (e.g. local +x → world +y if rotated 90°)
 - Emit diagnostics that explain the projection and any loss of alignment
@@ -192,6 +192,8 @@ Each axis-map entry is interpreted under an explicit **mode**:
 - **Plane**: constrains a face or plane (2 DOF)
 
 This aligns the schema directly with geometric degrees of freedom rather than UI metaphors. It allows the solver to reason precisely about what remains unconstrained, and enables diagnostics that explain *which* freedoms are still available and *why*.
+
+Implementations should surface DOF summaries alongside axis-level warnings so under-constrained components are easy to audit and promote to errors when `fail_on_warn` is enabled.
 
 ---
 
@@ -292,6 +294,7 @@ Although axis-maps are intentionally minimal, a few behaviours should stay consi
 
 - **Frames and projection**: interpret subject axes in the declared frame (`world`, `local`, or another component). If the frame is not axis-aligned, project local axes onto world axes; apply gaps/offsets in the projected direction and surface diagnostics to explain the mapping.
 - **Modes and DOF**: `plane` constrains one axis, `edge` constrains two, and `point` constrains three; extra subject axes may be ignored with a warning. Use this to reason about remaining degrees of freedom rather than forcing full mates.
+- **DOF reporting**: warn when axes remain unconstrained and include per-component DOF summaries so under-constrained placements are visible in lint/CI.
 - **Size inference**: when opposing faces on an axis are constrained, infer size; if an explicit size disagrees, treat it as a validation error. Missing size + missing faces leaves the axis unconstrained (report as such). Arrays can reuse these spans to interpolate inferred sizes along a run.
 - **Tolerance and severity**: when comparing subject/target coordinates, apply `tolerance` before deciding pass/fail, and honour `on_fail: warn|error|ignore`. If an environment promotes warnings, escalate after collecting results.
 - **Composition**: helpers such as `flush` or array `start`/`end` anchors should expand into explicit axis-map entries so the canonical shape remains stable.
