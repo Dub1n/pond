@@ -28,7 +28,7 @@ class RelationshipPlannerTests(unittest.TestCase):
                 class: IfcSlab
                 size: [1200, 800, 50]
                 material: decking
-                views: [section]
+                views: [plan, section]
                 relate:
                   +x+y-x-y: { ref: frame, pos: +x+y-x-y }
                   +z: { ref: origin, pos: +z }
@@ -64,7 +64,7 @@ class RelationshipPlannerTests(unittest.TestCase):
         self.assertAlmostEqual(slab.shape.centroid.y, 0.0, delta=1e-3)
         section_polygons = [feature for feature in section.bundle.polygons if feature.id.startswith("slab@section")]
         self.assertTrue(section_polygons)
-        self.assertEqual(section_polygons[0].views, ("section",))
+        self.assertIn("section", section_polygons[0].views)
 
     def test_show_all_views_includes_untagged_section(self) -> None:
         spec_text = dedent(
