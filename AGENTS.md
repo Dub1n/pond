@@ -14,7 +14,7 @@
 - Lint: `python scripts/lint_specs.py --relationship-only` (or `--legacy-only`), runs solver + IFC validation, collision reporting (`DIAGRAM_RELATIONSHIPS_COLLISIONS=error|warn|ignore`), selector/coverage checks, mesh digests.
 - Tests: `python -m unittest discover`.
 - Baseline freshness: pair render checks with `./.venv/bin/python scripts/baseline_render_check.py --fresh-check` and note results (e.g., “baseline render check passed; rerun … for details”).
-- Helpful spot checks: `scripts/check_water_area.py <spec> --option <key>`; `diagramming/tests/test_layering_debug.py` for layering regressions. If a command fails due to a missing dependency, rerun via the venv (`./.venv/bin/python …`) and add the package to `requirements.txt`.
+- Helpful spot checks: `scripts/check_water_area.py <spec> --view plan`; `diagramming/tests/test_renderer.py` for layering regressions. If a command fails due to a missing dependency, rerun via the venv (`./.venv/bin/python …`) and add the package to `requirements.txt`.
 
 ## Coding style & naming
 

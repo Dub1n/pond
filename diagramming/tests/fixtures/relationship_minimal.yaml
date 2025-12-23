@@ -1,59 +1,27 @@
 schema: pond-relationship-test
 info:
   option: X
-  title: "Phase 4 minimal test"
-dimensions:
-  structure:
-    span: 2000
-    inset: 50
-datums:
-  anchor:
-    type: point
-    coordinates:
-      +x: 0
-      +y: 0
-      +z: 0
-  bundles:
-    frame:
-      type: faces
-      origin:
-        ref: datums.anchor
-      span:
-        +x: dimensions.structure.span
-        +y: dimensions.structure.span
-  planes:
-    deck_top:
-      base:
-        ref: datums.anchor
-      normal: +z
-      offset: 28
+  title: "Relationship minimal test"
 components:
-  - id: deck_surface
+  - id: origin
+    kind: reference
+    size: [0, 0, 0]
+  - id: frame
+    kind: reference
+    size: [2000, 2000, 0]
+    relate:
+      cxcy: { ref: origin }
+      cz: { ref: origin }
+  - id: slab
     class: IfcSlab
-    profile: rectangle
-    size: [dimensions.structure.span, dimensions.structure.span, 28]
+    size: [2000, 2000, 28]
     material: decking
     relate:
-      - flush_bundle:
-          bundle: datums.bundles.frame
-          faces: [+x, -x, +y, -y]
-      - touch_planes:
-          object: datums.planes.deck_top
-          faces: [-z]
+      +x+y-x-y: { ref: frame, pos: +x+y-x-y }
+      +z: { ref: origin }
+      -z: { ref: origin, offset: -28 }
     ifc:
-      predefined_type: floor
-      psets:
-        - name: Pset_SlabCommon
-          props:
-            LoadBearing: true
-    repeat:
-      axis: +x
-      span:
-        use: datums.bundles.frame.x
-        inset:
-          start: dimensions.structure.inset
-          end: dimensions.structure.inset
-      pitch: 1000
+      predefined_type: FLOOR
 views:
   plan:
     title: "Plan"
@@ -62,4 +30,4 @@ views:
     title: "Section"
     plane:
       axis: y
-      coordinate: 1000
+      coordinate: 0

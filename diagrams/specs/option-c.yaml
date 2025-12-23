@@ -285,9 +285,7 @@ operations:
       - pad_run2_west
       - pad_run6_west
       - corner_diagonal_deck_to_inner_sw
-      - overhang_tip_nw
       - corner_diagonal_inner_to_opening_sw
-      - corner_diagonal_inner_span_check_sw
       - corner_tie_horizontal_nw
       - corner_tie_vertical_nw
     about: { ref: origin, axis: +z }
@@ -303,10 +301,8 @@ operations:
       pad_outer_corner_nw: [pad_outer_corner_nw, pad_outer_corner_sw, pad_outer_corner_se, pad_outer_corner_ne]
       pad_run2_west: [pad_run2_west, pad_run2_south, pad_run2_east, pad_run2_north]
       pad_run6_west: [pad_run6_west, pad_run6_south, pad_run6_east, pad_run6_north]
-      corner_diagonal_deck_to_inner_nw: [corner_diagonal_deck_to_inner_nw, corner_diagonal_sw_deck_to_inner, corner_diagonal_se_deck_to_inner, corner_diagonal_ne_deck_to_inner]
-      overhang_tip_nw: [overhang_tip_nw, overhang_tip_sw, overhang_tip_se, overhang_tip_ne]
       corner_diagonal_inner_to_opening_sw: [corner_diagonal_inner_to_opening_sw, corner_diagonal_inner_to_opening_se, corner_diagonal_inner_to_opening_ne, corner_diagonal_inner_to_opening_nw]
-      corner_diagonal_inner_span_check_sw: [corner_diagonal_inner_span_check_sw, corner_diagonal_inner_span_check_se, corner_diagonal_inner_span_check_ne, corner_diagonal_inner_span_check_nw]
+      corner_diagonal_deck_to_inner_sw: [corner_diagonal_deck_to_inner_sw, corner_diagonal_deck_to_inner_se, corner_diagonal_deck_to_inner_ne, corner_diagonal_deck_to_inner_nw]
       corner_tie_horizontal_nw: [corner_tie_horizontal_nw, corner_tie_horizontal_sw, corner_tie_horizontal_se, corner_tie_horizontal_ne]
       corner_tie_vertical_nw: [corner_tie_vertical_nw, corner_tie_vertical_sw, corner_tie_vertical_se, corner_tie_vertical_ne]
 

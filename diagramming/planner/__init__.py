@@ -1,8 +1,7 @@
 """
-Diagram planner – turns declarative components into concrete geometry.
+Planner primitives shared by the relationship-first pipeline.
 """
 
 from .bundle import GeometryBundle  # noqa: F401
-from .planner import DiagramPlanner  # noqa: F401
 
-__all__ = ["DiagramPlanner", "GeometryBundle"]
+__all__ = ["GeometryBundle"]

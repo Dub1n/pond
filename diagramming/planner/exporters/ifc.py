@@ -585,6 +585,8 @@ class IfcExporter:
                 void_prim = primitives.get(void_id)
                 if void_prim is None:
                     continue
+                if (void_prim.class_name or "").lower() != "ifcopeningelement":
+                    continue
                 void_template = (
                     getattr(void_prim, "template_id", None)
                     or (void_prim.metadata.get("template_id") if void_prim.metadata else None)

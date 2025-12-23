@@ -3,7 +3,7 @@
 Quick check for water coverage in rendered plan views.
 
 Example:
-  scripts/check_water_area.py diagrams/specs/deck-framing.yaml --option C
+  scripts/check_water_area.py diagrams/specs/option-c.yaml --view plan
 """
 from __future__ import annotations
 
@@ -26,9 +26,8 @@ ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
-from diagramming import DiagramPlanner
+from diagramming.relationships import ConstraintSolver, RelationshipPlanner, load_relationship_spec
 from diagramming.renderers import SvgRenderer
-from diagramming.schema import load_spec
 from scripts.baseline_render_check import run_check as baseline_run_check
 
 
@@ -80,10 +79,21 @@ def _pad_extent(bundle) -> tuple[float, float]:
     return (width + 2 * pad, height + 2 * pad)
 
 
-def measure_water(spec_path: Path, option_key: str, view: str = "plan") -> WaterMetrics:
-    spec = load_spec(spec_path, include_options=[option_key])
-    planner = DiagramPlanner(spec)
-    planned = planner.plan(option_key, view)
+def measure_water(spec_path: Path, option_key: str | None, view: str = "plan") -> WaterMetrics:
+    spec = load_relationship_spec(spec_path)
+    option = option_key or (spec.info.option or "relationship")
+    solver = ConstraintSolver(spec)
+    solved = solver.solve()
+    if not solved.diagnostics.ok:
+        detail = "; ".join(diag.message for diag in solved.diagnostics.errors)
+        raise SystemExit(f"Spec failed to solve: {detail}")
+    planner = RelationshipPlanner(spec, solved)
+    planned_views = planner.plan()
+    try:
+        planned = next(p for p in planned_views if p.view == view)
+    except StopIteration as exc:
+        available = ", ".join(p.view for p in planned_views)
+        raise SystemExit(f"View '{view}' not found. Available views: {available}") from exc
     bundle = planned.bundle
 
     def _is_water(p) -> bool:
@@ -141,7 +151,7 @@ def measure_water(spec_path: Path, option_key: str, view: str = "plan") -> Water
     measured_ratio = water_pixels / total_pixels if total_pixels else 0.0
     return WaterMetrics(
         spec=spec_path,
-        option=option_key,
+        option=option,
         view=view,
         bundle_area=sum(p.shape.area for p in bundle.polygons if p.shape is not None),
         water_area=water_feature.shape.area if water_feature.shape is not None else 0.0,
@@ -168,7 +178,7 @@ def format_metrics(metrics: WaterMetrics) -> str:
 def main(argv: Iterable[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="Check water visibility in rendered plans.")
     parser.add_argument("spec", type=Path, help="Path to spec YAML.")
-    parser.add_argument("--option", required=True, help="Option key to render.")
+    parser.add_argument("--option", help="Option key to render (defaults to info.option).")
     parser.add_argument("--view", default="plan", help="View name (default: plan)")
     parser.add_argument(
         "--skip-baseline",

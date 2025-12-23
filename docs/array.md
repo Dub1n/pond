@@ -10,7 +10,7 @@ instances are placed within), and the optional `repeat` block defines repetition
 `relate`, never both. When you need a single instance, use `array` without a `repeat` block; it is
 equivalent to a single-instance `relate` placement.
 
-This design replaces legacy `run_between` behavior and clarifies the separation between:
+This design replaces legacy `run_between` behavior (which is no longer accepted) and clarifies the separation between:
 
 - Component placement and size (`size`, `relate`)
 - Array space and repetition (`array`)
@@ -92,7 +92,7 @@ These relations define the array space (the bounding faces / anchors for the arr
 - Paired faces (e.g., `-x` and `+x`) define an array span on that axis.
 - A single face (e.g., `-x`) defines the array origin on that axis and implies direction; the array extends away from that face.
 - Center tokens (`cx`, `cy`, `cz`) can be used in the axis-map the same way as `relate`.
-- The `frame` field is accepted (world/local/component frame, with the same rules as `relate`; `frame: <component_id>` shorthand preferred, legacy `component:<id>` accepted).
+- The `frame` field is accepted (world/local/component frame, with the same rules as `relate`; `frame: <component_id>` shorthand preferred).
 - `orient` is optional and sets the orientation of each array instance (same shape as `relate.orient`).
 
 Direction rules for single-axis anchors:
@@ -137,7 +137,7 @@ Rules:
   inclusive of both ends.
 - If only `pitch` is provided, instances repeat as many times as fit; leftover space
   triggers a warning.
-- Each repeat entry can declare `frame: world|local|<component_id>` (legacy `component:<id>` accepted). `world` is default.
+- Each repeat entry can declare `frame: world|local|<component_id>`. `world` is default.
   `local` uses a frame derived from the array axis-map, so repeats can align to the array
   space even when it is rotated or skewed.
 

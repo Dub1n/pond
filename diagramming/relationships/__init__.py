@@ -1,13 +1,8 @@
 """
 Relationship-first schema scaffolding and helpers.
-
-This package intentionally avoids touching the legacy planner until the
-constraint solver and CadQuery integration are ready. The loader and lints
-let us validate relationship-first specs and iterate on the schema surface
-behind a feature flag.
 """
 
-from .flags import is_relationship_schema, relationship_mode_enabled
+from .flags import is_relationship_schema
 from .lint import lint_relationship_spec
 from .solver import ComponentTransform, ConstraintSolver, NeutralPrimitive, SolveDiagnostics, SolveResult, SolvedComponent
 from .schema import (
@@ -21,7 +16,6 @@ from .schema import (
     canonical_pos_token,
     RelationshipComponent,
     RelationshipDiagramSpec,
-    RunBetweenSpec,
     SchemaError,
     load_relationship_spec,
 )
@@ -51,7 +45,6 @@ __all__ = [
     "NeutralPrimitive",
     "RelationshipComponent",
     "RelationshipDiagramSpec",
-    "RunBetweenSpec",
     "SchemaError",
     "SolveDiagnostics",
     "SolveResult",
@@ -65,6 +58,5 @@ __all__ = [
     "is_relationship_schema",
     "load_relationship_spec",
     "mesh_checksum",
-    "relationship_mode_enabled",
     "validate_relationship_spec",
 ]

@@ -26,23 +26,22 @@ if you need rapid freeform sketching, interactive CAD is a better fit. if you ne
 python3 -m venv .venv
 source .venv/bin/activate
 python3 -m pip install -r requirements.txt
-python scripts/build_diagrams.py --spec diagrams/specs/deck-framing.yaml --option A --outdir diagrams/output --force
+python scripts/build_diagrams.py --spec diagrams/specs/option-c.yaml --option C --outdir diagrams/output --force
 ```
 
 - SVGs (and PNGs when `cairosvg` is available) land in `diagrams/output/<spec>/<option>/` alongside `model.glb` (or `.gltf` with `--gltf-format gltf`). IFC exports arrive for relationship builds; skip with `--no-ifc`. Add `--no-png` or `--no-gltf` when iterating. `--orthographic` writes a headless 3D snapshot (requires `pyrender`/`pyglet`); `--step`/`--obj` emit additional 3D exports when the CadQuery solver is active.
-- Lint specs before committing: `python scripts/lint_specs.py --relationship-only` (use `--ci` in CI to enforce relationship-only + fail-on-warn gating). Pair render checks with `./.venv/bin/python scripts/baseline_render_check.py --fresh-check` and note the result.
+- Lint specs before committing: `python scripts/lint_specs.py` (use `--ci` in CI to enforce fail-on-warn gating). Pair render checks with `./.venv/bin/python scripts/baseline_render_check.py --fresh-check` and note the result.
 
 ## Relationship schema highlights
 
 - Axis-map - an explicit axis-level constraint between components: `relate` entries map subject axes (`+x`, `-x+y`, `cxcy`, `~x`, etc.) to targets with explicit `ref`/`pos`/`gap`/`offset`/`mode`. Each axis-map key defines a single plane/edge/point (multi-axis keys are not shorthand for multiple independent plane constraints). `flush` sugar expands to these entries; `place` embeds per-placement axis-maps. Frames (`world`/`local`/`<component_id>`) are honoured during solving with size-axis remapping and contextual warnings + per-frame summaries when frames are not axis-aligned (component ids cannot be `world` or `local`); helper/assembly blocks are rejected in favour of explicit axis-maps. Axis-map refs can target operation clone ids, resolving faces using clone orientation.
 - Datums (points/planes/bundles) resolve dimension expressions and can be referenced anywhere a `ref` is accepted.
-- Arrays use `array` (legacy alias: `run_between`) with axis-map entries plus directional `repeat` vectors (`"x,y,z"`); `through` blocks provide direction checks. `array` is the canonical placement block (single-instance arrays replace `relate`). Instances accept selectors (`id`, `id.original`, `id.clones`) in typed `operations` (rotate/mirror/translate/boolean); rotations remap numbered clones.
+- Arrays use `array` with axis-map entries plus directional `repeat` vectors (`"x,y,z"`); `through` blocks provide direction checks. `array` is the canonical placement block (single-instance arrays replace `relate`). Instances accept selectors (`id`, `id.original`, `id.clones`) in typed `operations` (rotate/mirror/translate/boolean); rotations remap numbered clones.
 - Components can be solids or geometry-less references (`kind: reference`). Missing sizes infer from relation pairs; conflicts lint. Axis-maps support multi-reference entries for rotated placement. Checks reuse the same axis-map vocabulary, honour `tolerance` + `on_fail: warn|error|ignore`, and DOF reporting only warns when an axis remains unconstrained.
 
 ## What you can build
 
-- Deck framing plans/sections (see `diagrams/specs/deck-framing.yaml`) with responsive SVG output, legends, and synchronized plan/section slices derived from the canonical 3D scene.
-- Attachment details (`diagrams/specs/edge-attachments.yaml`) with variant-specific parameters.
+- Relationship-first Option C sketch (see `diagrams/specs/option-c.yaml`) with responsive SVG output, legends, and synchronized plan/section slices derived from the canonical 3D scene.
 - 3D deliverables for downstream tools: glTF/GLB with component metadata, IFC 4.3 Reference View (mm/deg units, Model/Axis/Body contexts, mapped items/types, class-aligned property sets from metadata, material usages, and cloned RelVoids), optional STEP/OBJ, and orthographic snapshots for quick QA.
 
 ## Usage tips and gotchas
@@ -54,7 +53,7 @@ python scripts/build_diagrams.py --spec diagrams/specs/deck-framing.yaml --optio
 
 ## Exports to Blender and friends
 
-1. Run `python scripts/build_diagrams.py --spec diagrams/specs/deck-framing.yaml --option A --outdir diagrams/output --force` (add `--no-png` if you only need 3D output).
+1. Run `python scripts/build_diagrams.py --spec diagrams/specs/option-c.yaml --option C --outdir diagrams/output --force` (add `--no-png` if you only need 3D output).
 2. Import `model.glb` into Blender (`File → Import → glTF 2.0`). Units are metres; IDs, labels, and materials are embedded in node metadata. Each resolved component (including repeats/clones/booleans) is its own glTF node.
 
 For implementation details, architecture notes, and development workflows, see `DEVELOPMENT.md` and `architecture-spec.md`. Tasks live in `dev/roadmap.md`.

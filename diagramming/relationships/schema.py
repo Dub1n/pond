@@ -282,10 +282,7 @@ def _parse_frame(raw: Any) -> FrameToken:
     value = raw_value.lower()
     if value in VALID_FRAMES:
         return value
-    if value.startswith("component:"):
-        component_id = raw_value.split(":", 1)[1].strip()
-    else:
-        component_id = raw_value
+    component_id = raw_value
     if not component_id:
         raise SchemaError("frame component id cannot be empty")
     if component_id.lower() in VALID_FRAMES:
@@ -421,19 +418,6 @@ class OrientSpec:
     vector: Optional[Tuple[float, float, float]] = None
     axis: Optional[AxisToken] = None
     twist: Optional[float] = None
-
-
-@dataclass(slots=True)
-class RunBetweenSpec:
-    start_relations: Tuple[AxisRelation, ...]
-    end_relations: Tuple[AxisRelation, ...] = ()
-    orient: str = "preserve_axes"
-    count: Optional[int] = None
-    pitch: Optional[float] = None
-    inset_start: Optional[float] = None
-    inset_end: Optional[float] = None
-    include_seed: bool = False
-    source: str = "run_between"
 
 
 @dataclass(slots=True)
@@ -761,7 +745,7 @@ def _parse_component(data: Mapping[str, Any], dimensions: DimensionResolver) -> 
     comp_id = str(data["id"])
     if "relate_from" in data:
         raise SchemaError(f"component '{comp_id}' uses relate_from, which has been removed")
-    if "relate" in data and (data.get("array") is not None or data.get("run_between") is not None):
+    if "relate" in data and data.get("array") is not None:
         raise SchemaError(f"component '{comp_id}' cannot specify both relate and array")
     kind = str(data.get("kind", "component")).lower()
     class_raw = data.get("class")
@@ -804,10 +788,9 @@ def _parse_component(data: Mapping[str, Any], dimensions: DimensionResolver) -> 
         relate_raw = {key: value for key, value in relate_raw.items() if key != "orient"}
     relations = tuple(_parse_axis_map(relate_raw, dimensions))
     array_raw = data.get("array")
-    run_between_raw = data.get("run_between")
-    if array_raw is not None and run_between_raw is not None:
-        raise SchemaError(f"component '{comp_id}' cannot specify both array and run_between")
-    array = _parse_array(array_raw, dimensions, source="array") if array_raw is not None else _parse_array(run_between_raw, dimensions, source="run_between")
+    if "run_between" in data:
+        raise SchemaError(f"component '{comp_id}' uses run_between, which has been removed; use array")
+    array = _parse_array(array_raw, dimensions, source="array") if array_raw is not None else None
     place = tuple(_parse_place(data.get("place", ()), dimensions))
     description = str(data["description"]) if "description" in data else None
     material = str(data["material"]) if data.get("material") is not None else None

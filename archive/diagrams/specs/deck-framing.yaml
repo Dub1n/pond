@@ -17,10 +17,10 @@ options:
         background: "#ffffff"
         plane:
           axis: y
-          coordinate: 6000
+          coordinate: 3300
     components:
       - type: rectangle
-        id: deck_walkway
+        id: deck_outer
         size: [7000, 7000]
         origin: [0, 0]
         class: component-structure
@@ -30,7 +30,6 @@ options:
         material: decking
         metadata:
           elevation: 370
-        views: [plan]
         cutouts:
           - size: [3000, 3000]
             anchor:
@@ -39,36 +38,17 @@ options:
       - type: rectangle
         id: pond_water
         size: [3000, 3000]
-        origin: [2000, 2000]
+        anchor:
+          ref: deck_outer
+          align: center
+          anchor_point: center
         class: component-water
-        label: "Pond opening (3.0 m square)"
-        label_id: "C"
+        label: "Pond water"
+        label_id: "W"
         height: 900
         material: water
         metadata:
           elevation: -900
-        views: [plan]
-      - type: rectangle
-        id: support_beam
-        size: [3360, 3360]
-        anchor:
-          ref: pond_water
-          align: center
-          anchor_point: center
-        cutouts:
-          - size: [3000, 3000]
-            anchor:
-              ref: self
-              align: center
-        class: component-beam
-        label: "Support beam at pond edge"
-        label_id: "S"
-        height: 220
-        material: timber
-        metadata:
-          elevation: 0
-        views: [plan]
-        views: [plan, section]
       - type: rectangle
         id: deck_overhang
         size: [3000, 3000]
@@ -76,366 +56,691 @@ options:
           ref: pond_water
           align: center
           anchor_point: center
-        class: component
+        class: component-structure
         label: "Cantilevered deck (0.5 m overhang)"
         label_id: "CL"
         height: 28
         material: decking
         metadata:
           elevation: 370
-        views: [plan, section]
         cutouts:
           - size: [2000, 2000]
             anchor:
               ref: self
               align: center
       - type: rectangle
+        id: beam_west
+        size: [180, 3360]
+        anchor:
+          ref: pond_water
+          align: west
+          anchor_point: west
+          offset: [-180, 0]
+        class: component-structure
+        label: "Support beam at pond edge"
+        label_id: "S"
+        height: 220
+        material: timber
+        metadata:
+          elevation: 0
+      - type: rectangle
         id: joists_west
-        size: [2000, 140]
+        size: [2500, 140]
         anchor:
           ref: pond_water
           align: north_west
           anchor_point: north_east
-          offset: [0, 430]
+          offset: [500, 430]
         repeat:
           count: 6
           spacing: [0, 400]
-        class: component-outline
+        class: component-structure
         label: "47×150 mm joist @ 400 mm centres"
         label_id: "E"
         height: 150
         material: joist
         metadata:
           elevation: 220
-        views: [plan]
       - type: rectangle
-        id: joists_east
-        size: [2000, 140]
+        id: west_posts
+        size: [160, 160]
         anchor:
-          ref: pond_water
-          align: north_east
-          anchor_point: north_west
-          offset: [0, 430]
+          ref: joists_west
+          align: west
+          anchor_point: center
+          offset: [80, 0]
         repeat:
           count: 6
           spacing: [0, 400]
-        class: component-outline
-        label: "47×150 mm joist @ 400 mm centres"
-        label_id: "E"
-        height: 150
-        material: joist
+        class: component-structure
+        label: "Perimeter posts"
+        label_id: "P"
+        height: 370
+        material: timber
         metadata:
-          elevation: 220
-        views: [plan]
-      - type: rectangle
-        id: joists_south
-        size: [140, 2000]
-        anchor:
+          elevation: -150
+    operations:
+      - type: rotate
+        targets: [joists_west, west_posts, beam_west]
+        count: 4
+        angle: 90
+        include_base: true
+        about:
           ref: pond_water
-          align: south_west
-          anchor_point: north_west
-          offset: [-430, 0]
-        repeat:
-          count: 6
-          spacing: [400, 0]
-        class: component-outline
-        label: "47×150 mm joist @ 400 mm centres"
-        label_id: "E"
-        height: 150
-        material: joist
-        metadata:
-          elevation: 220
-        views: [plan]
+          align: center
 
   B:
-    title: "Option B — 1 m walk with header + outriggers"
+    title: "Option B — 1 m walk, 0.5 m overhang"
+    dimensions:
+      pond_span: 3000
+      walkway_backspan: 1000
+      cantilever: 500
+      walkway_total: 1500
+      deck_span: 5000
+      header_overlap: 500
+      header_span: 4000
+      header_offset: 500
+      beam_width: 180
+      beam_height: 200
+      trimmer_width: 180
+      joist_width: 140
+      joist_depth: 150
+      joist_spacing: 400
+      rim_block_width: 140
+      rim_board_width: 145
+      strap_band_width: 80
+      post_size: 160
+      pad_size: 300
+      pad_height: 100
+      deck_thickness: 28
+      joist_elevation: 0
+      deck_elevation: 150
+      water_depth: 900
+      soil_depth: 900
     views:
       plan:
-        title: "Option B plan — Header 0.5 m back with outriggers"
-        aria_label: "Plan view of Option B showing headers 0.5 m behind the pond edge and cantilevered outriggers."
+        title: "Option B plan — 1 m walk with 0.5 m overhang"
+        aria_label: "Plan view of Option B showing the 1 m walk-around, 0.5 m cantilever, and header laps."
         scale: 0.18
         background: "#ffffff"
       section:
-        title: "Option B section — Header carries 0.5 m cantilever"
-        aria_label: "Section view of Option B showing the header and outriggers supporting the cantilever."
+        title: "Option B section — continuous joists with header backspan and 0.5 m cantilever"
+        aria_label: "Section view of Option B highlighting joist continuity from perimeter beam to header and cantilever strap."
         scale: 0.18
         background: "#ffffff"
+        plane:
+          axis: y
+          coordinate: 2500
     components:
       - type: rectangle
-        id: deck_outer
-        size: [5000, 5000]
+        id: deck_walkway
+        size: [deck_span, deck_span]
         origin: [0, 0]
-        label: "Deck surface"
+        class: component-structure
+        label: "Deck walkway (1.0 m walk)"
         label_id: "B1"
-        class: component
-        views: [plan]
+        height: deck_thickness
+        material: decking
+        metadata:
+          elevation: deck_elevation
         cutouts:
-          - size: [3000, 3000]
+          - size: [pond_span, pond_span]
             anchor:
               ref: self
               align: center
       - type: rectangle
         id: pond_water
-        size: [3000, 3000]
+        size: [pond_span, pond_span]
         anchor:
-          ref: deck_outer
+          ref: deck_walkway
           align: center
           anchor_point: center
         class: component-water
         label: "Pond water"
         label_id: "B2"
-        views: [plan]
+        height: water_depth
+        material: water
+        metadata:
+          elevation: -water_depth
       - type: rectangle
-        id: header_north
-        size: [3000, 180]
+        id: deck_cantilever
+        size: [pond_span, pond_span]
         anchor:
           ref: pond_water
-          align: north
-          anchor_point: south
-          offset: [0, -500]
-        class: component-structure
-        label: "Header beam"
-        label_id: "HB"
-        views: [plan]
-      - type: rectangle
-        id: header_south
-        size: [3000, 180]
-        anchor:
-          ref: pond_water
-          align: south
-          anchor_point: north
-          offset: [0, 500]
-        class: component-structure
-        label: "Header beam"
-        label_id: "HB"
-        views: [plan]
-      - type: rectangle
-        id: header_west
-        size: [180, 3000]
-        anchor:
-          ref: pond_water
-          align: west
-          anchor_point: east
-          offset: [-500, 0]
-        class: component-structure
-        label: "Side trimmer"
-        label_id: "ST"
-        views: [plan]
-      - type: rectangle
-        id: header_east
-        size: [180, 3000]
-        anchor:
-          ref: pond_water
-          align: east
-          anchor_point: west
-          offset: [500, 0]
-        class: component-structure
-        label: "Side trimmer"
-        label_id: "ST"
-        views: [plan]
-      - type: rectangle
-        id: outriggers_north
-        size: [140, 600]
-        anchor:
-          ref: header_north
-          align: south_west
-          anchor_point: north_west
-          offset: [200, 0]
-        repeat:
-          count: 6
-          spacing: [420, 0]
-        class: component-outline
-        label: "Cantilever outriggers"
-        label_id: "OR"
-        views: [plan]
-      - type: rectangle
-        id: outriggers_south
-        size: [140, 600]
-        anchor:
-          ref: header_south
-          align: north_west
-          anchor_point: south_west
-          offset: [200, 0]
-        repeat:
-          count: 6
-          spacing: [420, 0]
-        class: component-outline
-        label: "Cantilever outriggers"
-        label_id: "OR"
-        views: [plan]
-      - type: polyline
-        id: strap_line
-        points:
-          - [0, 0]
-          - [3000, 0]
-        anchor:
-          ref: header_north
-          align: south
-          anchor_point: north
-          offset: [0, 120]
-        class: component-detail
-        label: "Strap line"
-        label_id: "STP"
-        views: [plan]
-      - type: rectangle
-        id: section_header
-        size: [3000, 180]
-        origin: [0, 0]
-        class: component-structure
-        label: "Header beam"
-        label_id: "HB"
-        views: [section]
-      - type: rectangle
-        id: section_outrigger
-        size: [600, 140]
-        anchor:
-          ref: section_header
-          align: north
-          anchor_point: south
-          offset: [0, -600]
-        class: component-outline
-        label: "Cantilevered outrigger"
-        label_id: "OR"
-        views: [section]
-      - type: rectangle
-        id: section_water
-        size: [3000, 360]
-        anchor:
-          ref: section_header
           align: center
           anchor_point: center
-          offset: [0, 260]
-        class: component-water
-        label: "Water level"
-        label_id: "W"
-        views: [section]
-      - type: rectangle
-        id: section_soil
-        size: [5000, 200]
-        anchor:
-          ref: section_water
-          align: south
-          anchor_point: north
-          offset: [0, 120]
         class: component-structure
-        label: "Soil base"
-        label_id: "S"
+        label: "Cantilevered deck (0.5 m overhang)"
+        label_id: "B3"
+        height: deck_thickness
+        material: decking
+        vertical:
+          flush:
+            ref: pond_water
+            face: top
+          attach_face: bottom
+          offset: joist_depth
+        cutouts:
+          - size: [pond_span - 2 * cantilever, pond_span - 2 * cantilever]
+            anchor:
+              ref: self
+              align: center
+      - type: rectangle
+        id: rim_board
+        size: [pond_span - 2 * cantilever + 2 * rim_board_width, pond_span - 2 * cantilever + 2 * rim_board_width]
+        anchor:
+          ref: pond_water
+          align: center
+          anchor_point: center
+        class: component-detail
+        label: "Picture-frame rim board"
+        label_id: "B4"
+        height: deck_thickness
+        material: decking
+        views: [plan]
+        cutouts:
+          - size: [pond_span - 2 * cantilever, pond_span - 2 * cantilever]
+            anchor:
+              ref: self
+              align: center
+      - type: polyline
+        id: liner_clamp
+        points:
+          - [0, 0]
+          - [pond_span, 0]
+          - [pond_span, pond_span]
+          - [0, pond_span]
+          - [0, 0]
+        anchor:
+          ref: pond_water
+          align: north_west
+          anchor_point: north_west
+        class: component-detail
+        label: "Liner clamp batten"
+        label_id: "B5"
+        views: [plan]
+      - type: rectangle
+        id: beam_north
+        size: [deck_span, beam_width]
+        placement:
+          flush:
+            ref: deck_walkway
+            edge: north
+          attach_edge: north
+        class: component-structure
+        label: "Perimeter beam (double 47×200)"
+        label_id: "B6"
+        height: beam_height
+        material: timber
+        vertical:
+          flush:
+            ref: pond_water
+            face: top
+          attach_face: bottom
+          offset: joist_elevation - beam_height
+      - type: rectangle
+        id: trimmer_north
+        size: [header_span, trimmer_width]
+        placement:
+          flush:
+            ref: deck_walkway
+            edge: north
+          attach_edge: south
+          inset:
+            east: header_overlap
+            west: header_overlap
+          translate:
+            south: walkway_backspan
+        class: component-structure
+        label: "Side trimmer (double 47×200)"
+        label_id: "B7"
+        height: beam_height
+        material: timber
+        vertical:
+          flush:
+            ref: pond_water
+            face: top
+          attach_face: bottom
+          offset: joist_elevation - beam_height
+      - type: rectangle
+        id: header_north
+        size: [header_span, trimmer_width]
+        placement:
+          flush:
+            ref: deck_walkway
+            edge: north
+          attach_edge: south
+          inset:
+            east: header_overlap
+            west: header_overlap
+          translate:
+            south: header_offset
+        class: component-structure
+        label: "Header (double 47×200 with lap)"
+        label_id: "B8"
+        height: beam_height
+        material: timber
+        vertical:
+          flush:
+            ref: pond_water
+            face: top
+          attach_face: bottom
+          offset: joist_elevation - beam_height
+      - type: rectangle
+        id: joist_run_north
+        size: [joist_width, walkway_total]
+        placement:
+          flush:
+            ref: trimmer_north
+            edge: north
+          attach_edge: south
+          translate:
+            south: cantilever
+        repeat:
+          interval: joist_spacing
+          direction: east
+          span: deck_span - joist_spacing
+          include_base: true
+        class: component-structure
+        label: "47×150 joist @ 400 centres (continuous span)"
+        label_id: "B9"
+        height: joist_depth
+        material: joist
+        vertical:
+          flush:
+            ref: pond_water
+            face: top
+          attach_face: bottom
+          offset: joist_elevation
+      - type: rectangle
+        id: rim_block_north
+        size: [header_span, rim_block_width]
+        placement:
+          flush:
+            ref: header_north
+            edge: south
+          attach_edge: north
+          translate:
+            south: cantilever - rim_block_width
+        class: component-structure
+        label: "Rim blocking at cantilever edge"
+        label_id: "B10"
+        height: joist_depth
+        material: joist
+        views: [plan]
+      - type: rectangle
+        id: cantilever_strap_north
+        size: [joist_width, strap_band_width]
+        placement:
+          flush:
+            ref: joist_run_north
+            edge: south
+          attach_edge: north
+        repeat:
+          interval: joist_spacing
+          direction: east
+          span: deck_span - joist_spacing
+          include_base: true
+        class: component-detail
+        label: "LSTA strap over cantilever"
+        label_id: "B11"
+        views: [plan]
+      - type: rectangle
+        id: pad_run_north
+        size: [pad_size, pad_size]
+        placement:
+          flush:
+            ref: beam_north
+            edge: south
+          attach_edge: center
+          inset:
+            west: post_size / 2
+        repeat:
+          interval: 1500
+          direction: east
+          span: deck_span - post_size
+          include_base: true
+        class: component-structure
+        label: "300×300 pads @ 1.5 m centres"
+        label_id: "B12"
+        height: pad_height
+        material: pad
+        vertical:
+          flush:
+            ref: pond_water
+            face: top
+          attach_face: top
+          offset: -pad_height
+      - type: rectangle
+        id: header_post_north
+        size: [post_size, post_size]
+        placement:
+          flush:
+            ref: header_north
+            edge: south
+          attach_edge: center
+          inset:
+            west: header_overlap
+        repeat:
+          count: 3
+          direction: east
+          span: header_span - 2 * header_overlap
+          include_base: true
+        class: component-structure
+        label: "Header support post"
+        label_id: "B13"
+        height: deck_elevation + pad_height
+        material: timber
+        vertical:
+          flush:
+            ref: pond_water
+            face: top
+          attach_face: bottom
+          offset: -pad_height
+      - type: rectangle
+        id: soil_fill
+        size: [deck_span, deck_span]
+        origin: [0, 0]
+        class: component-structure
+        label: "Soil infill beneath deck"
+        label_id: "B14"
         views: [section]
+        height: soil_depth
+        material: soil
+        vertical:
+          flush:
+            ref: pond_water
+            face: top
+          attach_face: top
+        boolean:
+          subtract:
+            - target: pad_run_north
+              include_generated: true
+        cutouts:
+          - size: [pond_span, pond_span]
+            anchor:
+              ref: self
+              align: center
+      - type: rectangle
+        id: water_plane_section
+        size: [pond_span, deck_span]
+        anchor:
+          ref: pond_water
+          align: center
+          anchor_point: center
+        class: component-water
+        label: "Pond water (section slice)"
+        label_id: "B15"
+        views: [section]
+        height: water_depth
+        material: water
+        vertical:
+          flush:
+            ref: pond_water
+            face: top
+          attach_face: top
+          offset: -water_depth
+    operations:
+      - type: rotate
+        targets:
+          - beam_north
+          - trimmer_north
+          - header_north
+          - joist_run_north
+          - rim_block_north
+          - cantilever_strap_north
+          - pad_run_north
+          - header_post_north
+        count: 4
+        angle: 90
+        include_base: true
+        about:
+          ref: pond_water
+          align: center
 
   C:
-    title: "Option C — 1 m walk, 0.25 m overhang"
+    title: "Option C — 1 m backspan, 0.25 m cantilever"
+    dimensions:
+      deck_span: 5000
+      pond_span: 3000
+      backspan: 1000
+      cantilever: 250
+      walkway_gap: 0
+      joist_width: 47
+      joist_spacing: 400
+      joist_depth: 150
+      beam_width: 47
+      inner_beam_height: 150
+      beam_height: inner_beam_height
+      inner_beam_width: beam_width
+      pad_size: 300
+      pad_height: 100
+      joist_elevation: 0
+      deck_thickness: 28
+      water_depth: 900
+      soil_depth: water_depth
+      corner_run: backspan + cantilever
+      corner_diagonal_length: 1768
+      corner_tie_spacing: 500
     views:
       plan:
-        title: "Option C plan — 1 m walkway with reduced 0.25 m overhang"
-        aria_label: "Plan view of Option C showing 1 m walkway and 0.25 m inward overhang."
+        title: "Option C plan — 1 m backspan with 0.25 m cantilever"
+        aria_label: "Plan view of Option C showing a 1 m backspan and 0.25 m cantilever ring."
         scale: 0.18
         background: "#ffffff"
       section:
-        title: "Option C section — Short cantilever with 1 m backspan"
-        aria_label: "Section view of Option C showing 1 m backspan and 0.25 m cantilever."
+        title: "Option C section — 250 mm cantilever with saddle hanger support"
+        aria_label: "Section view of Option C highlighting the 250 mm cantilever, support beams, and pad foundations."
         scale: 0.18
         background: "#ffffff"
+        plane:
+          axis: y
+          coordinate: 1500
     components:
       - type: rectangle
-        id: deck_outer
-        size: [5000, 5000]
+        id: deck_backspan
+        size: [deck_span, deck_span]
         origin: [0, 0]
-        label: "Deck surface"
+        class: component-structure
+        label: "Deck surface (1.0 m backspan + 0.25 m overhang)"
         label_id: "C1"
-        class: component
-        views: [plan]
+        height: 28
+        material: decking
+        metadata:
+          elevation: joist_depth
         cutouts:
-          - size: [3000, 3000]
+          - size: [pond_span - 2 * cantilever, pond_span - 2 * cantilever]
             anchor:
               ref: self
               align: center
       - type: rectangle
         id: pond_water
-        size: [3000, 3000]
+        size: [pond_span, pond_span]
         anchor:
-          ref: deck_outer
+          ref: deck_backspan
           align: center
           anchor_point: center
         class: component-water
         label: "Pond water"
         label_id: "C2"
-        views: [plan]
+        height: 900
+        material: water
+        metadata:
+          elevation: -900
       - type: rectangle
-        id: walkway_rim
-        size: [5000, 300]
-        anchor:
-          ref: deck_outer
-          align: north
-          anchor_point: north
+        id: inner_beam_west
+        size: [inner_beam_width, deck_span]
+        placement:
+          flush:
+            ref: pond_water
+            edge: west
+          attach_edge: east
         class: component-structure
-        label: "Walkway rim"
-        label_id: "RW"
-        views: [plan]
+        label: "Inner beam (saddle hanger rebate)"
+        label_id: "C4B"
+        height: inner_beam_height
+        material: timber
+        vertical:
+          flush:
+            ref: pond_water
+            face: top
+          attach_face: bottom
       - type: rectangle
-        id: walkway_rim_south
-        size: [5000, 300]
-        anchor:
-          ref: deck_outer
-          align: south
-          anchor_point: south
+        id: beam_west
+        size: [beam_width, deck_span]
+        placement:
+          flush:
+            ref: deck_backspan
+            edge: west
+          attach_edge: west
         class: component-structure
-        label: "Walkway rim"
-        label_id: "RW"
-        views: [plan]
-      - type: polyline
-        id: cantilever_line
-        points:
-          - [0, 0]
-          - [3000, 0]
+        label: "Support beam at outer rim"
+        label_id: "C4"
+        height: beam_height
+        material: timber
+        vertical:
+          flush:
+            ref: pond_water
+            face: top
+          attach_face: bottom
+      - type: rectangle
+        id: joists_west
+        size: [backspan + cantilever - beam_width, joist_width]
         anchor:
           ref: pond_water
-          align: north
-          anchor_point: north
-          offset: [0, -250]
-        class: component-detail
-        label: "0.25 m overhang"
-        label_id: "CL"
-        views: [plan]
+          align: north_west
+          anchor_point: north_east
+          offset: [cantilever, cantilever]
+        repeat:
+          count: 7
+          span: pond_span - 2 * cantilever - joist_width
+          direction: south
+        class: component-structure
+        label: "47×150 mm joist (1.0 m backspan + 0.25 m cantilever)"
+        label_id: "C5"
+        height: 150
+        material: joist
+        vertical:
+          flush:
+            ref: pond_water
+            face: top
+          attach_face: bottom
       - type: rectangle
-        id: section_backspan
-        size: [4000, 140]
+        id: pads_west
+        size: [pad_size, pad_size]
+        anchor:
+          ref: beam_west
+          align: north
+          anchor_point: center
+        repeat:
+          count: 4
+          span: deck_span
+          direction: south
+        class: component-structure
+        label: "Shallow pad foundation"
+        label_id: "C6"
+        height: pad_height
+        material: pad
+        vertical:
+          flush:
+            ref: pond_water
+            face: top
+          attach_face: top
+      - type: rectangle
+        id: corner_diagonal
+        size: [corner_diagonal_length, joist_width]
+        anchor:
+          ref: deck_backspan
+          align: north_west
+          anchor_point: north_west
+        rotation: 45
+        rotation_anchor:
+          ref: self
+          align: north_west
+        class: component-structure
+        label: "Corner joist to overhang"
+        label_id: "C8"
+        height: joist_depth
+        material: joist
+        vertical:
+          flush:
+            ref: pond_water
+            face: top
+          attach_face: bottom
+      - type: rectangle
+        id: corner_tie_horizontal
+        size: [corner_tie_spacing, joist_width]
+        anchor:
+          ref: deck_backspan
+          align: north_west
+          anchor_point: north_west
+          offset: [0, corner_tie_spacing - joist_width / 2]
+        class: component-structure
+        label: "Corner tie to diagonal"
+        label_id: "C9"
+        height: joist_depth
+        material: joist
+        vertical:
+          flush:
+            ref: pond_water
+            face: top
+          attach_face: bottom
+      - type: rectangle
+        id: corner_tie_vertical
+        size: [joist_width, corner_tie_spacing]
+        anchor:
+          ref: deck_backspan
+          align: north_west
+          anchor_point: north_west
+          offset: [corner_tie_spacing - joist_width / 2, 0]
+        class: component-structure
+        label: "Corner tie to diagonal"
+        label_id: "C9"
+        height: joist_depth
+        material: joist
+        vertical:
+          flush:
+            ref: pond_water
+            face: top
+          attach_face: bottom
+      - type: rectangle
+        id: soil_fill
+        size: [deck_span, deck_span]
         origin: [0, 0]
         class: component-structure
-        label: "Backspan framing"
-        label_id: "JF"
+        label: "Soil fill"
+        label_id: "SO"
         views: [section]
-      - type: rectangle
-        id: section_cantilever
-        size: [500, 120]
-        anchor:
-          ref: section_backspan
-          align: east
-          anchor_point: west
-        class: component
-        label: "Cantilevered edge"
-        label_id: "CL"
-        views: [section]
-      - type: rectangle
-        id: section_water
-        size: [3000, 360]
-        anchor:
-          ref: section_backspan
+        height: soil_depth
+        material: soil
+        vertical:
+          flush:
+            ref: pond_water
+            face: top
+          attach_face: top
+        boolean:
+          subtract:
+            - target: pads_west
+              include_generated: true
+        cutouts:
+          - size: [pond_span, pond_span]
+            anchor:
+              ref: self
+              align: center
+    operations:
+      - type: rotate
+        targets:
+          - joists_west
+          - pads_west
+          - beam_west
+          - inner_beam_west
+          - corner_diagonal
+          - corner_tie_horizontal
+          - corner_tie_vertical
+        count: 4
+        angle: 90
+        include_base: true
+        about:
+          ref: pond_water
           align: center
-          anchor_point: center
-          offset: [0, 240]
-        class: component-water
-        label: "Water level"
-        label_id: "W"
-        views: [section]
-      - type: rectangle
-        id: section_soil
-        size: [5000, 200]
-        anchor:
-          ref: section_water
-          align: south
-          anchor_point: north
-          offset: [0, 120]
-        class: component-structure
-        label: "Soil base"
-        label_id: "S"
-        views: [section]
+  

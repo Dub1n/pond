@@ -170,7 +170,7 @@ Signed axes also allow the same component to participate in multiple relationshi
 
 ## Frames and projection
 
-Axis-maps are evaluated in a chosen frame. The frame determines which way “+x” points and how gaps/offsets are applied. Component ids used as frames cannot be `world` or `local`. `frame: <component_id>` is the preferred shorthand, with legacy `component:<id>` accepted during transition. When a frame is not axis-aligned with world space, an implementation can:
+Axis-maps are evaluated in a chosen frame. The frame determines which way “+x” points and how gaps/offsets are applied. Component ids used as frames cannot be `world` or `local`. Use `frame: <component_id>` when you want to borrow a component basis. When a frame is not axis-aligned with world space, an implementation can:
 
 - Project local axes onto world axes (e.g. local +x → world +y if rotated 90°)
 - Emit diagnostics that explain the projection and any loss of alignment

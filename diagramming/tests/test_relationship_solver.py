@@ -764,7 +764,7 @@ class RelationshipSolverTests(unittest.TestCase):
                 class: IfcBeam
                 size: [40, 20, 10]
                 relate:
-                  +x: { ref: host, pos: +x, frame: component:host }
+                  +x: { ref: host, pos: +x, frame: host }
                   cx: { ref: origin }
                   cz: { ref: origin }
                 ifc:

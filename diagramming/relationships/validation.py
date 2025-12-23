@@ -403,6 +403,8 @@ def _ifc_model_report(primitives: Sequence[NeutralPrimitive]) -> IfcModelReport:
             template_for_guid[prim.guid] = template
         for void_id in prim.voids:
             void_prim = prim_by_id.get(void_id)
+            if void_prim is None or (void_prim.class_name or "").lower() != "ifcopeningelement":
+                continue
             if void_prim and void_prim.guid:
                 expected_void_pairs.add((prim.guid, void_prim.guid))
 

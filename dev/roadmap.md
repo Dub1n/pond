@@ -2,7 +2,7 @@
 
 ## Active / near-term
 
-- [x] Enable placements to reference rotated/mirrored clones (resolve axis-map refs to op outputs so specs can anchor to clone faces). Definition of done: `dev/option-c.yaml` builds successfully when C1/C2 use clone refs directly. See `dev/tasks/enable-clone-axis-map-refs.md`.
+- [x] Enable placements to reference rotated/mirrored clones (resolve axis-map refs to op outputs so specs can anchor to clone faces). Definition of done: `diagrams/specs/option-c.yaml` builds successfully when C1/C2 use clone refs directly. See `dev/tasks/enable-clone-axis-map-refs.md`.
 - [x] Array rework: replace start/end run_between with axis-map `array` + `repeat`/`through` semantics (array space, per-axis repetition, through checks, overlap guards). Definition of done: schema/solver/lint/tests/docs updated; existing arrays migrated; new `docs/array.md` aligned.
 - [x] Add optional `orient` field on `relate` and `array` to define explicit instance basis (`vector` + optional `axis`/`twist`, or `frame` inheritance with roll) and bypass inferred orientation when provided.
 - [x] Make `array` the canonical placement block (single-instance arrays replace `relate`) and enforce mutual exclusivity in schema/lint/docs.
@@ -10,7 +10,7 @@
 - [x] Extend axis-map entries to accept multiple refs per subject axis for non-orthogonal placement (multi-ref axis-maps).
 - [x] Update schema/solver/lint/tests for non-orthogonal relate/array placement and repeat vectors; add fixtures for rotated/diagonal runs.
 - [x] Update docs/axis-maps.md with multi-ref inputs and non-grid-aligned examples; follow with a doc sweep (instructions/DEVELOPMENT).
-- [x] Allow `frame: <component_id>` shorthand (reserve `world`/`local`; keep legacy `component:<id>` accepted during transition).
+- [x] Allow `frame: <component_id>` shorthand (reserve `world`/`local`).
 - [x] Implement frame-aware placement (subject/object frames, frame on `flush`), preserving gaps and size inference when transforming frames.
 - [x] Enforce `mode: plane|edge|point`, honour `tolerance`/`on_fail`, and improve DOF reporting; add fail-on-warn paths for collisions/under/over-constraint. (Progress: lint enforces mode shapes; solver trims extra axes per mode, reports DOF, and fail-on-warn can promote under-constraint warnings; checks honour tolerance/on_fail.)
 - [x] Finalise selector/clone semantics (template vs placement IDs, id_map remapping, metadata/IFC propagation to clones); lint `base#n` and selectors consistently. (Progress: id_map length lint, selector warnings, clone metadata/IFC/material propagation. Remaining: ✅ enforce `base#n` validity, deterministic template/placement remap, IFC/void propagation to clones, selector/id_map fixtures.)
@@ -43,12 +43,12 @@
 
 ## Backlog – legacy teardown (Phase 4.5)
 
-- [ ] Remove legacy anchor/planner/rendering helpers and schema surfaces; move legacy specs/fixtures to `archive/`.
-- [ ] Simplify CLI defaults (retire `DIAGRAM_RELATIONSHIPS` flag, dual-path build/lint logic, and legacy-only arguments).
-- [ ] Delete unused legacy exporters/renderers/tests; collapse duplicated bundle/material logic into the relationship pipeline.
-- [ ] Prune docs/examples referencing legacy helpers; refresh onboarding docs to cover relationship-first only.
-- [ ] Run full lint/test/build suite to verify the single-path engine; record final teardown release notes.
-- [ ] Migration playbook executed; legacy schema archived; release notes updated.
+- [x] Remove legacy anchor/planner/rendering helpers and schema surfaces; move legacy specs/fixtures to `archive/`.
+- [x] Simplify CLI defaults (retire `DIAGRAM_RELATIONSHIPS` flag, dual-path build/lint logic, and legacy-only arguments).
+- [x] Delete unused legacy exporters/renderers/tests; collapse duplicated bundle/material logic into the relationship pipeline.
+- [x] Prune docs/examples referencing legacy helpers; refresh onboarding docs to cover relationship-first only.
+- [x] Run full lint/test/build suite to verify the single-path engine; record final teardown release notes.
+- [x] Migration playbook executed; legacy schema archived; release notes updated.
 
 ## Backlog – richer modelling & integrations (Phase 5)
 
@@ -76,8 +76,8 @@
 ## Completed milestones
 
 - [x] Axis-map schema landed (`relate`/`flush`/`place`, center tokens, size inference, aggregate selectors, typed operations; rotations remap clones).
-- [x] Relationship-first solver with CadQuery solids, run_between spans, selector-aware operations, deterministic GUIDs, OCC collision reporting.
+- [x] Relationship-first solver with CadQuery solids, array spans, selector-aware operations, deterministic GUIDs, OCC collision reporting.
 - [x] Planner projects plan/section from solids and emits dimension polylines; renderers share bundle pipeline with legacy path.
 - [x] Exporters: glTF/GLB (tessellated solids), IFC 4.3 Reference View scaffolding, STEP/OBJ from CadQuery.
 - [x] Lint CLI runs solver + IFC validation, checks axis coverage/size inference/selector validity, emits mesh digests.
-- [x] Regression harness covers relationship schema parsing, solver, planner, validation; run_between multi-axis point anchors fixed with coverage.
+- [x] Regression harness covers relationship schema parsing, solver, planner, validation; array multi-axis point anchors fixed with coverage.

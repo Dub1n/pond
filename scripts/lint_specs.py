@@ -20,8 +20,6 @@ from diagramming.relationships import (  # noqa: E402
     load_relationship_spec,
     validate_relationship_spec,
 )
-from diagramming.schema import load_spec  # noqa: E402
-from diagramming.schema.ifc_lint import lint_ifc_metadata  # noqa: E402
 
 
 def find_spec_paths(explicit: Iterable[str]) -> List[Path]:
@@ -35,22 +33,12 @@ def find_spec_paths(explicit: Iterable[str]) -> List[Path]:
 
 
 def parse_args(argv: List[str] | None) -> argparse.Namespace:
-    parser = argparse.ArgumentParser(description="Lint legacy and relationship-first deck specs.")
+    parser = argparse.ArgumentParser(description="Lint relationship-first deck specs.")
     parser.add_argument(
         "--spec",
         action="append",
         dest="specs",
         help="Specific spec files to lint (defaults to diagrams/specs/*.yaml).",
-    )
-    parser.add_argument(
-        "--relationship-only",
-        action="store_true",
-        help="Only lint relationship-first specs.",
-    )
-    parser.add_argument(
-        "--legacy-only",
-        action="store_true",
-        help="Only lint legacy specs using the current planner schema.",
     )
     parser.add_argument(
         "--collision-mode",
@@ -69,57 +57,41 @@ def parse_args(argv: List[str] | None) -> argparse.Namespace:
     parser.add_argument(
         "--ci",
         action="store_true",
-        help="CI gate: relationship-only lint with warnings treated as errors.",
+        help="CI gate: treat warnings as errors.",
     )
     return parser.parse_args(argv)
 
 
-def lint_path(path: Path, *, relationship_only: bool, legacy_only: bool) -> Tuple[bool, List[str]]:
+def lint_path(path: Path) -> Tuple[bool, List[str]]:
     raw = yaml.safe_load(path.read_text(encoding="utf-8"))
     spec_is_relationship = is_relationship_schema(raw.get("schema") if isinstance(raw, dict) else None)
-
-    if relationship_only and not spec_is_relationship:
-        return True, []
-    if legacy_only and spec_is_relationship:
-        return True, []
-
-    if spec_is_relationship:
-        try:
-            spec = load_relationship_spec(path)
-            errors = lint_relationship_spec(spec)
-            report = validate_relationship_spec(spec)
-            errors.extend(report.errors)
-            warnings = report.warnings
-        except SchemaError as exc:
-            return False, [f"{path.name}: {exc}"]
-        messages: List[str] = []
-        if warnings:
-            messages.extend([f"{path.name}: warning: {warn}" for warn in warnings])
-        if errors:
-            prefixed = [f"{path.name}: {err}" for err in errors]
-            prefixed.extend(messages)
-            return False, prefixed
-        checksum_note = f" (mesh {report.mesh_checksum[:12]})" if report.mesh_checksum else ""
-        messages.append(f"{path.name}: relationship-first lint passed{checksum_note}")
-        return True, messages
+    if not spec_is_relationship:
+        return False, [f"{path.name}: not a relationship-first spec; archive legacy specs instead"]
 
     try:
-        spec = load_spec(path)
-    except Exception as exc:  # pragma: no cover - defensive
-        return False, [f"{path.name}: legacy schema failed validation ({exc})"]
-    ifc_errors = lint_ifc_metadata(spec)
-    if ifc_errors:
-        prefixed = [f"{path.name}: {err}" for err in ifc_errors]
+        spec = load_relationship_spec(path)
+        errors = lint_relationship_spec(spec)
+        report = validate_relationship_spec(spec)
+        errors.extend(report.errors)
+        warnings = report.warnings
+    except SchemaError as exc:
+        return False, [f"{path.name}: {exc}"]
+    messages: List[str] = []
+    if warnings:
+        messages.extend([f"{path.name}: warning: {warn}" for warn in warnings])
+    if errors:
+        prefixed = [f"{path.name}: {err}" for err in errors]
+        prefixed.extend(messages)
         return False, prefixed
-    return True, [f"{path.name}: legacy lint passed"]
+    checksum_note = f" (mesh {report.mesh_checksum[:12]})" if report.mesh_checksum else ""
+    messages.append(f"{path.name}: relationship-first lint passed{checksum_note}")
+    return True, messages
 
 
 def main(argv: List[str] | None = None) -> int:
     args = parse_args(argv)
     if args.ci:
         args.fail_on_warn = True
-        if not args.legacy_only:
-            args.relationship_only = True
     if args.collision_mode:
         os.environ["DIAGRAM_RELATIONSHIPS_COLLISIONS"] = args.collision_mode
     if args.collision_ignore:
@@ -134,7 +106,7 @@ def main(argv: List[str] | None = None) -> int:
     all_ok = True
     messages: List[str] = []
     for path in spec_paths:
-        ok, details = lint_path(path, relationship_only=args.relationship_only, legacy_only=args.legacy_only)
+        ok, details = lint_path(path)
         all_ok = all_ok and ok
         messages.extend(details)
 

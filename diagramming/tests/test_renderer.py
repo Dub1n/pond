@@ -1,24 +1,58 @@
 import re
 import unittest
 from pathlib import Path
+from tempfile import TemporaryDirectory
+from textwrap import dedent
 
-from diagramming import DiagramPlanner
-from diagramming.renderers import SvgRenderer
-from diagramming.schema import load_spec
 from diagramming.planner.bundle import GeometryBundle, PolygonFeature
+from diagramming.relationships import ConstraintSolver, RelationshipPlanner, load_relationship_spec
+from diagramming.renderers import SvgRenderer
 
 
 class RendererTests(unittest.TestCase):
+    def _plan_bundle(self) -> GeometryBundle:
+        spec_text = dedent(
+            """
+            schema: pond-relationship-test
+            info:
+              option: render
+            components:
+              - id: origin
+                kind: reference
+                size: [0, 0, 0]
+              - id: deck
+                class: IfcSlab
+                size: [400, 300, 40]
+                material: decking
+                label: "Deck"
+                label_id: "D"
+                relate:
+                  cxcy: { ref: origin }
+                  cz: { ref: origin }
+                ifc:
+                  predefined_type: FLOOR
+            views:
+              plan:
+                title: Plan
+            """
+        )
+        with TemporaryDirectory() as tmp:
+            path = Path(tmp) / "renderer.yaml"
+            path.write_text(spec_text, encoding="utf-8")
+            spec = load_relationship_spec(path)
+        solver = ConstraintSolver(spec)
+        solved = solver.solve()
+        self.assertTrue(solved.diagnostics.ok)
+        planner = RelationshipPlanner(spec, solved)
+        planned = next(view for view in planner.plan() if view.view == "plan")
+        return planned.bundle
+
     def test_svg_renderer_outputs_accessible_markup(self) -> None:
-        spec_path = Path(__file__).resolve().parent / "fixtures" / "deck-framing.yaml"
-        spec = load_spec(spec_path)
-        planner = DiagramPlanner(spec)
-        planned = planner.plan("C", "plan")
-
+        bundle = self._plan_bundle()
         renderer = SvgRenderer()
-        svg_text = renderer.render(planned.bundle, aria_label="Option C plan", title="Option C plan")
+        svg_text = renderer.render(bundle, aria_label="Option plan", title="Option plan")
 
-        self.assertIn("aria-label=\"Option C plan\"", svg_text)
+        self.assertIn("aria-label=\"Option plan\"", svg_text)
         self.assertIn("<path", svg_text)
         self.assertRegex(svg_text, r"Legend")
         self.assertRegex(svg_text, r'width="[0-9.]+"')
@@ -55,14 +89,11 @@ class RendererTests(unittest.TestCase):
         )
 
     def test_dash_scale_applies_to_svg_and_outlines(self) -> None:
-        spec_path = Path("diagrams/specs/deck-framing.yaml")
-        spec = load_spec(spec_path)
-        planner = DiagramPlanner(spec)
-        planned = planner.plan("A", "plan")
+        bundle = self._plan_bundle()
 
         renderer = SvgRenderer()
-        scaled_svg = renderer.render(planned.bundle)
-        unscaled_svg = renderer.render(planned.bundle, dash_scale=1.0)
+        scaled_svg = renderer.render(bundle)
+        unscaled_svg = renderer.render(bundle, dash_scale=1.0)
 
         self.assertIn("stroke-dasharray: 1 0.75;", scaled_svg)
         self.assertIn("stroke-dasharray: 8 6;", unscaled_svg)

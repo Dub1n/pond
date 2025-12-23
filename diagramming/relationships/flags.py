@@ -4,23 +4,10 @@ import os
 from typing import Any
 
 
-_ENV_FLAG = "DIAGRAM_RELATIONSHIPS"
 _SCHEMA_PREFIX = "pond-relationship"
 _COLLISION_FLAG = "DIAGRAM_RELATIONSHIPS_COLLISIONS"
 _FAIL_ON_WARN_FLAG = "DIAGRAM_RELATIONSHIPS_FAIL_ON_WARN"
 _COLLISION_IGNORE_CLASSES_FLAG = "DIAGRAM_RELATIONSHIPS_COLLISIONS_IGNORE_CLASSES"
-
-
-def relationship_mode_enabled() -> bool:
-    """
-    Returns True when the Phase 4 relationship-first pipeline is explicitly
-    enabled via environment variable. The legacy planner remains the default.
-    """
-
-    raw = os.getenv(_ENV_FLAG)
-    if raw is None:
-        return False
-    return raw.lower() in {"1", "true", "yes", "on"}
 
 
 def collision_handling_mode() -> str:
@@ -86,7 +73,6 @@ def is_relationship_schema(schema_field: Any) -> bool:
 
 
 __all__ = [
-    "relationship_mode_enabled",
     "collision_handling_mode",
     "collision_ignore_classes",
     "fail_on_warn",

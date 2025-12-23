@@ -398,11 +398,14 @@ def _lint_resolved_refs(
     datum_bundles: Set[str],
     errors: List[str],
 ) -> None:
+    reference_ids = {component.id for component in spec.components if component.kind == "reference"}
+    known_instance_ids = set(instance_ids) | reference_ids
+
     def validate_relations(relations: Tuple[AxisRelation, ...], context: str) -> None:
         for relation in relations:
             if not _ref_known_instance(
                 relation.target.ref,
-                instance_ids,
+                known_instance_ids,
                 datum_points,
                 datum_planes,
                 datum_bundles,
@@ -412,7 +415,7 @@ def _lint_resolved_refs(
     for check in spec.checks:
         if not _ref_known_instance(
             check.target.ref,
-            instance_ids,
+            known_instance_ids,
             datum_points,
             datum_planes,
             datum_bundles,

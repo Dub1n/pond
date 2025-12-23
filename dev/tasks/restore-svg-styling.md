@@ -13,7 +13,7 @@ We temporarily stripped CSS class usage from rendered paths to stop `.material-w
 
 - Current renderer emits inline fills/strokes without class attributes to avoid `.material-water` bleed.
 - Changing stroke widths in `base.css` has no effect because classes aren’t on paths.
-- Layering regression is covered by `diagramming/tests/test_layering_debug.py`.
+- Layering regression is covered by `diagramming/tests/test_renderer.py`.
 
 ### Proposed Approach
 
@@ -26,13 +26,13 @@ We temporarily stripped CSS class usage from rendered paths to stop `.material-w
 
 ### Acceptance Criteria
 
-- `test_layering_debug` passes (deck ring clips water correctly).
+- Renderer layer-order tests pass (deck ring clips water correctly).
 - Changing `stroke-width` in `base.css` visibly affects outlines again.
 - Water coverage checks for options A/B/C remain within expected ratios.
 - No stray debug colors (e.g., green outlines) reappear.
 
 ### Suggested Checks
 
-- `python -m unittest diagramming.tests.test_layering_debug`
-- `scripts/check_water_area.py diagrams/specs/deck-framing.yaml --option A/B/C`
+- `python -m unittest diagramming.tests.test_renderer`
+- `scripts/check_water_area.py diagrams/specs/option-c.yaml --view plan`
 - `scripts/baseline_render_check.py --fresh-check`

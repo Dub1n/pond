@@ -286,8 +286,6 @@ def _dominant_local_axis(orientation: OrientationMatrix, world_axis: str) -> Tup
 def _frame_component_id(frame: str) -> Optional[str]:
     if frame in {"world", "local"}:
         return None
-    if frame.startswith("component:"):
-        return frame.split(":", 1)[1]
     return frame
 
 

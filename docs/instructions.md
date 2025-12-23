@@ -5,7 +5,7 @@ Use this as a quick-reference when editing relationship-first specs (schema `pon
 ## Setup
 
 - Activate the venv (`source .venv/bin/activate`) and install deps (`python3 -m pip install -r requirements.txt`).
-- Run tests with `python -m unittest discover` and renders with `./.venv/bin/python scripts/build_diagrams.py …` (set `DIAGRAM_RELATIONSHIPS=0` to force legacy-only mode).
+- Run tests with `python -m unittest discover` and renders with `./.venv/bin/python scripts/build_diagrams.py …`.
 - Collision severity: `DIAGRAM_RELATIONSHIPS_COLLISIONS=error|warn|ignore` (default `error`); set `DIAGRAM_RELATIONSHIPS_FAIL_ON_WARN=1` to promote warnings (including validation warnings such as selector hygiene/diagnostic summaries). CLI helpers (`scripts/build_diagrams.py`, `scripts/lint_specs.py`) accept `--collision-mode`, `--collision-ignore`, and `--fail-on-warn` to set these without exporting env vars. Footings are ignored in collision checks by default (even when a custom ignore list is supplied) to avoid noisy pad overlaps.
 
 ## Components & References
@@ -16,7 +16,7 @@ Use this as a quick-reference when editing relationship-first specs (schema `pon
 
 ## Axis-Map Relate (core shape)
 
-Frames (`frame: world|local|<component_id>`, with `world`/`local` reserved; legacy `component:<id>` accepted) are honoured during placement; axis-map and `flush` relations follow the chosen frame while keeping gaps/offsets and size inference intact. Non-axis-aligned frames emit contextual warnings and a per-frame summary showing how local axes were projected.
+Frames (`frame: world|local|<component_id>`, with `world`/`local` reserved) are honoured during placement; axis-map and `flush` relations follow the chosen frame while keeping gaps/offsets and size inference intact. Non-axis-aligned frames emit contextual warnings and a per-frame summary showing how local axes were projected.
 
 Each entry maps subject axes to a target:
 
@@ -55,7 +55,7 @@ place:
     +z: { ref: pad_top, pos: +z }
 ```
 
-- `array` (alias `run_between`) lays out arrays using an axis-map for the array space and a `repeat` block for per-axis repetition:
+- `array` lays out arrays using an axis-map for the array space and a `repeat` block for per-axis repetition:
 
 ```yaml
 array:
@@ -69,7 +69,7 @@ array:
 - `array` is the canonical placement block; do not combine `array` and `relate` on the same component.
 - `array.orient` sets the orientation of each instance (same shape as `relate.orient`).
 - Use `through` blocks inside `array` for direction checks; they do not infer size.
-- Use `frame: <component_id>` when you need a relation to borrow another component’s orientation instead of the target’s local axes (legacy `component:<id>` still works). Component ids cannot be `world` or `local`.
+- Use `frame: <component_id>` when you need a relation to borrow another component’s orientation instead of the target’s local axes. Component ids cannot be `world` or `local`.
 - For corner-to-corner spans (e.g. diagonals), multi-axis keys like `-x+y` in `array` are treated as point anchors when `mode: point` (the default), so the span is based on the actual corner point rather than drifting due to face/size assumptions.
 - You can reference run instances directly (e.g. `joist_run_west#1`) anywhere a `ref` is accepted.
 - Repeat keys accept direction vectors (`"x,y,z"`) and shorthand axis aliases (`"x"`, `"-x"`, etc.). Unsigned axis keys inherit the array direction on that axis.
@@ -79,7 +79,7 @@ array:
 - Typed operations: `rotate`, `mirror`, `translate`, `boolean`.
 - Selectors: `id` (all instances), `id.original` (seeds/place entries), `id.clones` (generated copies). Work in operations, booleans, groups, checks.
 - Axis-map refs can target clone ids produced by operations, letting placements and checks anchor directly to rotated/mirrored faces.
-- Boolean subtract uses selectors against a target component (void references are stored on the host and propagate to clones for IFC openings and plan cutouts).
+- Boolean subtract uses selectors against a target component (void references to `IfcOpeningElement` propagate to clones for IFC openings; other voids only drive plan cutouts).
 - Selector hygiene: `id.clones` warns if no clones exist, and unknown clone refs/selectors fail lint after solver resolution.
 
 ## Size Inference Rules
@@ -101,7 +101,7 @@ array:
 
 ## Run & Validate
 
-- Lint: `python scripts/lint_specs.py --relationship-only` (runs solver + IFC validation, size/selector checks, collision reporting, mesh digests). Use `--ci` in CI to enforce relationship-only + fail-on-warn gating.
-- Render: `DIAGRAM_RELATIONSHIPS=1 ./.venv/bin/python scripts/build_diagrams.py --spec <path> --option <id> --outdir <dir> --force`.
+- Lint: `python scripts/lint_specs.py` (runs solver + IFC validation, size/selector checks, collision reporting, mesh digests). Use `--ci` in CI to enforce fail-on-warn gating.
+- Render: `./.venv/bin/python scripts/build_diagrams.py --spec <path> --option <id> --outdir <dir> --force`.
 - Baseline freshness: pair render checks with `./.venv/bin/python scripts/baseline_render_check.py --fresh-check` and note results in logs.
 - When adding helpers/ops, add axis-map + IFC regression tests and update authoring docs in the same change.
