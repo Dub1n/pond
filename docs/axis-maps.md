@@ -34,6 +34,13 @@ Each axis-map entry may specify:
 - **Gap / offset** values
 - Optional size inference or validation behaviour
 
+Axis-map keys define a single geometric entity: a plane (single axis), an edge (two axes),
+or a point (three axes). Multi-axis keys are not shorthand for multiple independent constraints.
+If you need to constrain multiple planes independently, use separate axis-map entries.
+
+When an axis-map targets a rotated/mirrored clone, target faces are resolved using the clone's
+orientation so world-aligned axes still hit the closest matching local face.
+
 Axis-maps are orthogonal by default. Axes only deviate from grid alignment when a signed axis
 (`-x`, `+x`, `-y`, `+y`, `-z`, `+z`, or `cx/cy/cz`) is used in multiple axis-map entries. In that
 case, the solver infers a local orientation that best satisfies the multiple references and treats
@@ -47,6 +54,9 @@ Crucially, axis-maps may be *partial*, *complete*, or *intentionally over-constr
 
 Axis-maps cover point/edge/plane anchors, size inference, arrays, and non-orthogonal placement. The
 snippets below show the minimal shapes for each use case.
+
+Axis-map references can also target clone ids produced by operations (`rotate`, `mirror`, `translate`),
+so placements and checks can anchor directly to rotated or mirrored faces.
 
 Point anchor (fully constrained):
 

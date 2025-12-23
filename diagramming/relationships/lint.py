@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import List, Set
+from typing import Dict, List, Sequence, Set
 
 from .schema import (
     ArraySpec,
@@ -32,10 +32,8 @@ def lint_relationship_spec(spec: RelationshipDiagramSpec) -> List[str]:
 
     errors: List[str] = []
     component_ids = {component.id for component in spec.components}
-    placement_ids = {
-        placement.id for component in spec.components for placement in component.place
-    }
-    known_ids = component_ids | placement_ids
+    placement_ids = {placement.id for component in spec.components for placement in component.place}
+    known_ids = _expand_known_ids(component_ids | placement_ids, spec.operations)
     datum_points = set(spec.datums.keys())
     datum_planes = set(spec.planes.keys())
     datum_bundles = set(spec.bundles.keys())
@@ -62,17 +60,22 @@ def lint_relationship_spec(spec: RelationshipDiagramSpec) -> List[str]:
         )
 
     for operation in spec.operations:
-        _lint_operation(
-            operation,
-            known_ids=known_ids,
-            errors=errors,
-        )
+        _lint_operation(operation, known_ids=known_ids, errors=errors)
 
     # Use the solver to surface inferred size conflicts and under-constrained axes.
     try:
         solver = ConstraintSolver(spec)
         result = solver.solve()
         errors.extend([err.message for err in result.diagnostics.errors])
+        _lint_operation_selectors(spec.operations, result.components, errors)
+        _lint_resolved_refs(
+            spec,
+            instance_ids={comp.instance_id for comp in result.components},
+            datum_points=datum_points,
+            datum_planes=datum_planes,
+            datum_bundles=datum_bundles,
+            errors=errors,
+        )
         for prim in result.primitives:
             class_lower = (prim.class_name or "").lower()
             requirements = IFC_REQUIREMENTS.get(class_lower)
@@ -236,7 +239,7 @@ def _lint_operation(operation: object, *, known_ids: Set[str], errors: List[str]
         for base, mapped in operation.id_map.items():
             if base not in known_ids:
                 errors.append(f"rotate.id_map references unknown base '{base}'")
-            if len(mapped) < operation.count:
+            if len(mapped) != operation.count:
                 errors.append(
                     f"rotate.id_map for '{base}' provides {len(mapped)} ids but count={operation.count}"
                 )
@@ -248,7 +251,8 @@ def _lint_operation(operation: object, *, known_ids: Set[str], errors: List[str]
 
     for selector in selectors:
         base = selector.split(".", 1)[0]
-        if base and base not in known_ids:
+        base_id = base.split("#", 1)[0]
+        if base and base not in known_ids and base_id not in known_ids:
             errors.append(f"operation references unknown selector '{selector}'")
 
 
@@ -271,7 +275,13 @@ def _axes_from_pos(pos_token: str) -> List[tuple[str, int]]:
     return axes
 
 
-def _ref_known(ref: str, component_ids: Set[str], datum_points: Set[str], datum_planes: Set[str], datum_bundles: Set[str]) -> bool:
+def _ref_known(
+    ref: str,
+    component_ids: Set[str],
+    datum_points: Set[str],
+    datum_planes: Set[str],
+    datum_bundles: Set[str],
+) -> bool:
     if ref == "self":
         return True
     if "#" in ref:
@@ -295,6 +305,169 @@ def _ref_known(ref: str, component_ids: Set[str], datum_points: Set[str], datum_
             if category in {"points", "point"}:
                 return name in datum_points
     return False
+
+
+def _selector_index(components: Sequence[object]) -> Dict[str, Dict[str, set[str]]]:
+    index: Dict[str, Dict[str, set[str]]] = {}
+    for item in components:
+        template_id = getattr(item, "template_id", None)
+        if not template_id:
+            continue
+        entry = index.setdefault(template_id, {"all": set(), "original": set(), "clones": set()})
+        entry["all"].add(item.instance_id)
+        if getattr(item, "origin", "original") == "original":
+            entry["original"].add(item.instance_id)
+        else:
+            entry["clones"].add(item.instance_id)
+        seed_id = getattr(item, "seed_id", None)
+        if seed_id:
+            seed_entry = index.setdefault(seed_id, {"all": set(), "original": set(), "clones": set()})
+            seed_entry["all"].add(item.instance_id)
+            if getattr(item, "origin", "original") == "original":
+                seed_entry["original"].add(item.instance_id)
+            else:
+                seed_entry["clones"].add(item.instance_id)
+    return index
+
+
+def _resolve_selector(selector: str, index: Dict[str, Dict[str, set[str]]]) -> List[str]:
+    if selector.endswith(".original"):
+        base = selector[: -len(".original")]
+        return sorted(index.get(base, {}).get("original", []) or index.get(base, {}).get("all", []))
+    if selector.endswith(".clones"):
+        base = selector[: -len(".clones")]
+        clones = index.get(base, {}).get("clones", set())
+        if clones:
+            return sorted(clones)
+        return sorted(index.get(base, {}).get("all", []))
+    if selector in index:
+        return sorted(index[selector].get("all", []))
+    for entry in index.values():
+        if selector in entry.get("all", set()):
+            return [selector]
+    return []
+
+
+def _lint_operation_selectors(operations: Sequence[object], components: Sequence[object], errors: List[str]) -> None:
+    index = _selector_index(components)
+    for operation in operations:
+        selectors: List[str] = []
+        if isinstance(operation, RotateOperation):
+            selectors.extend(operation.targets)
+        elif isinstance(operation, (MirrorOperation, TranslateOperation)):
+            selectors.extend(operation.targets)
+        elif isinstance(operation, BooleanOperation):
+            selectors.append(operation.target)
+            selectors.extend(operation.subtract)
+        for selector in selectors:
+            if selector and not _resolve_selector(selector, index):
+                errors.append(f"operation references unknown selector '{selector}'")
+
+
+def _expand_known_ids(component_ids: Set[str], operations: Sequence[object]) -> Set[str]:
+    known_ids = set(component_ids)
+    for operation in operations:
+        if isinstance(operation, RotateOperation):
+            expanded: Set[str] = set()
+            if operation.id_map:
+                for mapped in operation.id_map.values():
+                    expanded.update(mapped)
+            else:
+                targets = operation.targets or tuple(known_ids)
+                for selector in targets:
+                    base = selector.split(".", 1)[0]
+                    base_id = base.split("#", 1)[0]
+                    if base_id in known_ids:
+                        for turn in range(1, operation.count):
+                            expanded.add(f"{base_id}_rot{turn}")
+            known_ids.update(expanded)
+        elif isinstance(operation, MirrorOperation):
+            targets = operation.targets or tuple(known_ids)
+            for selector in targets:
+                base = selector.split(".", 1)[0]
+                base_id = base.split("#", 1)[0]
+                if base_id in known_ids:
+                    known_ids.add(f"{base_id}_mirrored")
+        elif isinstance(operation, TranslateOperation):
+            targets = operation.targets or tuple(known_ids)
+            for selector in targets:
+                base = selector.split(".", 1)[0]
+                base_id = base.split("#", 1)[0]
+                if base_id in known_ids:
+                    known_ids.add(f"{base_id}_translated")
+    return known_ids
+
+
+def _ref_known_instance(
+    ref: str,
+    instance_ids: Set[str],
+    datum_points: Set[str],
+    datum_planes: Set[str],
+    datum_bundles: Set[str],
+) -> bool:
+    if ref == "self":
+        return True
+    if ref in instance_ids:
+        return True
+    if ref in datum_points or ref in datum_planes or ref in datum_bundles:
+        return True
+    if ref.startswith("datums."):
+        segments = ref.split(".")
+        if len(segments) == 2:
+            name = segments[1]
+            return name in datum_points or name in datum_planes or name in datum_bundles
+        if len(segments) >= 3:
+            category = segments[1]
+            name = ".".join(segments[2:])
+            if category == "planes":
+                return name in datum_planes
+            if category == "bundles":
+                return name in datum_bundles or name.split(".")[0] in datum_bundles
+            if category in {"points", "point"}:
+                return name in datum_points
+    return False
+
+
+def _lint_resolved_refs(
+    spec: RelationshipDiagramSpec,
+    *,
+    instance_ids: Set[str],
+    datum_points: Set[str],
+    datum_planes: Set[str],
+    datum_bundles: Set[str],
+    errors: List[str],
+) -> None:
+    def validate_relations(relations: Tuple[AxisRelation, ...], context: str) -> None:
+        for relation in relations:
+            if not _ref_known_instance(
+                relation.target.ref,
+                instance_ids,
+                datum_points,
+                datum_planes,
+                datum_bundles,
+            ):
+                errors.append(f"{context} references unknown target '{relation.target.ref}'")
+
+    for check in spec.checks:
+        if not _ref_known_instance(
+            check.target.ref,
+            instance_ids,
+            datum_points,
+            datum_planes,
+            datum_bundles,
+        ):
+            errors.append(f"checks references unknown target '{check.target.ref}'")
+
+    for component in spec.components:
+        validate_relations(component.relations, f"component '{component.id}'")
+        for placement in component.place:
+            validate_relations(placement.relations, f"component '{component.id}' place '{placement.id}'")
+        array = component.array
+        if array:
+            label = array.source or "array"
+            validate_relations(array.relations, f"component '{component.id}' {label}")
+            for through in array.through:
+                validate_relations(through.relations, f"component '{component.id}' {label}.through")
 
 
 __all__ = ["lint_relationship_spec"]

@@ -10,7 +10,7 @@ from shapely.geometry import Polygon as ShapelyPolygon
 
 from .planner import RelationshipPlanner
 from .solver import ConstraintSolver, NeutralPrimitive, SolveResult, mesh_from_primitive
-from .schema import RelationshipDiagramSpec
+from .schema import MirrorOperation, RelationshipDiagramSpec, RotateOperation, TranslateOperation
 from ..planner.bundle import GeometryBundle, PolygonFeature
 from ..renderers import SvgRenderer
 
@@ -39,6 +39,7 @@ def validate_relationship_spec(spec: RelationshipDiagramSpec) -> ValidationRepor
 
     errors = [err.message for err in result.diagnostics.errors]
     warnings = [warn.message for warn in result.diagnostics.warnings]
+    warnings.extend(_operation_order_warnings(spec))
 
     if spec.checks and len(result.diagnostics.check_results) < len(spec.checks):
         errors.append("checks block did not emit results for all clauses")
@@ -59,6 +60,47 @@ def mesh_checksum(primitives: Sequence[NeutralPrimitive]) -> str:
         digest.update(mesh.vertices.round(6).tobytes())
         digest.update(mesh.faces.tobytes())
     return digest.hexdigest()
+
+
+def _operation_order_warnings(spec: RelationshipDiagramSpec) -> List[str]:
+    component_ids = {component.id for component in spec.components}
+    placement_ids = {placement.id for component in spec.components for placement in component.place}
+    known_ids = component_ids | placement_ids
+    if not known_ids:
+        return []
+    op_bases: List[tuple[object, set[str]]] = []
+    for operation in spec.operations:
+        bases: set[str] = set()
+        if isinstance(operation, (RotateOperation, MirrorOperation, TranslateOperation)):
+            targets = operation.targets
+            if not targets:
+                bases = set(known_ids)
+            else:
+                for selector in targets:
+                    base = selector.split(".", 1)[0]
+                    base_id = base.split("#", 1)[0]
+                    if base_id in known_ids:
+                        bases.add(base_id)
+        op_bases.append((operation, bases))
+
+    warnings: List[str] = []
+    for idx, (operation, bases) in enumerate(op_bases):
+        if not isinstance(operation, (RotateOperation, MirrorOperation, TranslateOperation)):
+            continue
+        if not bases:
+            continue
+        for later_op, later_bases in op_bases[idx + 1 :]:
+            if not isinstance(later_op, (RotateOperation, MirrorOperation, TranslateOperation)):
+                continue
+            overlap = bases & later_bases
+            if overlap:
+                targets = ", ".join(sorted(overlap))
+                warnings.append(
+                    f"{operation.type} operation targets {targets} before later clone generation; "
+                    "earlier transforms will not affect clones created later"
+                )
+                break
+    return warnings
 
 
 def dual_render_compare(bundle_a: GeometryBundle, bundle_b: GeometryBundle) -> DualRenderDiff:

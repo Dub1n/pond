@@ -198,6 +198,19 @@ def _dominant_world_axis(vector: Tuple[float, float, float]) -> Tuple[str, int, 
     return axis, sign, magnitudes[idx]
 
 
+def _dominant_local_axis(orientation: OrientationMatrix, world_axis: str) -> Tuple[str, float]:
+    world_idx = AXIS_ORDER[world_axis]
+    best_axis = "x"
+    best_alignment = -1.0
+    for axis in ("x", "y", "z"):
+        vec = _axis_vector(orientation, axis)
+        alignment = abs(vec[world_idx])
+        if alignment > best_alignment:
+            best_alignment = alignment
+            best_axis = axis
+    return best_axis, max(best_alignment, 0.0)
+
+
 @dataclass(slots=True)
 class Diagnostic:
     level: str
@@ -400,7 +413,14 @@ class ReferenceResolver:
         if ref in self.component_states:
             state = self.component_states[ref]
             base = state.transform.position
-            offset = 0.0 if sign == 0 else _half_size(state.size, axis) * float(sign * world_sign)
+            if sign == 0:
+                return base[world_idx]
+            orientation = getattr(state, "orientation", IDENTITY_ORIENTATION)
+            if frame == "world":
+                local_axis, alignment = _dominant_local_axis(orientation, world_axis)
+                offset = _half_size(state.size, local_axis) * float(sign * world_sign) * alignment
+                return base[world_idx] + offset
+            offset = _half_size(state.size, axis) * float(sign * world_sign)
             return base[world_idx] + offset
 
         if ref in self.datum_bundles:
@@ -587,7 +607,23 @@ class ConstraintSolver:
                 axis_states[axis].center = value
                 axis_states[axis].locked_center = True
 
+            size = list(component.size)
+            overrides = instance.get("size_overrides") or {}
+            for axis, value in overrides.items():
+                if axis in AXIS_ORDER:
+                    size[AXIS_ORDER[axis]] = value
+
+            planar_points, planar_skip = self._planar_anchor_points(
+                component,
+                plan.relations,
+                resolver,
+                (size[0], size[1], size[2]),
+                diagnostics,
+                instance_id=instance["id"],
+            )
             for relation in plan.relations:
+                if id(relation) in planar_skip:
+                    continue
                 self._apply_axis_relation(
                     component,
                     axis_states,
@@ -597,25 +633,54 @@ class ConstraintSolver:
                     instance_id=instance["id"],
                     axis_size_map=size_axis_map,
                 )
-
-            size = list(component.size)
-            overrides = instance.get("size_overrides") or {}
-            for axis, value in overrides.items():
-                if axis in AXIS_ORDER:
-                    size[AXIS_ORDER[axis]] = value
             relations = plan.relations + (tuple(array.relations) if array else tuple())
             orientation_candidate = self._orientation_candidate(relations)
             orientation_override = None
+            center_override = None
             orientation_ok = False
             if orientation_candidate:
-                orientation_override, orientation_ok = self._infer_orientation_from_relations(
+                orientation_override, orientation_ok, center_override = self._infer_orientation_from_relations(
                     component,
                     relations,
                     resolver,
                     (size[0], size[1], size[2]),
                     diagnostics,
                     instance_id=instance["id"],
+                    planar_points=planar_points,
                 )
+                if orientation_ok and planar_points[0] and planar_points[1]:
+                    local_points, world_points = planar_points
+                    if len(local_points) >= 2 and len(world_points) >= 2:
+                        local_vec = (
+                            local_points[1][0] - local_points[0][0],
+                            local_points[1][1] - local_points[0][1],
+                        )
+                        world_vec = (
+                            world_points[1][0] - world_points[0][0],
+                            world_points[1][1] - world_points[0][1],
+                        )
+                        local_len = math.hypot(local_vec[0], local_vec[1])
+                        world_len = math.hypot(world_vec[0], world_vec[1])
+                        if local_len > 1e-6:
+                            diff = abs(world_len - local_len)
+                            min_value = min(abs(world_len), abs(local_len))
+                            tolerance = 0.001 * min_value
+                            if diff > max(1e-6, tolerance):
+                                diagnostics.add_warning(
+                                    f"component '{component.id}' size on x conflicts with inferred span ({local_len:.3f} vs {world_len:.3f})",
+                                    subject=instance["id"],
+                                )
+            if center_override is not None:
+                for axis, value in zip(("x", "y"), center_override):
+                    state = axis_states[axis]
+                    if state.center is not None and abs(state.center - value) > 1e-6 and state.locked_center:
+                        diagnostics.add_error(
+                            f"component '{component.id}' has conflicting center on {axis}",
+                            subject=instance["id"],
+                        )
+                    else:
+                        state.center = value
+                        state.locked_center = True
 
             final_center: Dict[str, float] = {}
 
@@ -757,6 +822,8 @@ class ConstraintSolver:
             target_axes.setdefault(axis, set()).add(sign)
 
         for axis, subject_sign in subject_axes:
+            if axis not in target_axes:
+                continue
             world_axis, world_sign, alignment = resolver.world_axis_for(relation.target.frame, relation.target.ref, axis)
             if axis_size_map is not None:
                 current_axis = axis_size_map.get(world_axis)
@@ -899,16 +966,15 @@ class ConstraintSolver:
             elif pos_minus is not None:
                 inferred_size = abs((center - pos_minus) * 2)
 
-        if (
-            size_value is not None
-            and inferred_size is not None
-            and abs(size_value - inferred_size) > 1e-6
-            and not allow_size_mismatch
-        ):
-            diagnostics.add_error(
-                f"component '{component.id}' size on {size_axis} conflicts with inferred span ({size_value:.3f} vs {inferred_size:.3f})",
-                subject=instance_id,
-            )
+        if size_value is not None and inferred_size is not None and not allow_size_mismatch:
+            diff = abs(size_value - inferred_size)
+            min_value = min(abs(size_value), abs(inferred_size))
+            tolerance = 0.001 * min_value
+            if diff > max(1e-6, tolerance):
+                diagnostics.add_error(
+                    f"component '{component.id}' size on {size_axis} conflicts with inferred span ({size_value:.3f} vs {inferred_size:.3f})",
+                    subject=instance_id,
+                )
         if size_value is None and inferred_size is not None:
             size_value = inferred_size
         if size_value is None:
@@ -946,24 +1012,25 @@ class ConstraintSolver:
         component: RelationshipComponent,
         relations: Sequence[AxisRelation],
         resolver: ReferenceResolver,
-        size_values: Tuple[float, float, float],
+        size_values: Tuple[Optional[float], Optional[float], Optional[float]],
         diagnostics: SolveDiagnostics,
         *,
         instance_id: str,
-    ) -> Tuple[Optional[OrientationMatrix], bool]:
+        planar_points: Optional[Tuple[List[Tuple[float, float]], List[Tuple[float, float]]]] = None,
+    ) -> Tuple[Optional[OrientationMatrix], bool, Optional[Tuple[float, float]]]:
         axis_counts: Dict[Tuple[str, int], int] = {}
         for relation in relations:
             for axis, sign in _axes_from_pos(relation.subject):
                 axis_counts[(axis, sign)] = axis_counts.get((axis, sign), 0) + 1
         if not any(count > 1 for count in axis_counts.values()):
-            return None, False
+            return None, False, None
 
         if any(value is None for value in size_values):
             diagnostics.add_warning(
                 f"component '{component.id}' orientation inference skipped due to missing size",
                 subject=instance_id,
             )
-            return None, False
+            return None, False, None
 
         local_points: List[Tuple[float, float, float]] = []
         world_points: List[Tuple[float, float, float]] = []
@@ -1011,7 +1078,15 @@ class ConstraintSolver:
             )
 
         if len(local_points) < 3:
-            return None, False
+            if planar_points is None:
+                return None, False, None
+            orientation_2d, center_override = self._infer_orientation_from_planar_points(
+                component,
+                planar_points,
+                diagnostics,
+                instance_id=instance_id,
+            )
+            return orientation_2d, orientation_2d is not None, center_override
 
         local = np.array(local_points)
         world = np.array(world_points)
@@ -1033,12 +1108,12 @@ class ConstraintSolver:
                 f"component '{component.id}' orientation inference residual {max_residual:.3f} exceeds tolerance",
                 subject=instance_id,
             )
-            return None, False
+            return None, False, None
         return (
             (float(rotation[0, 0]), float(rotation[1, 0]), float(rotation[2, 0])),
             (float(rotation[0, 1]), float(rotation[1, 1]), float(rotation[2, 1])),
             (float(rotation[0, 2]), float(rotation[1, 2]), float(rotation[2, 2])),
-        ), True
+        ), True, None
 
     def _orientation_candidate(self, relations: Sequence[AxisRelation]) -> bool:
         axis_counts: Dict[Tuple[str, int], int] = {}
@@ -1048,12 +1123,168 @@ class ConstraintSolver:
         if not any(count > 1 for count in axis_counts.values()):
             return False
         full_point_relations = 0
+        planar_point_relations = 0
         for relation in relations:
             if (relation.target.mode or "point").lower() != "point":
                 continue
-            if len(_axes_from_pos(relation.subject)) == 3 and len(_axes_from_pos(relation.target.pos)) == 3:
+            subject_axes = _axes_from_pos(relation.subject)
+            target_axes = _axes_from_pos(relation.target.pos)
+            if len(subject_axes) == 3 and len(target_axes) == 3:
                 full_point_relations += 1
-        return full_point_relations >= 3
+            if (
+                len(subject_axes) == 2
+                and len(target_axes) >= 1
+                and {axis for axis, _ in subject_axes} == {"x", "y"}
+            ):
+                planar_point_relations += 1
+        return full_point_relations >= 3 or planar_point_relations >= 2
+
+    def _planar_anchor_points(
+        self,
+        component: RelationshipComponent,
+        relations: Sequence[AxisRelation],
+        resolver: ReferenceResolver,
+        size_values: Tuple[Optional[float], Optional[float], Optional[float]],
+        diagnostics: SolveDiagnostics,
+        *,
+        instance_id: str,
+    ) -> Tuple[Tuple[List[Tuple[float, float]], List[Tuple[float, float]]], set[int]]:
+        grouped: Dict[str, List[AxisRelation]] = {}
+        for relation in relations:
+            if (relation.target.mode or "point").lower() != "point":
+                continue
+            subject_axes = _axes_from_pos(relation.subject)
+            if len(subject_axes) != 2:
+                continue
+            if {axis for axis, _ in subject_axes} != {"x", "y"}:
+                continue
+            grouped.setdefault(relation.subject, []).append(relation)
+
+        local_points: List[Tuple[float, float]] = []
+        world_points: List[Tuple[float, float]] = []
+        skip_relations: set[int] = set()
+
+        for subject, rels in grouped.items():
+            subject_axes = _axes_from_pos(subject)
+            axis_set = {axis for axis, _ in subject_axes}
+            if any(axis_set.issubset({axis for axis, _ in _axes_from_pos(rel.target.pos)}) for rel in rels):
+                continue
+            axis_coords: Dict[str, float] = {}
+            axis_sources: Dict[str, str] = {}
+            for relation in rels:
+                target_axes = {axis: sign for axis, sign in _axes_from_pos(relation.target.pos)}
+                for axis, subject_sign in subject_axes:
+                    if axis not in target_axes:
+                        continue
+                    world_axis, world_sign, _ = resolver.world_axis_for(relation.target.frame, relation.target.ref, axis)
+                    if world_axis not in {"x", "y"}:
+                        continue
+                    target_sign = target_axes.get(axis, subject_sign)
+                    coord = resolver.axis_coordinate(
+                        relation.target.ref,
+                        axis,
+                        target_sign,
+                        frame=relation.target.frame,
+                        mapped_axis=world_axis,
+                        mapped_sign=world_sign,
+                    )
+                    if coord is None:
+                        continue
+                    offset_amount = self._axis_amount_for(axis, subject_sign, relation.target.offset)
+                    gap_amount = self._axis_amount_for(axis, subject_sign, relation.target.gap)
+                    gap_direction = subject_sign * world_sign if subject_sign != 0 else 0
+                    adjusted = coord + offset_amount * world_sign + gap_amount * gap_direction
+                    if world_axis in axis_coords and abs(axis_coords[world_axis] - adjusted) > 1e-6:
+                        diagnostics.add_error(
+                            f"component '{component.id}' has conflicting planar anchor on {world_axis} for '{subject}'",
+                            subject=instance_id,
+                        )
+                    axis_coords[world_axis] = adjusted
+                    axis_sources[world_axis] = relation.target.ref
+            if "x" not in axis_coords or "y" not in axis_coords:
+                continue
+            if any(value is None for value in size_values):
+                diagnostics.add_warning(
+                    f"component '{component.id}' planar anchors skipped due to missing size",
+                    subject=instance_id,
+                )
+                continue
+            local_coord_map: Dict[str, float] = {}
+            missing_size = False
+            for axis, sign in subject_axes:
+                if sign == 0:
+                    local_coord_map[axis] = 0.0
+                else:
+                    size_value = size_values[AXIS_ORDER[axis]]
+                    if size_value is None:
+                        missing_size = True
+                        break
+                    local_coord_map[axis] = (size_value / 2.0) * float(sign)
+            if missing_size:
+                continue
+            local_points.append((local_coord_map["x"], local_coord_map["y"]))
+            world_points.append((axis_coords["x"], axis_coords["y"]))
+            skip_relations.update(id(rel) for rel in rels)
+
+        return (local_points, world_points), skip_relations
+
+    def _infer_orientation_from_planar_points(
+        self,
+        component: RelationshipComponent,
+        planar_points: Tuple[List[Tuple[float, float]], List[Tuple[float, float]]],
+        diagnostics: SolveDiagnostics,
+        *,
+        instance_id: str,
+    ) -> Tuple[Optional[OrientationMatrix], Optional[Tuple[float, float]]]:
+        local_points, world_points = planar_points
+        if len(local_points) < 2:
+            return None, None
+
+        local_vec = (
+            local_points[1][0] - local_points[0][0],
+            local_points[1][1] - local_points[0][1],
+        )
+        world_vec = (
+            world_points[1][0] - world_points[0][0],
+            world_points[1][1] - world_points[0][1],
+        )
+        local_len = math.hypot(local_vec[0], local_vec[1])
+        world_len = math.hypot(world_vec[0], world_vec[1])
+        if local_len <= 1e-6 or world_len <= 1e-6:
+            return None, None
+        local_angle = math.atan2(local_vec[1], local_vec[0])
+        world_angle = math.atan2(world_vec[1], world_vec[0])
+        angle = math.degrees(world_angle - local_angle)
+        orientation = _orientation_from_z_rotation(angle)
+
+        local_centroid = (
+            sum(point[0] for point in local_points) / len(local_points),
+            sum(point[1] for point in local_points) / len(local_points),
+        )
+        world_centroid = (
+            sum(point[0] for point in world_points) / len(world_points),
+            sum(point[1] for point in world_points) / len(world_points),
+        )
+        residuals: List[float] = []
+        cos_a = math.cos(math.radians(angle))
+        sin_a = math.sin(math.radians(angle))
+        for (lx, ly), (wx, wy) in zip(local_points, world_points):
+            centered_x = lx - local_centroid[0]
+            centered_y = ly - local_centroid[1]
+            rotated_x = centered_x * cos_a - centered_y * sin_a + world_centroid[0]
+            rotated_y = centered_x * sin_a + centered_y * cos_a + world_centroid[1]
+            residuals.append(math.hypot(rotated_x - wx, rotated_y - wy))
+        max_residual = max(residuals) if residuals else 0.0
+        if max_residual > ORIENTATION_RESIDUAL_TOL:
+            diagnostics.add_warning(
+                f"component '{component.id}' planar orientation residual {max_residual:.3f} exceeds tolerance",
+                subject=instance_id,
+            )
+        center_override = (
+            world_centroid[0] - (local_centroid[0] * cos_a - local_centroid[1] * sin_a),
+            world_centroid[1] - (local_centroid[0] * sin_a + local_centroid[1] * cos_a),
+        )
+        return orientation, center_override
 
     def _array_positions(
         self,
@@ -1216,8 +1447,29 @@ class ConstraintSolver:
                 through_points.append(constraints)
 
         axis_repeat_specs: Dict[str, List[Tuple[str, RepeatAxisSpec]]] = {"x": [], "y": [], "z": []}
+        def repeat_direction(key: str, spec: RepeatAxisSpec) -> Tuple[float, float, float]:
+            axis_key = key.strip().lower()
+            if axis_key in {"x", "y", "z"}:
+                info = axis_info[axis_key]
+                face_minus = info["face_minus"]
+                face_plus = info["face_plus"]
+                if face_minus is not None and face_plus is not None:
+                    sign = 1.0 if face_plus >= face_minus else -1.0
+                elif face_minus is not None:
+                    sign = 1.0
+                elif face_plus is not None:
+                    sign = -1.0
+                else:
+                    sign = 1.0
+                if axis_key == "x":
+                    return (sign, 0.0, 0.0)
+                if axis_key == "y":
+                    return (0.0, sign, 0.0)
+                return (0.0, 0.0, sign)
+            return spec.direction
+
         for key, spec in repeat_entries:
-            direction = _normalise_vector(spec.direction)
+            direction = _normalise_vector(repeat_direction(key, spec))
             if direction == (0.0, 0.0, 0.0):
                 diagnostics.add_error(
                     f"component '{component.id}' array repeat '{key}' direction is zero",
@@ -1304,7 +1556,7 @@ class ConstraintSolver:
         base_center_tuple = (base_center.get("x", 0.0), base_center.get("y", 0.0), base_center.get("z", 0.0))
 
         for key, spec in repeat_entries:
-            direction = _normalise_vector(spec.direction)
+            direction = _normalise_vector(repeat_direction(key, spec))
             if direction == (0.0, 0.0, 0.0):
                 continue
             if spec.frame == "local":
@@ -1398,6 +1650,10 @@ class ConstraintSolver:
                 if count <= 1:
                     pitch = 0.0
                 else:
+                    if span is None:
+                        axis, _, alignment = _dominant_world_axis(direction_world)
+                        if alignment > 1.0 - 1e-6:
+                            span = axis_info[axis]["span"]
                     if span is None:
                         diagnostics.add_error(
                             f"component '{component.id}' array repeat '{key}' requires span for count without pitch",

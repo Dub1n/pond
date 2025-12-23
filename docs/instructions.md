@@ -33,7 +33,11 @@ relate:
 
 Tips:
 
+- Each axis-map key defines a single plane/edge/point. Multi-axis keys are not shorthand for
+  multiple independent plane constraints; use separate entries when you intend separate planes.
 - Subject/pos accept multi-axis tokens, including centers (`cx`, `cy`, `cz`, `~x` etc.).
+- Axis-map refs can target rotated/mirrored clones; target faces are resolved using the clone’s
+  orientation so world-aligned axes land on the nearest matching local face.
 - Use one X and one Y span when you want inference; extra face pairs can conflict with explicit sizes.
 - `flush` sugar expands to axis-map entries (`faces: all` by default, inset scalar or per-face map).
 
@@ -65,11 +69,13 @@ array:
 - Use `frame: <component_id>` when you need a relation to borrow another component’s orientation instead of the target’s local axes. Component ids cannot be `world` or `local`.
 - For corner-to-corner spans (e.g. diagonals), multi-axis keys like `-x+y` in `array` are treated as point anchors when `mode: point` (the default), so the span is based on the actual corner point rather than drifting due to face/size assumptions.
 - You can reference run instances directly (e.g. `joist_run_west#1`) anywhere a `ref` is accepted.
+- Repeat keys accept direction vectors (`"x,y,z"`) and shorthand axis aliases (`"x"`, `"-x"`, etc.). Unsigned axis keys inherit the array direction on that axis.
 
 ## Operations & Selectors
 
 - Typed operations: `rotate`, `mirror`, `translate`, `boolean`.
 - Selectors: `id` (all instances), `id.original` (seeds/place entries), `id.clones` (generated copies). Work in operations, booleans, groups, checks.
+- Axis-map refs can target clone ids produced by operations, letting placements and checks anchor directly to rotated/mirrored faces.
 - Boolean subtract uses selectors against a target component (void references are stored on the host and propagate to clones for IFC openings and plan cutouts).
 
 ## Size Inference Rules

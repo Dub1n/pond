@@ -99,6 +99,9 @@ Rules:
 
 - Repeat keys are direction vectors written as strings (`"x,y,z"`). The vector is normalised; only
   direction matters.
+- Shorthand axis keys (`"x"`, `"-x"`, `"y"`, `"-y"`, `"z"`, `"-z"`) are accepted as aliases for the
+  equivalent unit vectors. Unsigned keys (`"x"`, `"y"`, `"z"`) inherit the array direction on that
+  axis (from `-x` to `+x` or the implied direction when only one face is anchored).
 - `count` is the number of instances along that direction.
 - `pitch` is the center-to-center spacing along that direction.
 - If both `count` and `pitch` are provided, the array uses both and warns if the total

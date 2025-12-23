@@ -1,0 +1,34 @@
+schema: pond-relationship-test
+info:
+  option: clone-axis-map
+components:
+  - id: origin
+    kind: reference
+    size: [0, 0, 0]
+  - id: beam
+    class: IfcBeam
+    size: [100, 20, 20]
+    material: timber
+    relate:
+      -x: { ref: origin, pos: +x }
+      cycz: { ref: origin }
+    ifc:
+      predefined_type: BEAM
+  - id: marker
+    class: IfcBeam
+    size: [20, 20, 20]
+    material: timber
+    relate:
+      -y: { ref: beam_north, pos: +y }
+      cx: { ref: origin }
+      cz: { ref: origin }
+    ifc:
+      predefined_type: BEAM
+operations:
+  - type: rotate
+    targets: [beam]
+    about: { ref: origin, axis: +z }
+    count: 4
+    include_seed: true
+    id_map:
+      beam: [beam, beam_north, beam_west, beam_south]

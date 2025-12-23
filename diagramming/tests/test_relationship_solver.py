@@ -213,6 +213,52 @@ class RelationshipSolverTests(unittest.TestCase):
         self.assertAlmostEqual(positions[1][0], 100.0 * scale, places=5)
         self.assertAlmostEqual(positions[1][1], 100.0 * scale, places=5)
 
+    def test_array_repeat_axis_alias_uses_span(self) -> None:
+        spec_text = dedent(
+            """
+            schema: pond-relationship-test
+            info:
+              option: repeat-alias
+            components:
+              - id: origin
+                kind: reference
+                size: [0, 0, 0]
+              - id: start
+                kind: reference
+                size: [0, 0, 0]
+                relate:
+                  cx: { ref: origin, offset: -100 }
+              - id: end
+                kind: reference
+                size: [0, 0, 0]
+                relate:
+                  cx: { ref: origin, offset: 100 }
+              - id: runner
+                class: IfcBeam
+                size: [20, 10, 10]
+                array:
+                  -x: { ref: start, pos: +x }
+                  +x: { ref: end, pos: +x }
+                  cy: { ref: origin }
+                  cz: { ref: origin }
+                  repeat:
+                    x: { count: 2 }
+                ifc:
+                  predefined_type: BEAM
+            """
+        )
+        with TemporaryDirectory() as tmp:
+            path = Path(tmp) / "repeat-alias.yaml"
+            path.write_text(spec_text, encoding="utf-8")
+            spec = load_relationship_spec(path)
+        solver = ConstraintSolver(spec)
+        result = solver.solve()
+        runners = [comp for comp in result.components if comp.component.id == "runner"]
+        self.assertEqual(len(runners), 2)
+        xs = sorted(comp.transform.position[0] for comp in runners)
+        self.assertAlmostEqual(xs[0], -90.0)
+        self.assertAlmostEqual(xs[1], 90.0)
+
     def test_orientation_inferred_from_point_relations(self) -> None:
         spec_text = dedent(
             """
@@ -1389,6 +1435,67 @@ class RelationshipSolverTests(unittest.TestCase):
         host_clone = next(comp for comp in result.components if comp.instance_id == "host_clone")
         self.assertIn("cut_seed", host_clone.primitive.voids)
         self.assertIn("cut_seed_rot", host_clone.primitive.voids)
+
+    def test_axis_map_ref_resolves_rotated_clone_fixture(self) -> None:
+        spec_path = Path(__file__).resolve().parent / "fixtures" / "clone-axis-map.yaml"
+        spec = load_relationship_spec(spec_path)
+        solver = ConstraintSolver(spec)
+        result = solver.solve()
+        ids = {comp.instance_id for comp in result.components}
+        self.assertIn("beam_north", ids)
+        marker = next(comp for comp in result.components if comp.instance_id == "marker")
+        self.assertAlmostEqual(marker.transform.position[0], 0.0)
+        self.assertAlmostEqual(marker.transform.position[1], 110.0)
+        self.assertAlmostEqual(marker.transform.position[2], 0.0)
+
+    def test_planar_edge_anchors_define_orientation_and_center(self) -> None:
+        spec_text = dedent(
+            """
+            schema: pond-relationship-test
+            info:
+              option: planar-anchors
+            components:
+              - id: origin
+                kind: reference
+                size: [0, 0, 0]
+              - id: point_a
+                kind: reference
+                size: [0, 0, 0]
+                relate:
+                  cx: { ref: origin }
+                  cy: { ref: origin }
+              - id: point_b
+                kind: reference
+                size: [0, 0, 0]
+                relate:
+                  cx: { ref: origin, offset: 100 }
+                  cy: { ref: origin, offset: 100 }
+              - id: diagonal
+                class: IfcBeam
+                size: [141.421356, 20, 10]
+                material: timber
+                relate:
+                  -xcy:
+                    - { ref: point_a, pos: cx }
+                    - { ref: point_a, pos: cy }
+                  +xcy:
+                    - { ref: point_b, pos: cx }
+                    - { ref: point_b, pos: cy }
+                  +z: { ref: origin, pos: +z }
+                ifc:
+                  predefined_type: BEAM
+            """
+        )
+        with TemporaryDirectory() as tmp:
+            path = Path(tmp) / "planar-anchors.yaml"
+            path.write_text(spec_text, encoding="utf-8")
+            spec = load_relationship_spec(path)
+        solver = ConstraintSolver(spec)
+        result = solver.solve()
+        diagonal = next(comp for comp in result.components if comp.instance_id == "diagonal")
+        self.assertAlmostEqual(diagonal.transform.position[0], 50.0, places=3)
+        self.assertAlmostEqual(diagonal.transform.position[1], 50.0, places=3)
+        self.assertAlmostEqual(diagonal.transform.rotation[2], 45.0, places=2)
 
 
 if __name__ == "__main__":  # pragma: no cover
