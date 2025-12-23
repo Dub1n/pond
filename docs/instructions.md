@@ -6,7 +6,7 @@ Use this as a quick-reference when editing relationship-first specs (schema `pon
 
 - Activate the venv (`source .venv/bin/activate`) and install deps (`python3 -m pip install -r requirements.txt`).
 - Run tests with `python -m unittest discover` and renders with `./.venv/bin/python scripts/build_diagrams.py …` (set `DIAGRAM_RELATIONSHIPS=0` to force legacy-only mode).
-- Collision severity: `DIAGRAM_RELATIONSHIPS_COLLISIONS=error|warn|ignore` (default `error`); set `DIAGRAM_RELATIONSHIPS_FAIL_ON_WARN=1` to promote warnings. CLI helpers (`scripts/build_diagrams.py`, `scripts/lint_specs.py`) accept `--collision-mode`, `--collision-ignore`, and `--fail-on-warn` to set these without exporting env vars. Footings are ignored in collision checks by default (even when a custom ignore list is supplied) to avoid noisy pad overlaps.
+- Collision severity: `DIAGRAM_RELATIONSHIPS_COLLISIONS=error|warn|ignore` (default `error`); set `DIAGRAM_RELATIONSHIPS_FAIL_ON_WARN=1` to promote warnings (including validation warnings such as selector hygiene/diagnostic summaries). CLI helpers (`scripts/build_diagrams.py`, `scripts/lint_specs.py`) accept `--collision-mode`, `--collision-ignore`, and `--fail-on-warn` to set these without exporting env vars. Footings are ignored in collision checks by default (even when a custom ignore list is supplied) to avoid noisy pad overlaps.
 
 ## Components & References
 
@@ -80,6 +80,7 @@ array:
 - Selectors: `id` (all instances), `id.original` (seeds/place entries), `id.clones` (generated copies). Work in operations, booleans, groups, checks.
 - Axis-map refs can target clone ids produced by operations, letting placements and checks anchor directly to rotated/mirrored faces.
 - Boolean subtract uses selectors against a target component (void references are stored on the host and propagate to clones for IFC openings and plan cutouts).
+- Selector hygiene: `id.clones` warns if no clones exist, and unknown clone refs/selectors fail lint after solver resolution.
 
 ## Size Inference Rules
 
@@ -90,7 +91,7 @@ array:
 
 - Same axis-map shape under `checks:`; use `mode: plane|edge` for coplanar/colinear assertions. Checks now honour `tolerance` + `on_fail: warn|error|ignore`, apply offsets/gaps/frames, and respect `fail_on_warn` escalation.
 - Prefer checks for “this must never drift” geometry (like diagonal start/end conditions) and back them with a unit test when a bug is discovered (for example: `RelationshipSolverTests.test_array_multi_axis_point_anchors_center_on_span_midpoint`).
-- Checks accept `tolerance` and `on_fail: warn|error|ignore`; failures respect the chosen severity, and `fail_on_warn` still promotes warnings. DOF reporting warns only when an axis can’t infer a position or size (remaining DOF) and emits per-component DOF summaries; providing both spans and explicit sizes is allowed as long as they agree.
+- Checks accept `tolerance` and `on_fail: warn|error|ignore`; failures respect the chosen severity, and `fail_on_warn` still promotes warnings. DOF reporting warns only when an axis can’t infer a position or size (remaining DOF) and emits per-component DOF summaries; validation also emits a diagnostics summary (collisions/under/over-constraint counts). Providing both spans and explicit sizes is allowed as long as they agree.
 
 ## IFC & Materials
 
@@ -103,3 +104,4 @@ array:
 - Lint: `python scripts/lint_specs.py --relationship-only` (runs solver + IFC validation, size/selector checks, collision reporting, mesh digests).
 - Render: `DIAGRAM_RELATIONSHIPS=1 ./.venv/bin/python scripts/build_diagrams.py --spec <path> --option <id> --outdir <dir> --force`.
 - Baseline freshness: pair render checks with `./.venv/bin/python scripts/baseline_render_check.py --fresh-check` and note results in logs.
+- When adding helpers/ops, add axis-map + IFC regression tests and update authoring docs in the same change.

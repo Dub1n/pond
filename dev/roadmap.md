@@ -37,10 +37,10 @@
 - [x] Checks/diagnostics depth: formalise warning/error surfacing for collisions and under/over-constraint; add DOF reporting. (Progress: DOF reporting in solver; tolerance/on_fail on checks; warnings emitted for remaining axes.)
 - [x] Frame projection diagnostics: add per-relation context (axis remap, frame, offsets), tolerance threshold for warnings, and optional per-frame summaries.
 - [x] Component-frame coverage: add fixtures/tests for `frame: <component_id>` placement and size-axis remapping.
-- [ ] Clone-aware linting: accept `base#n` refs, validate cloned instance IDs/selectors consistently; fail unknown clone refs.
-- [ ] Selector hygiene: lint unknown selectors and id_map/count mismatches; warn when transforms run before array expansion if that risks nondeterminism.
-- [ ] Docs/tests gate: new helpers/ops must ship with regression tests covering axis-map + IFC output; gate docs accordingly.
-- [ ] Additional diagnostics: add fail-on-warn modes and parity checks for collisions/under/over-constraint.
+- [x] Clone-aware linting: accept `base#n` refs, validate cloned instance IDs/selectors consistently; fail unknown clone refs.
+- [x] Selector hygiene: lint unknown selectors and id_map/count mismatches; warn when transforms target `.clones` with no clones and when transforms run before later clone generation.
+- [x] Docs/tests gate: new helpers/ops must ship with regression tests covering axis-map + IFC output; document the gate in authoring guides.
+- [x] Additional diagnostics: add fail-on-warn modes and parity summaries for collisions/under/over-constraint.
 
 ## Backlog – legacy teardown (Phase 4.5)
 

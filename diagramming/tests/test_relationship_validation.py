@@ -97,6 +97,47 @@ class RelationshipValidationTests(unittest.TestCase):
             spec = load_relationship_spec(path)
         report = validate_relationship_spec(spec)
         self.assertTrue(any("degrees of freedom" in warn for warn in report.warnings))
+        self.assertTrue(any("diagnostics summary" in warn for warn in report.warnings))
+
+    def test_validate_warns_on_empty_clone_selector(self) -> None:
+        spec_text = dedent(
+            """
+            schema: pond-relationship-test
+            info:
+              option: clone-selector
+            components:
+              - id: origin
+                kind: reference
+                size: [0, 0, 0]
+              - id: beam
+                class: IfcBeam
+                size: [100, 50, 20]
+                material: timber
+                relate:
+                  cxcy: { ref: origin }
+                  cz: { ref: origin }
+                ifc:
+                  predefined_type: BEAM
+              - id: void
+                class: IfcOpeningElement
+                size: [20, 20, 20]
+                relate:
+                  cxcy: { ref: origin }
+                  cz: { ref: origin }
+                ifc:
+                  predefined_type: OPENING
+            operations:
+              - type: boolean
+                target: beam.clones
+                subtract: [void]
+            """
+        )
+        with TemporaryDirectory() as tmp:
+            path = Path(tmp) / "clone-selector.yaml"
+            path.write_text(spec_text, encoding="utf-8")
+            spec = load_relationship_spec(path)
+        report = validate_relationship_spec(spec)
+        self.assertTrue(any("matched no clones" in warn for warn in report.warnings))
 
     def test_validate_flags_rotate_id_map_length(self) -> None:
         spec_text = dedent(

@@ -9,9 +9,10 @@ from typing import Dict, Iterable, List, Sequence, Tuple
 from shapely.geometry import Polygon as ShapelyPolygon
 
 from .ifc_rules import IFC_REQUIREMENTS
+from .flags import fail_on_warn
 from .planner import RelationshipPlanner
 from .solver import ConstraintSolver, NeutralPrimitive, SolveResult, mesh_from_primitive
-from .schema import MirrorOperation, RelationshipDiagramSpec, RotateOperation, TranslateOperation
+from .schema import BooleanOperation, MirrorOperation, RelationshipDiagramSpec, RotateOperation, TranslateOperation
 from ..planner.bundle import GeometryBundle, PolygonFeature
 from ..renderers import SvgRenderer
 
@@ -51,6 +52,8 @@ def validate_relationship_spec(spec: RelationshipDiagramSpec) -> ValidationRepor
     warnings = [warn.message for warn in result.diagnostics.warnings]
     warnings.extend(_operation_order_warnings(spec))
     warnings.extend(_dof_warnings(result))
+    warnings.extend(_selector_hygiene_warnings(spec, result))
+    warnings.extend(_diagnostic_summary_warnings(result))
 
     if spec.checks and len(result.diagnostics.check_results) < len(spec.checks):
         errors.append("checks block did not emit results for all clauses")
@@ -61,6 +64,10 @@ def validate_relationship_spec(spec: RelationshipDiagramSpec) -> ValidationRepor
     completeness_summary = _ifc_completeness_summary(result.primitives, ifc_report)
     if completeness_summary:
         warnings.append(completeness_summary)
+    if fail_on_warn():
+        for warning in warnings:
+            if warning not in errors:
+                errors.append(warning)
 
     checksum = mesh_checksum(result.primitives) if result.primitives else None
     return ValidationReport(result=result, errors=errors, warnings=warnings, mesh_checksum=checksum)
@@ -117,6 +124,68 @@ def _operation_order_warnings(spec: RelationshipDiagramSpec) -> List[str]:
                 )
                 break
     return warnings
+
+
+def _selector_hygiene_warnings(spec: RelationshipDiagramSpec, result: SolveResult) -> List[str]:
+    index: Dict[str, Dict[str, set[str]]] = {}
+    for item in result.components:
+        template_id = getattr(item, "template_id", None)
+        if not template_id:
+            continue
+        entry = index.setdefault(template_id, {"all": set(), "original": set(), "clones": set()})
+        entry["all"].add(item.instance_id)
+        if getattr(item, "origin", "original") == "original":
+            entry["original"].add(item.instance_id)
+        else:
+            entry["clones"].add(item.instance_id)
+        seed_id = getattr(item, "seed_id", None)
+        if seed_id:
+            seed_entry = index.setdefault(seed_id, {"all": set(), "original": set(), "clones": set()})
+            seed_entry["all"].add(item.instance_id)
+            if getattr(item, "origin", "original") == "original":
+                seed_entry["original"].add(item.instance_id)
+            else:
+                seed_entry["clones"].add(item.instance_id)
+
+    selectors: List[str] = []
+    for operation in spec.operations:
+        if isinstance(operation, (RotateOperation, MirrorOperation, TranslateOperation)):
+            selectors.extend(operation.targets)
+        elif isinstance(operation, BooleanOperation):
+            selectors.append(operation.target)
+            selectors.extend(operation.subtract)
+
+    warnings: List[str] = []
+    for selector in selectors:
+        if selector.endswith(".clones"):
+            base = selector[: -len(".clones")]
+            clones = index.get(base, {}).get("clones", set())
+            originals = index.get(base, {}).get("original", set())
+            if not clones and originals:
+                warnings.append(f"selector '{selector}' matched no clones; only originals exist")
+    return warnings
+
+
+def _diagnostic_summary_warnings(result: SolveResult) -> List[str]:
+    under_constrained = 0
+    over_constrained = 0
+    for warning in result.diagnostics.warnings:
+        message = warning.message
+        if "under-constrained" in message:
+            under_constrained += 1
+        if "conflicting" in message:
+            over_constrained += 1
+    collisions = len(result.diagnostics.collisions)
+    if not any((under_constrained, over_constrained, collisions)):
+        return []
+    summary_bits = ["diagnostics summary"]
+    if collisions:
+        summary_bits.append(f"collisions: {collisions}")
+    if under_constrained:
+        summary_bits.append(f"under-constrained: {under_constrained}")
+    if over_constrained:
+        summary_bits.append(f"over-constrained: {over_constrained}")
+    return ["; ".join(summary_bits)]
 
 
 def _dof_warnings(result: SolveResult) -> List[str]:

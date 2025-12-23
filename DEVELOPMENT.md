@@ -30,7 +30,7 @@ flowchart TD
 - **Arrays**: `array` (legacy alias: `run_between`) supplies axis-map entries for the array space plus directional `repeat` blocks (vector keys, optional `frame`); optional `through` blocks validate directionality. `array.orient` can set the orientation of instances. `array` is the canonical placement block (single-instance arrays replace `relate`); run instances (`base#n`) are valid refs/selectors.
 - **Operations & selectors**: typed `operations` (`rotate`, `mirror`, `translate`, `boolean`) accept selectors (`id`, `id.original`, `id.clones`). Rotations remap numbered clones; mirror reflects across axis-aligned planes while keeping orientations right-handed. Axis-map refs can target operation clone ids directly, resolving faces using clone orientation in world frame.
 - **Size inference & references**: components infer missing sizes from axis pairs; conflicts with explicit size lint. `kind: reference` components are geometry-less anchors with missing axes defaulting to 0.
-- **Checks & diagnostics**: checks reuse axis-map shapes and now honour `tolerance` + `on_fail: warn|error|ignore`, applying offsets/gaps/frames (with contextual projection warnings + per-frame summaries when frames are not axis-aligned) and escalating through `fail_on_warn` when requested. DOF reporting warns only when an axis can’t infer a position or size (remaining DOF) and validation now surfaces per-component DOF summaries, while explicit spans + sizes are permitted so long as they agree.
+- **Checks & diagnostics**: checks reuse axis-map shapes and now honour `tolerance` + `on_fail: warn|error|ignore`, applying offsets/gaps/frames (with contextual projection warnings + per-frame summaries when frames are not axis-aligned) and escalating through `fail_on_warn` when requested. DOF reporting warns only when an axis can’t infer a position or size (remaining DOF) and validation now surfaces per-component DOF summaries plus selector hygiene/diagnostic summaries, while explicit spans + sizes are permitted so long as they agree.
 - **Planner & renderers**: relationship planner projects footprints/section slices from solids and emits dimension polylines; renderers share styling with the legacy path.
 - **Exporters**: tessellated glTF/GLB with metadata in `extras`; IFC 4.3 Reference View (mm/deg units, Model/Axis/Body contexts, predefined-type/material expectations, mapped items/types for repeats, class-aligned property sets from metadata, RelVoids propagated to clones); STEP/OBJ reuse CadQuery solids.
 
@@ -122,7 +122,7 @@ flowchart LR
 
 - Do prefer axis-map relates, `flush`, and `array` spans over manual coordinates; use center tokens for symmetric anchors.
 - Do keep specs and materials in sync; add new material keys to `diagramming/materials.py`.
-- Do document new helpers/ops with fixtures and update `DEVELOPMENT.md`/`architecture-spec.md` when behaviour changes.
+- Do document new helpers/ops with fixtures (axis-map + IFC regression coverage) and update `DEVELOPMENT.md`/`architecture-spec.md` when behaviour changes.
 - `relate_from` and assemblies have been removed to reduce surface area; specs should stick to axis-map `relate`/`flush`/`place` and `array`.
 - Don't hand-edit generated artefacts; regenerate outputs instead.
 
