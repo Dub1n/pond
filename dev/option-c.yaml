@@ -188,11 +188,11 @@ components:
       -x: { ref: outer_beam_west, pos: +x }
       +z: { ref: joist_top, pos: +z }
     array:
-      -y:
+      +y:
         ref: opening_frame
         pos: +y
         offset: decking_overhang
-      +y:
+      -y:
         ref: opening_frame
         pos: -y
         offset: -decking_overhang
@@ -426,8 +426,8 @@ components:
     kind: reference
     size: [0, 0, 0]
     relate:
-      +x: { ref: joist_run_west_inner, pos: +x }
-      -x: { ref: opening_frame, pos: -x }
+      -x: { ref: joist_run_west_inner, pos: -x }
+      +x: { ref: opening_frame, pos: -x }
 
 operations:
   - type: rotate

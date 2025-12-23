@@ -158,15 +158,13 @@ class RelationshipValidationTests(unittest.TestCase):
                 class: IfcBeam
                 size: [400, 50, 150]
                 material: timber
-                relate:
-                  cx: { ref: origin }
-                  cy: { ref: origin }
-                  cz: { ref: origin }
                 array:
                   -y: { ref: origin, offset: -600 }
                   +y: { ref: origin, offset: 600 }
+                  cx: { ref: origin }
+                  cz: { ref: origin }
                   repeat:
-                    y: { count: 3 }
+                    "0,1,0": { count: 3 }
                 ifc:
                   predefined_type: BEAM
             """

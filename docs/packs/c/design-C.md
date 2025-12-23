@@ -1,13 +1,13 @@
 # pond deck design – rev 4
 
-> 1 m walk + 250 mm overhang; compact, low-profile build
+> 1 m walk + 340 mm overhang; compact, low-profile build
 
 ---
 
 ## overview
 
 * pond: 3 m × 3 m × ≈ 0.9 m deep
-* desired: 1 m walk-around, 250 mm overhang into pond
+* desired: 1 m walk-around, 340 mm overhang into pond
 * deck finish: ≈100 mm above max water level
 * priorities: minimal build-up, tidy liner interface, clean edge detailing
 
@@ -19,14 +19,14 @@
 
 * rectangular deck frame around pond.
 * joists span between **outer beam** and **inner beam**, both continuous.
-* joists cantilever 250 mm beyond the inner beam.
+* joists cantilever 340 mm beyond the inner beam for the inner five runs; the outer two runs stay shorter to avoid diagonal conflicts.
 * corners infilled with a diagonal joist plus short perpendicular ties so the mitered corner boards stay fully supported.
 
 **member sizes (C24 UC4-treated softwood):**
 
 | member                | size      | spacing/notes                           |
 | --------------------- | --------- | --------------------------------------- |
-| joists                | 47×150 mm | ≈409 mm c/c (7 per side across 2.5 m)  |
+| joists (J, C)          | 47×75 mm  | ≈409 mm c/c (7 per side across 2.5 m)  |
 | beams (outer & inner) | 47×150 mm | continuous, flush with joist tops       |
 | blocking              | 47×150 mm | solid between joists at both beam lines |
 | deck boards           | 28×145 mm | 5–6 mm gaps, 20–30 mm overhang          |
@@ -72,16 +72,17 @@
 **support spacing:**
 
 * beam supported on **pads/ground screws**: one at every corner plus **two intermediates per edge aligned to joist lines #2 and #6** (≈1.67 m and ≈3.33 m from the corner) so corners sit on bearing and pad centres coincide with joist centrelines.
-* 300×300×100 mm concrete pads on gravel; DPC or membrane under beam. If pads cannot be used at the pond edge, confirm the alternative support there delivers equivalent bearing and uplift resistance.
+* pads are **600×600×50 mm precast concrete council slabs** on 10 mm compacted gravel over geotextile; DPC between pad and timber.
+* add pads at the **pond-edge side centre** and **pond-edge corner** for each side, with pad edges kissing the pond line (not centred on it). If pads cannot be used at the pond edge, confirm the alternative support there delivers equivalent bearing and uplift resistance.
 
 ---
 
 ## corner infill (rev 4)
 
 * extend the **outer beam (C4)** and **inner beam (C4B)** so their ends fan toward the deck corners, sharing elevation with the joists; lock with blocking/hangers where members cross.
-* add a **diagonal corner joist** from each deck corner to the end of the 250 mm overhang (e.g., (0, 0) → (1.25, 1.25)), rotated through all four corners.
+* add a **diagonal corner joist** from each deck corner to the pond opening corner (longer than the original 250 mm overhang), rotated through all four corners.
 * add two short **perpendicular ties** from the perimeter to that diagonal at 500 mm from each corner (e.g., (0, 0.5) → (0.5, 0.5) and (0.5, 0) → (0.5, 0.5)), also rotated 4×.
-* re-space the side joist arrays evenly across the 2.5 m overhang width: **7 joists (~409 mm c/c)**, first face flush to the overhang edge at the pond opening; the run ends flush to the opposite edge so joists stay within the cantilever band and only the diagonal needs trimming.
+* re-space the side joist arrays evenly across the 2.5 m overhang width: **7 joists (~409 mm c/c)**, first face flush to the overhang edge at the pond opening; the inner five runs extend to the 340 mm overhang while the two outer runs stay shorter so the diagonal and outer corners remain clear.
 
 ---
 
@@ -109,6 +110,8 @@
 
 * UC4-treated timber throughout; reseal cut ends.
 * stainless or class 4 fasteners only.
+* 10 mm compacted gravel over geotextile beneath each pad.
+* DPC between pads and timber.
 * breathable membrane under deck for weed control.
 * isolate metal edges from liner with EPDM or underlay.
 

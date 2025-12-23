@@ -5,6 +5,11 @@
 - [!] Enable placements to reference rotated/mirrored clones (resolve axis-map refs to op outputs so specs can anchor to clone faces). Definition of done: `dev/option-c.yaml` builds successfully when C2 start references `inner_beam_south` and `inner_beam_west` clone faces.
 - [x] Array rework: replace start/end run_between with axis-map `array` + `repeat`/`through` semantics (array space, per-axis repetition, through checks, overlap guards). Definition of done: schema/solver/lint/tests/docs updated; existing arrays migrated; new `docs/array.md` aligned.
 - [!] Add optional `orient` field on `relate` (e.g. `span`), and consider options for explicit vectors or `component_id` frames to define orientation basis.
+- [x] Make `array` the canonical placement block (single-instance arrays replace `relate`) and enforce mutual exclusivity in schema/lint/docs.
+- [x] Define repeat direction vectors (`"x,y,z"`) with per-repeat `frame: world|local|<component_id>` semantics; document array-derived local frame rules.
+- [x] Extend axis-map entries to accept multiple refs per subject axis for non-orthogonal placement (multi-ref axis-maps).
+- [x] Update schema/solver/lint/tests for non-orthogonal relate/array placement and repeat vectors; add fixtures for rotated/diagonal runs.
+- [x] Update docs/axis-maps.md with multi-ref inputs and non-grid-aligned examples; follow with a doc sweep (instructions/DEVELOPMENT).
 - [ ] Allow `frame: <component_id>` shorthand (reserve `world`/`local`; keep legacy `component:<id>` accepted during transition).
 - [x] Implement frame-aware placement (subject/object frames, frame on `flush`), preserving gaps and size inference when transforming frames.
 - [x] Enforce `mode: plane|edge|point`, honour `tolerance`/`on_fail`, and improve DOF reporting; add fail-on-warn paths for collisions/under/over-constraint. (Progress: lint enforces mode shapes; solver trims extra axes per mode, reports DOF, and fail-on-warn can promote under-constraint warnings; checks honour tolerance/on_fail.)
@@ -56,6 +61,7 @@
 - [ ] Footprint offset helpers on solids to keep reveals/tolerances declarative.
 - [ ] Selector groups and selector integration across operations/booleans; lint support.
 - [ ] DOF reporting and richer diagnostics surfaced once implemented.
+- [!] Consider equation-style repeat keys (e.g., `y=x`) alongside vector strings.
 - [ ] Re-evaluate `relate_from`/assemblies once core axis-map is stable (decide whether to reintroduce with coverage).
 
 ## Backlog – authoring UX & tooling (Phase 6)

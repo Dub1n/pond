@@ -56,11 +56,11 @@ array:
   -y: { ref: frame, pos: +y }
   +y: { ref: frame, pos: -y }
   repeat:
-    y: { count: 7 }
+    "0,1,0": { count: 7 }
 ```
 
-- The axis-map defines the array space; `repeat` defines how many instances along each axis. Without `repeat`, an array is a single instance and behaves like a placement constraint.
-- Axes not listed in `repeat` must match the span implied by the array axis-map (or infer from it if size is null). Axes in `repeat` are excluded from size-vs-span checks.
+- The axis-map defines the array space; `repeat` defines how many instances along each direction. Without `repeat`, an array is a single instance and behaves like a placement constraint.
+- `array` is the canonical placement block; do not combine `array` and `relate` on the same component.
 - Use `through` blocks inside `array` for direction checks; they do not infer size.
 - Use `frame: <component_id>` when you need a relation to borrow another component’s orientation instead of the target’s local axes. Component ids cannot be `world` or `local`.
 - For corner-to-corner spans (e.g. diagonals), multi-axis keys like `-x+y` in `array` are treated as point anchors when `mode: point` (the default), so the span is based on the actual corner point rather than drifting due to face/size assumptions.

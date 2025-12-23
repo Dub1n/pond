@@ -34,148 +34,69 @@ Each axis-map entry may specify:
 - **Gap / offset** values
 - Optional size inference or validation behaviour
 
+Axis-maps are orthogonal by default. Axes only deviate from grid alignment when a signed axis
+(`-x`, `+x`, `-y`, `+y`, `-z`, `+z`, or `cx/cy/cz`) is used in multiple axis-map entries. In that
+case, the solver infers a local orientation that best satisfies the multiple references and treats
+the component as rotated relative to world axes.
+
 Crucially, axis-maps may be *partial*, *complete*, or *intentionally over-constrained*.
 
 ---
 
 ## Example (Pond relationship specs)
 
-This project uses axis-maps as the primary placement primitive. The excerpt below follows the current relationship-first schema (the same shape used in `dev/option-c.yaml`) and shows orphan point/edge/plane references, three styles of component `relate` blocks, and an array that interpolates a missing size axis.
+Axis-maps cover point/edge/plane anchors, size inference, arrays, and non-orthogonal placement. The
+snippets below show the minimal shapes for each use case.
+
+Point anchor (fully constrained):
 
 ```yaml
-schema: pond-relationship-example
-dimensions:
-  frame_x: 2400
-  frame_y: 1800
-  slab_thickness: 40
-  edge_inset: 120
-  footing_height: 200
-  beam_width: 90
-  beam_depth: 180
-  post_size: 140
-  post_height: 900
-  rail_width: 60
-  rail_depth: 40
-  rail_top_start: 160
-  rail_top_end: 100
-  rail_top_delta: rail_top_end - rail_top_start
-  rail_count: 5
-
-components:
-  # Shared anchors (all-caps ids).
-  - id: ORIGIN
-    size: [0, 0, 0]
-
-  - id: DECK_FRAME
-    size: [frame_x, frame_y, 0]
-    relate:
-      cxcy: { ref: ORIGIN, pos: cxcy, frame: world }
-
-  - id: SLAB_TOP
-    size: [1, 1, 0]
-    relate:
-      cz: { ref: ORIGIN, pos: cz, offset: slab_thickness, frame: world }
-
-  # Orphan point: fully constrained point (x/y/z) used as a corner datum.
-  - id: FOOTING_POINT
-    size: [0, 0, 0]
-    relate:
-      +x+y+z:
-        ref: DECK_FRAME
-        pos: -x-y+z
-        mode: point
-        frame: DECK_FRAME
-        offset:
-          +x: edge_inset
-          +y: edge_inset
-
-  # Orphan edge: y/z fixed, x intentionally free (edge runs along X).
-  - id: NORTH_EDGE
-    size: [frame_x - 2 * edge_inset, 0, 0]
-    relate:
-      +y+z:
-        ref: DECK_FRAME
-        pos: +y+z
-        mode: edge
-        frame: DECK_FRAME
-        offset:
-          +y: -edge_inset
-          +z: slab_thickness
-
-  # Orphan plane: z fixed, x/y intentionally free.
-  - id: RAIL_TOP_PLANE
-    size: [frame_x, frame_y, 0]
-    relate:
-      +z:
-        ref: SLAB_TOP
-        pos: +z
-        mode: plane
-        offset: rail_top_start
-
-  # No size field: size inferred from two point axis-maps.
-  - id: footing_block
-    relate:
-      -x-y-z: { ref: FOOTING_POINT, pos: cxcycz, mode: point }
-      +x+y+z:
-        ref: FOOTING_POINT
-        pos: cxcycz
-        mode: point
-        offset:
-          +x: post_size
-          +y: post_size
-          +z: footing_height
-
-  # Size vector with three plane axis-maps (one per axis).
-  - id: east_beam
-    size: [beam_width, frame_y - 2 * edge_inset, beam_depth]
-    relate:
-      +x: { ref: DECK_FRAME, pos: +x, mode: plane, frame: DECK_FRAME }
-      -y: { ref: DECK_FRAME, pos: -y, mode: plane, frame: DECK_FRAME, offset: edge_inset }
-      +z: { ref: SLAB_TOP, pos: +z, mode: plane }
-
-  # Overconstrained in two axes as a check (x and y use face pairs + centers).
-  - id: post_check
-    size: [post_size, post_size, post_height]
-    relate:
-      cx: { ref: FOOTING_POINT, pos: cx, offset: post_size / 2 }
-      +x: { ref: FOOTING_POINT, pos: cx, offset: post_size }
-      -x: { ref: FOOTING_POINT, pos: cx }
-      cy: { ref: FOOTING_POINT, pos: cy, offset: post_size / 2 }
-      +y: { ref: FOOTING_POINT, pos: cy, offset: post_size }
-      -y: { ref: FOOTING_POINT, pos: cy }
-      -z: { ref: SLAB_TOP, pos: +z }
-
-  # Array with one size left null; Z size interpolates between start/end planes.
-  - id: rail_panel
-    size: [300, rail_width, null]
-    array:
-      start:
-        cxcy:
-          ref: DECK_FRAME
-          pos: -x+y
-          mode: point
-          frame: DECK_FRAME
-          offset:
-            cx: edge_inset
-            cy: -edge_inset
-        +z: { ref: RAIL_TOP_PLANE, pos: +z, mode: plane }
-        -z: { ref: SLAB_TOP, pos: +z, mode: plane }
-      end:
-        cxcy:
-          ref: DECK_FRAME
-          pos: +x+y
-          mode: point
-          frame: DECK_FRAME
-          offset:
-            cx: -edge_inset
-            cy: -edge_inset
-        +z: { ref: RAIL_TOP_PLANE, pos: +z, mode: plane, offset: rail_top_delta }
-        -z: { ref: SLAB_TOP, pos: +z, mode: plane }
-      count: rail_count
-      orient: along_run
+relate:
+  +x+y+z: { ref: frame, pos: -x-y+z, mode: point, offset: { +x: inset, +y: inset } }
 ```
 
-Each key (`+x`, `cxcy`, `-x-y-z`) names the subject axis set; the value names a target (`ref`), the target position (`pos`), optional `frame`, and per-axis `offset`/`gap`. The orphan edge/plane blocks intentionally leave DOF free, while the component examples show inferred size, explicit plane anchoring, and deliberate over-constraint for validation.
+Edge anchor (one axis free):
+
+```yaml
+relate:
+  +y+z: { ref: frame, pos: +y+z, mode: edge, offset: { +y: -inset, +z: thickness } }
+```
+
+Plane anchor (two axes free) with size inference:
+
+```yaml
+size: [null, 90, 180]
+relate:
+  -x: { ref: frame, pos: -x }
+  +x: { ref: frame, pos: +x }
+  +z: { ref: slab_top, pos: +z, mode: plane }
+```
+
+Array with repeat direction vectors:
+
+```yaml
+array:
+  -x: { ref: beam_a, pos: +x }
+  +x: { ref: beam_b, pos: -x }
+  cy: { ref: frame, pos: cy }
+  repeat:
+    "1,0,0": { count: 7 }
+```
+
+Multi-reference axis-map (non-orthogonal placement):
+
+```yaml
+relate:
+  +y:
+    - { ref: frame_west, pos: +y }
+    - { ref: frame_north, pos: -y }
+  -x: { ref: outer_beam, pos: +x }
+  +z: { ref: joist_top, pos: +z }
+```
+
+Using a signed axis in multiple axis-map entries is the signal that rotation is permitted. Center
+tokens (`cx`, `cy`, `cz`) can also participate in multi-reference placement. Orientation inference
+uses point-mode relations with full axis tokens (three axes) when available.
 
 ---
 

@@ -6,6 +6,10 @@ Arrays are a placement primitive that map a component into an array space. The c
 refers to the instance size. The array axis-map defines the array space (the span or bounds that
 instances are placed within), and the optional `repeat` block defines repetition within that space.
 
+`array` is the canonical placement block and does not coexist with `relate`. Use either `array` or
+`relate`, never both. When you need a single instance, use `array` without a `repeat` block; it is
+equivalent to a single-instance `relate` placement.
+
 This design replaces legacy `run_between` behavior and clarifies the separation between:
 
 - Component placement and size (`size`, `relate`)
@@ -19,7 +23,7 @@ Arrays can be used for a single instance (no repetition) or for multi-axis repet
 
 ## Quick reference
 
-Minimal single-instance array:
+Minimal single-instance array (use instead of `relate`):
 
 ```yaml
 array:
@@ -34,7 +38,7 @@ array:
   -x: { ref: beam_a, pos: +x }
   +x: { ref: beam_b, pos: -x }
   repeat:
-    x: { count: 10, pitch: 400 }
+    "1,0,0": { count: 10, pitch: 400 }
 ```
 
 2D grid along X/Y with a through check:
@@ -48,8 +52,8 @@ array:
   through:
     - cxcy: { ref: origin, pos: cxcy, mode: point }
   repeat:
-    x: { count: 6 }
-    y: { count: 4 }
+    "1,0,0": { count: 6 }
+    "0,1,0": { count: 4 }
 ```
 
 ---
@@ -79,28 +83,40 @@ When both faces are provided, the direction for that axis is taken from `start` 
 
 ## Repeat block
 
-The `repeat` block defines repetition along one or more axes. If `repeat` is omitted, the
+The `repeat` block defines repetition along one or more directions. If `repeat` is omitted, the
 array produces a single instance and the array axis-map behaves like a placement constraint.
 
 Structure:
 
 ```yaml
 repeat:
-  x: { count: 10, pitch: 400 }
-  y: { count: 4 }
-  z: { count: 2, pitch: 300 }
+  "1,0,0": { count: 10, pitch: 400 }
+  "0,1,0": { count: 4 }
+  "0,0,1": { count: 2, pitch: 300 }
 ```
 
 Rules:
 
-- `count` is the number of instances along that axis.
-- `pitch` is the center-to-center spacing along that axis.
+- Repeat keys are direction vectors written as strings (`"x,y,z"`). The vector is normalised; only
+  direction matters.
+- `count` is the number of instances along that direction.
+- `pitch` is the center-to-center spacing along that direction.
 - If both `count` and `pitch` are provided, the array uses both and warns if the total
   span implied by count/pitch does not match the array span.
 - If only `count` is provided, instances are evenly distributed across the axis span,
   inclusive of both ends.
 - If only `pitch` is provided, instances repeat as many times as fit; leftover space
   triggers a warning.
+- Each repeat entry can declare `frame: world|local|<component_id>`. `world` is default.
+  `local` uses a frame derived from the array axis-map, so repeats can align to the array
+  space even when it is rotated or skewed.
+
+Local frame derivation (array axis-map):
+
+- The local origin is the array anchor implied by the axis-map (using the `-x/-y/-z` corner when present).
+- The local X axis points from `-x-y-z` toward `+x-y-z`.
+- The local Y axis starts from `-x-y-z` toward `-x+y-z`, then is orthogonalised to X.
+- The local Z axis is orthonormal to X/Y, with sign chosen so `-x-y+z` lies on the positive side.
 
 Overlap rules:
 
@@ -128,7 +144,8 @@ Behavior:
 
 Direction line definition:
 
-- When axes repeat, the direction is derived from the array axis-map spans on those axes.
+- When repeats are present, the direction uses the repeat vector (after applying its frame).
+- If a repeat is absent, the direction falls back to the array axis-map spans on those axes.
 - If an axis has only one face anchor, through constraints can supply the missing direction
   for that axis.
 
@@ -136,14 +153,14 @@ Direction line definition:
 
 ## Size inference and over-constraints
 
-Size inference is only applied to axes that are NOT in the `repeat` block. The array axis-map
-is treated as the authoritative span for those axes.
+The array axis-map is treated as the authoritative span for world axes. Size inference is driven
+by the axis-map faces in the same way as `relate`, with one exception: when a repeat direction is
+aligned to a world axis, size-vs-span checks are skipped on that axis (so repeats can span a bay
+without forcing the component size to equal the span).
 
 - If paired faces define a span and `size[axis]` is provided, the size must match.
 - If `size[axis]` is null and a span is defined, the size is inferred from the span.
 - If only one face is present and `size[axis]` is provided, the span is taken from size.
-
-If an axis is in `repeat`, it is excluded from size-vs-span checks.
 
 ---
 
@@ -183,7 +200,7 @@ Array that spans a frame and repeats along X only:
     cy: { ref: frame, pos: cy }
     +z: { ref: slab_top, pos: +z }
     repeat:
-      x: { count: 7 }
+      "1,0,0": { count: 7 }
 ```
 
 Array with a single anchor and explicit pitch:
@@ -195,8 +212,8 @@ Array with a single anchor and explicit pitch:
     -x: { ref: frame, pos: -x }
     -y: { ref: frame, pos: -y }
     repeat:
-      x: { pitch: 1200 }
-      y: { pitch: 1200 }
+      "1,0,0": { pitch: 1200 }
+      "0,1,0": { pitch: 1200 }
 ```
 
 Array with through checks enforcing directionality:

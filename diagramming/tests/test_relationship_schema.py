@@ -57,6 +57,40 @@ class RelationshipSchemaTests(unittest.TestCase):
         errors = lint_relationship_spec(spec)
         self.assertFalse(errors)
 
+    def test_axis_map_accepts_multiple_targets(self) -> None:
+        spec_text = dedent(
+            """
+            schema: pond-relationship-test
+            info:
+              option: multi-ref
+            components:
+              - id: origin
+                kind: reference
+                size: [0, 0, 0]
+              - id: datum
+                kind: reference
+                size: [0, 0, 0]
+                relate:
+                  cx: { ref: origin }
+                  cy: { ref: origin }
+              - id: beam
+                class: IfcBeam
+                size: [100, 50, 20]
+                relate:
+                  +x:
+                    - { ref: origin, pos: +x }
+                    - { ref: datum, pos: +x }
+                  +y: { ref: origin, pos: +y }
+                  +z: { ref: origin, pos: +z }
+            """
+        )
+        with TemporaryDirectory() as tmp:
+            path = Path(tmp) / "multi-ref.yaml"
+            path.write_text(spec_text, encoding="utf-8")
+            spec = load_relationship_spec(path)
+        beam = next(comp for comp in spec.components if comp.id == "beam")
+        self.assertEqual(len(beam.relations), 4)
+
     def test_lint_catches_unknown_operation_selector(self) -> None:
         spec_text = dedent(
             """

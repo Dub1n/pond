@@ -276,11 +276,14 @@ def _parse_frame(raw: Any) -> FrameToken:
         return "world"
     if not isinstance(raw, str):
         raise SchemaError("frame must be a string")
-    value = raw.strip().lower()
+    raw_value = raw.strip()
+    value = raw_value.lower()
     if value in VALID_FRAMES:
         return value
-    if value.startswith("component:") and len(value.split(":", 1)[1]) > 0:
-        return value
+    if value.startswith("component:") and len(raw_value.split(":", 1)[1]) > 0:
+        return raw_value
+    if raw_value:
+        return f"component:{raw_value}"
     raise SchemaError(f"unsupported frame '{raw}'")
 
 
@@ -421,8 +424,10 @@ class RunBetweenSpec:
 
 @dataclass(slots=True)
 class RepeatAxisSpec:
+    direction: Tuple[float, float, float]
     count: Optional[int] = None
     pitch: Optional[float] = None
+    frame: FrameToken = "world"
 
 
 @dataclass(slots=True)
@@ -847,35 +852,44 @@ def _parse_axis_map(data: Any, dimensions: DimensionResolver) -> List[AxisRelati
             relations.extend(_parse_flush(payload, dimensions))
             continue
         subject = canonical_pos_token(raw_subject)
-        if not isinstance(payload, Mapping):
+        targets: List[Mapping[str, Any]] = []
+        if isinstance(payload, Mapping):
+            targets = [payload]
+        elif isinstance(payload, Sequence) and not isinstance(payload, (str, bytes)):
+            for entry in payload:
+                if not isinstance(entry, Mapping):
+                    raise SchemaError("axis-map entry must be a mapping")
+                targets.append(entry)
+        else:
             raise SchemaError("axis-map entry must be a mapping")
-        ref_raw = payload.get("ref") or payload.get("component") or payload.get("to")
-        if ref_raw is None:
-            raise SchemaError(f"axis-map entry '{subject}' requires a ref/component/to field")
-        pos_raw = payload.get("pos", subject)
-        gap = _parse_axis_amount(payload.get("gap"), dimensions)
-        offset = _parse_axis_amount(payload.get("offset"), dimensions)
-        mode = str(payload.get("mode", "point"))
-        tolerance = _resolve_optional_number(payload.get("tolerance"), dimensions)
-        on_fail_raw = str(payload.get("on_fail", "error")).lower()
-        if on_fail_raw not in {"error", "warn", "ignore"}:
-            raise SchemaError(f"axis-map entry '{subject}' has unsupported on_fail '{on_fail_raw}'")
-        frame = _parse_frame(payload.get("frame"))
-        relations.append(
-            AxisRelation(
-                subject=subject,
-                target=AxisMapTarget(
-                    ref=str(ref_raw),
-                    pos=canonical_pos_token(pos_raw),
-                    gap=gap,
-                    offset=offset,
-                    mode=mode,
-                    frame=frame,
-                ),
-                tolerance=tolerance,
-                on_fail=on_fail_raw,
+        for target_payload in targets:
+            ref_raw = target_payload.get("ref") or target_payload.get("component") or target_payload.get("to")
+            if ref_raw is None:
+                raise SchemaError(f"axis-map entry '{subject}' requires a ref/component/to field")
+            pos_raw = target_payload.get("pos", subject)
+            gap = _parse_axis_amount(target_payload.get("gap"), dimensions)
+            offset = _parse_axis_amount(target_payload.get("offset"), dimensions)
+            mode = str(target_payload.get("mode", "point"))
+            tolerance = _resolve_optional_number(target_payload.get("tolerance"), dimensions)
+            on_fail_raw = str(target_payload.get("on_fail", "error")).lower()
+            if on_fail_raw not in {"error", "warn", "ignore"}:
+                raise SchemaError(f"axis-map entry '{subject}' has unsupported on_fail '{on_fail_raw}'")
+            frame = _parse_frame(target_payload.get("frame"))
+            relations.append(
+                AxisRelation(
+                    subject=subject,
+                    target=AxisMapTarget(
+                        ref=str(ref_raw),
+                        pos=canonical_pos_token(pos_raw),
+                        gap=gap,
+                        offset=offset,
+                        mode=mode,
+                        frame=frame,
+                    ),
+                    tolerance=tolerance,
+                    on_fail=on_fail_raw,
+                )
             )
-        )
     return relations
 
 
@@ -930,19 +944,43 @@ def _parse_repeat(payload: Any, dimensions: DimensionResolver) -> Dict[str, Repe
         raise SchemaError("array.repeat must be a mapping when provided")
     repeat: Dict[str, RepeatAxisSpec] = {}
     for axis, entry in payload.items():
-        axis_name = str(axis).lower()
-        if axis_name not in {"x", "y", "z"}:
-            raise SchemaError(f"array.repeat axis '{axis}' is not supported")
+        axis_name = str(axis).strip()
         if not isinstance(entry, Mapping):
-            raise SchemaError(f"array.repeat.{axis} must be a mapping")
+            raise SchemaError(f"array.repeat.{axis_name} must be a mapping")
         count_raw = entry.get("count")
         pitch_raw = entry.get("pitch")
         count = int(count_raw) if count_raw is not None else None
         pitch = _resolve_optional_number(pitch_raw, dimensions)
         if count is None and pitch is None:
-            raise SchemaError(f"array.repeat.{axis} must include count or pitch")
-        repeat[axis_name] = RepeatAxisSpec(count=count, pitch=pitch)
+            raise SchemaError(f"array.repeat.{axis_name} must include count or pitch")
+        frame = _parse_frame(entry.get("frame"))
+        direction = _parse_repeat_direction(axis_name)
+        repeat[axis_name] = RepeatAxisSpec(direction=direction, count=count, pitch=pitch, frame=frame)
     return repeat
+
+
+def _parse_repeat_direction(raw: str) -> Tuple[float, float, float]:
+    axis = raw.strip().lower()
+    if axis in {"x", "+x"}:
+        return (1.0, 0.0, 0.0)
+    if axis == "-x":
+        return (-1.0, 0.0, 0.0)
+    if axis in {"y", "+y"}:
+        return (0.0, 1.0, 0.0)
+    if axis == "-y":
+        return (0.0, -1.0, 0.0)
+    if axis in {"z", "+z"}:
+        return (0.0, 0.0, 1.0)
+    if axis == "-z":
+        return (0.0, 0.0, -1.0)
+
+    parts = [part for part in re.split(r"[,\s]+", axis) if part]
+    if len(parts) != 3:
+        raise SchemaError(f"array.repeat axis '{raw}' must be a vector 'x,y,z'")
+    try:
+        return (float(parts[0]), float(parts[1]), float(parts[2]))
+    except ValueError as exc:
+        raise SchemaError(f"array.repeat axis '{raw}' must be a numeric vector") from exc
 
 
 def _parse_through(payload: Any, dimensions: DimensionResolver) -> Tuple[ThroughSpec, ...]:

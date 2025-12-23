@@ -322,7 +322,7 @@ class InstancePlan:
 @dataclass(slots=True)
 class AxisState:
     center: Optional[float] = None
-    faces: Dict[int, float] = field(default_factory=dict)
+    faces: Dict[int, List[float]] = field(default_factory=dict)
     size: Optional[float] = None
     locked_center: bool = False
 
@@ -358,6 +358,14 @@ class ReferenceResolver:
         orientation = self._frame_orientation(frame, ref)
         axis_vec = _axis_vector(orientation, axis)
         return _dominant_world_axis(axis_vec)
+
+    def vector_in_world(self, frame: str, ref: str, vector: Tuple[float, float, float]) -> Tuple[float, float, float]:
+        orientation = self._frame_orientation(frame, ref)
+        return (
+            orientation[0][0] * vector[0] + orientation[1][0] * vector[1] + orientation[2][0] * vector[2],
+            orientation[0][1] * vector[0] + orientation[1][1] * vector[1] + orientation[2][1] * vector[2],
+            orientation[0][2] * vector[0] + orientation[1][2] * vector[1] + orientation[2][2] * vector[2],
+        )
 
     def coords_for_ref(self, ref: str) -> Optional[Dict[str, float]]:
         if ref in self.component_states:
@@ -551,6 +559,7 @@ class ConstraintSolver:
         diagnostics: SolveDiagnostics,
     ) -> List[SolvedComponent]:
         component = plan.component
+        array = plan.array
         base_orientation = IDENTITY_ORIENTATION
         base_rotation_z = float(component.metadata.get("_rotation_z", 0.0)) if component.metadata else 0.0
         if base_rotation_z:
@@ -614,10 +623,19 @@ class ConstraintSolver:
                 final_center[axis] = center_value
                 size[AXIS_ORDER[axis]] = size_value
 
+            orientation_override = self._infer_orientation_from_relations(
+                component,
+                plan.relations + (tuple(array.relations) if array else tuple()),
+                resolver,
+                (size[0], size[1], size[2]),
+                diagnostics,
+                instance_id=instance["id"],
+            )
+            orientation = orientation_override or instance.get("orientation", base_orientation)
             transform = ComponentTransform(
                 position=(final_center["x"], final_center["y"], final_center["z"]),
-                rotation=_rotation_from_orientation(instance.get("orientation", base_orientation)),
-                orientation=instance.get("orientation", base_orientation),
+                rotation=_rotation_from_orientation(orientation),
+                orientation=orientation,
             )
 
             size_tuple = (float(size[0] or 0.0), float(size[1] or 0.0), float(size[2] or 0.0))
@@ -782,7 +800,7 @@ class ConstraintSolver:
                 if not state.locked_center:
                     state.center = adjusted
             else:
-                state.faces[subject_sign] = adjusted
+                state.faces.setdefault(subject_sign, []).append(adjusted)
             touched_axes.add(world_axis)
         self._enforce_relation_mode(component, relation, axis_states, diagnostics, instance_id=instance_id)
         return touched_axes
@@ -835,8 +853,20 @@ class ConstraintSolver:
         size_axis = size_axis or axis
         center = state.center
         size_value = explicit_size
-        pos_plus = state.faces.get(1)
-        pos_minus = state.faces.get(-1)
+        pos_plus_values = state.faces.get(1) or []
+        pos_minus_values = state.faces.get(-1) or []
+        pos_plus = sum(pos_plus_values) / len(pos_plus_values) if pos_plus_values else None
+        pos_minus = sum(pos_minus_values) / len(pos_minus_values) if pos_minus_values else None
+        if len(pos_plus_values) > 1 and (max(pos_plus_values) - min(pos_plus_values)) > 1e-6:
+            diagnostics.add_warning(
+                f"component '{component.id}' has conflicting +{axis} face constraints",
+                subject=instance_id,
+            )
+        if len(pos_minus_values) > 1 and (max(pos_minus_values) - min(pos_minus_values)) > 1e-6:
+            diagnostics.add_warning(
+                f"component '{component.id}' has conflicting -{axis} face constraints",
+                subject=instance_id,
+            )
 
         axis_dof = 0
         inferred_size = None
@@ -887,6 +917,96 @@ class ConstraintSolver:
 
         return center, size_value, axis_dof
 
+    def _infer_orientation_from_relations(
+        self,
+        component: RelationshipComponent,
+        relations: Sequence[AxisRelation],
+        resolver: ReferenceResolver,
+        size_values: Tuple[float, float, float],
+        diagnostics: SolveDiagnostics,
+        *,
+        instance_id: str,
+    ) -> Optional[OrientationMatrix]:
+        axis_counts: Dict[Tuple[str, int], int] = {}
+        for relation in relations:
+            for axis, sign in _axes_from_pos(relation.subject):
+                axis_counts[(axis, sign)] = axis_counts.get((axis, sign), 0) + 1
+        if not any(count > 1 for count in axis_counts.values()):
+            return None
+
+        if any(value is None for value in size_values):
+            diagnostics.add_warning(
+                f"component '{component.id}' orientation inference skipped due to missing size",
+                subject=instance_id,
+            )
+            return None
+
+        local_points: List[Tuple[float, float, float]] = []
+        world_points: List[Tuple[float, float, float]] = []
+        for relation in relations:
+            if (relation.target.mode or "point").lower() != "point":
+                continue
+            subject_axes = _axes_from_pos(relation.subject)
+            target_axes = _axes_from_pos(relation.target.pos)
+            if len(subject_axes) != 3 or len(target_axes) != 3:
+                continue
+            local_coords: Dict[str, float] = {}
+            for axis, sign in subject_axes:
+                if sign == 0:
+                    local_coords[axis] = 0.0
+                else:
+                    local_coords[axis] = (size_values[AXIS_ORDER[axis]] / 2.0) * float(sign)
+
+            world_coords: Dict[str, float] = {}
+            target_signs = {axis: sign for axis, sign in target_axes}
+            for axis, subject_sign in subject_axes:
+                world_axis, world_sign, _ = resolver.world_axis_for(relation.target.frame, relation.target.ref, axis)
+                target_sign = target_signs.get(axis, subject_sign)
+                coord = resolver.axis_coordinate(
+                    relation.target.ref,
+                    axis,
+                    target_sign,
+                    frame=relation.target.frame,
+                    mapped_axis=world_axis,
+                    mapped_sign=world_sign,
+                )
+                if coord is None:
+                    break
+                offset_amount = self._axis_amount_for(axis, subject_sign, relation.target.offset)
+                gap_amount = self._axis_amount_for(axis, subject_sign, relation.target.gap)
+                gap_direction = subject_sign * world_sign if subject_sign != 0 else 0
+                adjusted = coord + offset_amount * world_sign + gap_amount * gap_direction
+                world_coords[world_axis] = adjusted
+            if len(world_coords) != 3:
+                continue
+            local_points.append(
+                (local_coords["x"], local_coords["y"], local_coords["z"])
+            )
+            world_points.append(
+                (world_coords["x"], world_coords["y"], world_coords["z"])
+            )
+
+        if len(local_points) < 3:
+            return None
+
+        local = np.array(local_points)
+        world = np.array(world_points)
+        local_centroid = np.mean(local, axis=0)
+        world_centroid = np.mean(world, axis=0)
+        local_centered = local - local_centroid
+        world_centered = world - world_centroid
+        covariance = local_centered.T @ world_centered
+        u_mat, _, v_t = np.linalg.svd(covariance)
+        rotation = v_t.T @ u_mat.T
+        if np.linalg.det(rotation) < 0:
+            v_t[2, :] *= -1
+            rotation = v_t.T @ u_mat.T
+        return (
+            (float(rotation[0, 0]), float(rotation[1, 0]), float(rotation[2, 0])),
+            (float(rotation[0, 1]), float(rotation[1, 1]), float(rotation[2, 1])),
+            (float(rotation[0, 2]), float(rotation[1, 2]), float(rotation[2, 2])),
+        )
+
     def _array_positions(
         self,
         plan: InstancePlan,
@@ -909,7 +1029,7 @@ class ConstraintSolver:
                 axis_size_map=size_axis_map,
             )
 
-        repeat_axes = set(array.repeat.keys())
+        repeat_entries = list(array.repeat.items())
         explicit_sizes: Dict[str, Optional[float]] = {}
         for axis in ("x", "y", "z"):
             size_axis = size_axis_map.get(axis, axis)
@@ -918,20 +1038,21 @@ class ConstraintSolver:
         axis_info: Dict[str, Dict[str, Optional[float]]] = {}
         for axis in ("x", "y", "z"):
             state = axis_states[axis]
-            face_plus = state.faces.get(1)
-            face_minus = state.faces.get(-1)
+            face_plus_vals = state.faces.get(1) or []
+            face_minus_vals = state.faces.get(-1) or []
+            face_plus = sum(face_plus_vals) / len(face_plus_vals) if face_plus_vals else None
+            face_minus = sum(face_minus_vals) / len(face_minus_vals) if face_minus_vals else None
             center = state.center
             span = None
             if face_plus is not None and face_minus is not None:
                 span = abs(face_plus - face_minus)
-            elif axis not in repeat_axes:
-                if explicit_sizes[axis] is not None:
-                    span = explicit_sizes[axis]
-                elif center is not None:
-                    if face_plus is not None:
-                        span = abs((face_plus - center) * 2)
-                    elif face_minus is not None:
-                        span = abs((center - face_minus) * 2)
+            elif explicit_sizes[axis] is not None:
+                span = explicit_sizes[axis]
+            elif center is not None:
+                if face_plus is not None:
+                    span = abs((face_plus - center) * 2)
+                elif face_minus is not None:
+                    span = abs((center - face_minus) * 2)
             axis_info[axis] = {
                 "face_plus": face_plus,
                 "face_minus": face_minus,
@@ -954,6 +1075,60 @@ class ConstraintSolver:
             if face_plus is not None:
                 return face_plus, -1
             return info["center"], 1
+
+        def _axis_bounds(axis: str, size_value: Optional[float]) -> Tuple[Optional[float], Optional[float]]:
+            info = axis_info[axis]
+            face_minus = info["face_minus"]
+            face_plus = info["face_plus"]
+            if face_minus is not None or face_plus is not None:
+                return face_minus, face_plus
+            center = info["center"]
+            if center is None or size_value is None:
+                return None, None
+            half = size_value / 2.0
+            return center - half, center + half
+
+        def _array_local_frame(bounds: Dict[str, Tuple[Optional[float], Optional[float]]]) -> Optional[OrientationMatrix]:
+            if any(bounds[axis][0] is None or bounds[axis][1] is None for axis in ("x", "y", "z")):
+                return None
+            min_x, max_x = bounds["x"]
+            min_y, max_y = bounds["y"]
+            min_z, max_z = bounds["z"]
+            base = (min_x, min_y, min_z)
+            x_point = (max_x, min_y, min_z)
+            y_point = (min_x, max_y, min_z)
+            z_point = (min_x, min_y, max_z)
+            x_dir = _normalise_vector((x_point[0] - base[0], x_point[1] - base[1], x_point[2] - base[2]))
+            y_raw = (y_point[0] - base[0], y_point[1] - base[1], y_point[2] - base[2])
+            y_proj = _normalise_vector(
+                (
+                    y_raw[0] - x_dir[0] * (x_dir[0] * y_raw[0] + x_dir[1] * y_raw[1] + x_dir[2] * y_raw[2]),
+                    y_raw[1] - x_dir[1] * (x_dir[0] * y_raw[0] + x_dir[1] * y_raw[1] + x_dir[2] * y_raw[2]),
+                    y_raw[2] - x_dir[2] * (x_dir[0] * y_raw[0] + x_dir[1] * y_raw[1] + x_dir[2] * y_raw[2]),
+                )
+            )
+            if x_dir == (0.0, 0.0, 0.0) or y_proj == (0.0, 0.0, 0.0):
+                return None
+            z_dir = _normalise_vector(
+                (
+                    x_dir[1] * y_proj[2] - x_dir[2] * y_proj[1],
+                    x_dir[2] * y_proj[0] - x_dir[0] * y_proj[2],
+                    x_dir[0] * y_proj[1] - x_dir[1] * y_proj[0],
+                )
+            )
+            if z_dir == (0.0, 0.0, 0.0):
+                return None
+            z_hint = (z_point[0] - base[0], z_point[1] - base[1], z_point[2] - base[2])
+            if z_dir[0] * z_hint[0] + z_dir[1] * z_hint[1] + z_dir[2] * z_hint[2] < 0.0:
+                z_dir = (-z_dir[0], -z_dir[1], -z_dir[2])
+            y_dir = _normalise_vector(
+                (
+                    z_dir[1] * x_dir[2] - z_dir[2] * x_dir[1],
+                    z_dir[2] * x_dir[0] - z_dir[0] * x_dir[2],
+                    z_dir[0] * x_dir[1] - z_dir[1] * x_dir[0],
+                )
+            )
+            return (x_dir, y_dir, z_dir)
 
         through_points: List[Dict[str, float]] = []
         for through in array.through:
@@ -992,136 +1167,66 @@ class ConstraintSolver:
             if constraints:
                 through_points.append(constraints)
 
-        direction_components: Dict[str, float] = {}
-        for axis in ("x", "y", "z"):
-            anchor, sign = _axis_anchor(axis)
-            span = axis_info[axis]["span"]
-            repeat_spec = array.repeat.get(axis)
-            component_length = 0.0
-            if axis in repeat_axes:
-                count = repeat_spec.count if repeat_spec else None
-                pitch = repeat_spec.pitch if repeat_spec else None
-                if span is not None:
-                    component_length = span * sign
-                elif count is not None and pitch is not None and count > 1:
-                    component_length = pitch * (count - 1) * sign
-            direction_components[axis] = component_length
+        axis_repeat_specs: Dict[str, List[Tuple[str, RepeatAxisSpec]]] = {"x": [], "y": [], "z": []}
+        for key, spec in repeat_entries:
+            direction = _normalise_vector(spec.direction)
+            if direction == (0.0, 0.0, 0.0):
+                diagnostics.add_error(
+                    f"component '{component.id}' array repeat '{key}' direction is zero",
+                    subject=plan.id,
+                )
+                continue
+            axis, sign, alignment = _dominant_world_axis(direction)
+            if alignment > 1.0 - 1e-6 and abs(abs(direction[AXIS_ORDER[axis]]) - 1.0) < 1e-6:
+                axis_repeat_specs[axis].append((key, spec))
 
-            if abs(direction_components[axis]) < 1e-6 and through_points and anchor is not None:
-                through_axis = through_points[0].get(axis)
-                if through_axis is not None:
-                    direction_components[axis] = through_axis - anchor
+        for axis, specs in axis_repeat_specs.items():
+            if len(specs) > 1:
+                diagnostics.add_error(
+                    f"component '{component.id}' array repeat has multiple entries aligned to {axis}",
+                    subject=plan.id,
+                )
 
         origin: Dict[str, float] = {}
-        axis_centers: Dict[str, List[float]] = {}
         size_overrides: Dict[str, float] = {}
+        base_center: Dict[str, float] = {}
+        size_values: Dict[str, float] = {}
 
         for axis in ("x", "y", "z"):
-            if axis not in repeat_axes and axis not in constrained_axes:
-                axis_centers[axis] = [None]
-                continue
             info = axis_info[axis]
             anchor, sign = _axis_anchor(axis)
-            repeat_spec = array.repeat.get(axis)
             size_value = explicit_sizes[axis]
-
-            if size_value is None and axis in repeat_axes:
-                count = repeat_spec.count if repeat_spec else None
-                if count is None or count > 1:
-                    diagnostics.add_error(
-                        f"component '{component.id}' array repeat requires explicit size on {axis}",
-                        subject=plan.id,
-                    )
-                    size_value = 0.0
-
-            if axis in repeat_axes:
-                count = repeat_spec.count if repeat_spec else None
-                pitch = repeat_spec.pitch if repeat_spec else None
+            if axis_repeat_specs[axis]:
+                repeat_key, repeat_spec = axis_repeat_specs[axis][0]
+                count = repeat_spec.count
                 span = info["span"]
                 if size_value is None and span is not None and count == 1:
                     size_value = span
-
                 if size_value is None:
-                    size_value = 0.0
-
-                if pitch is not None and pitch < size_value:
                     diagnostics.add_error(
-                        f"component '{component.id}' array repeat.{axis} pitch {pitch:.3f} overlaps size {size_value:.3f}",
+                        f"component '{component.id}' array repeat '{repeat_key}' requires explicit size on {axis}",
                         subject=plan.id,
                     )
-                if count is None and pitch is not None:
-                    if span is None:
-                        diagnostics.add_error(
-                            f"component '{component.id}' array repeat.{axis} requires count when span is undefined",
-                            subject=plan.id,
-                        )
-                        count = 1
-                    else:
-                        available = span - size_value
-                        if available < 0:
-                            diagnostics.add_error(
-                                f"component '{component.id}' array span on {axis} is smaller than size",
-                                subject=plan.id,
-                            )
-                            available = 0.0
-                        count = int(available // pitch) + 1
-                        occupied = size_value + (count - 1) * pitch
-                        if abs(occupied - span) > 1e-6:
-                            diagnostics.add_warning(
-                                f"component '{component.id}' array repeat.{axis} does not align to span",
-                                subject=plan.id,
-                            )
-                if count is not None and pitch is None:
-                    if count <= 1:
-                        pitch = 0.0
-                    else:
-                        if span is None:
-                            diagnostics.add_error(
-                                f"component '{component.id}' array repeat.{axis} requires span for count without pitch",
-                                subject=plan.id,
-                            )
-                            pitch = 0.0
-                        else:
-                            available = span - size_value
-                            if available < 0:
-                                diagnostics.add_error(
-                                    f"component '{component.id}' array span on {axis} is smaller than size",
-                                    subject=plan.id,
-                                )
-                                available = 0.0
-                            pitch = available / max(count - 1, 1)
-                if count is None:
-                    count = 1
-                if pitch is None:
-                    pitch = 0.0
-
-                if span is not None and count > 1:
-                    occupied = size_value + (count - 1) * pitch
-                    if pitch and abs(occupied - span) > 1e-6:
-                        diagnostics.add_warning(
-                            f"component '{component.id}' array repeat.{axis} does not align to span",
-                            subject=plan.id,
-                        )
-                    if occupied - span > 1e-6:
-                        diagnostics.add_error(
-                            f"component '{component.id}' array repeat.{axis} exceeds span (occupied {occupied:.3f} vs span {span:.3f})",
-                            subject=plan.id,
-                        )
-
+                    size_value = 0.0
                 if anchor is None and info["center"] is None:
                     diagnostics.add_error(
-                        f"component '{component.id}' array repeat.{axis} is missing an anchor",
+                        f"component '{component.id}' array repeat '{repeat_key}' is missing an anchor on {axis}",
                         subject=plan.id,
                     )
-                    anchor_center = 0.0
+                    center_value = 0.0
                 elif anchor is not None:
-                    anchor_center = anchor + sign * (size_value / 2)
+                    center_value = anchor + sign * (size_value / 2)
                 else:
-                    anchor_center = info["center"] or 0.0
-
-                axis_centers[axis] = [anchor_center + sign * (pitch * i) for i in range(count)]
-                origin[axis] = axis_centers[axis][0] if axis_centers[axis] else anchor_center
+                    center_value = info["center"] or 0.0
                 size_overrides[axis] = size_value
+                base_center[axis] = center_value
+                size_values[axis] = size_value
+                origin[axis] = center_value
+                continue
+
+            if axis not in constrained_axes:
+                base_center[axis] = 0.0
+                size_values[axis] = size_value or 0.0
                 continue
 
             size_axis = size_axis_map.get(axis, axis)
@@ -1135,13 +1240,215 @@ class ConstraintSolver:
                 instance_id=plan.id,
                 size_axis=size_axis,
             )
-            axis_centers[axis] = [center_value]
+            base_center[axis] = center_value
+            size_values[axis] = size_value
             origin[axis] = center_value
             if explicit_sizes[axis] is None and size_value is not None:
                 size_overrides[axis] = size_value
 
+        bounds = {axis: _axis_bounds(axis, size_values.get(axis)) for axis in ("x", "y", "z")}
+        array_local_frame = _array_local_frame(bounds)
+
+        repeat_offset_sets: List[List[Tuple[float, float, float]]] = []
+        repeat_axes_in_world: set[str] = set()
+        repeat_direction_worlds: List[Tuple[float, float, float]] = []
+        repeat_starts: List[Tuple[float, float, float]] = []
+        base_center_tuple = (base_center.get("x", 0.0), base_center.get("y", 0.0), base_center.get("z", 0.0))
+
+        for key, spec in repeat_entries:
+            direction = _normalise_vector(spec.direction)
+            if direction == (0.0, 0.0, 0.0):
+                continue
+            if spec.frame == "local":
+                if array_local_frame is None:
+                    diagnostics.add_error(
+                        f"component '{component.id}' array repeat '{key}' requires local frame but array bounds are incomplete",
+                        subject=plan.id,
+                    )
+                    direction_world = direction
+                else:
+                    direction_world = (
+                        array_local_frame[0][0] * direction[0]
+                        + array_local_frame[1][0] * direction[1]
+                        + array_local_frame[2][0] * direction[2],
+                        array_local_frame[0][1] * direction[0]
+                        + array_local_frame[1][1] * direction[1]
+                        + array_local_frame[2][1] * direction[2],
+                        array_local_frame[0][2] * direction[0]
+                        + array_local_frame[1][2] * direction[1]
+                        + array_local_frame[2][2] * direction[2],
+                    )
+            else:
+                direction_world = resolver.vector_in_world(spec.frame, plan.id, direction)
+            direction_world = _normalise_vector(direction_world)
+            if direction_world == (0.0, 0.0, 0.0):
+                diagnostics.add_error(
+                    f"component '{component.id}' array repeat '{key}' direction resolves to zero",
+                    subject=plan.id,
+                )
+                continue
+            repeat_direction_worlds.append(direction_world)
+            for axis in ("x", "y", "z"):
+                if abs(direction_world[AXIS_ORDER[axis]]) > 1e-9:
+                    repeat_axes_in_world.add(axis)
+
+            count = spec.count
+            pitch = spec.pitch
+
+            bounds_ready = all(bounds[axis][0] is not None and bounds[axis][1] is not None for axis in ("x", "y", "z"))
+            span = None
+            min_proj = None
+            max_proj = None
+            if bounds_ready:
+                xs = [bounds["x"][0], bounds["x"][1]]
+                ys = [bounds["y"][0], bounds["y"][1]]
+                zs = [bounds["z"][0], bounds["z"][1]]
+                projections = []
+                for x in xs:
+                    for y in ys:
+                        for z in zs:
+                            projections.append(direction_world[0] * x + direction_world[1] * y + direction_world[2] * z)
+                min_proj = min(projections)
+                max_proj = max(projections)
+                span = max_proj - min_proj
+
+            size_along = (
+                abs(direction_world[0]) * size_values.get("x", 0.0)
+                + abs(direction_world[1]) * size_values.get("y", 0.0)
+                + abs(direction_world[2]) * size_values.get("z", 0.0)
+            )
+
+            if pitch is not None and pitch < size_along:
+                diagnostics.add_error(
+                    f"component '{component.id}' array repeat '{key}' pitch {pitch:.3f} overlaps size {size_along:.3f}",
+                    subject=plan.id,
+                )
+
+            if count is None and pitch is not None:
+                if span is None:
+                    diagnostics.add_error(
+                        f"component '{component.id}' array repeat '{key}' requires count when span is undefined",
+                        subject=plan.id,
+                    )
+                    count = 1
+                else:
+                    available = span - size_along
+                    if available < 0:
+                        diagnostics.add_error(
+                            f"component '{component.id}' array span is smaller than size along repeat '{key}'",
+                            subject=plan.id,
+                        )
+                        available = 0.0
+                    count = int(available // pitch) + 1
+                    occupied = size_along + (count - 1) * pitch
+                    if abs(occupied - span) > 1e-6:
+                        diagnostics.add_warning(
+                            f"component '{component.id}' array repeat '{key}' does not align to span",
+                            subject=plan.id,
+                        )
+            if count is not None and pitch is None:
+                if count <= 1:
+                    pitch = 0.0
+                else:
+                    if span is None:
+                        diagnostics.add_error(
+                            f"component '{component.id}' array repeat '{key}' requires span for count without pitch",
+                            subject=plan.id,
+                        )
+                        pitch = 0.0
+                    else:
+                        available = span - size_along
+                        if available < 0:
+                            diagnostics.add_error(
+                                f"component '{component.id}' array span is smaller than size along repeat '{key}'",
+                                subject=plan.id,
+                            )
+                            available = 0.0
+                        pitch = available / max(count - 1, 1)
+
+            if count is None:
+                count = 1
+            if pitch is None:
+                pitch = 0.0
+
+            if span is not None and count > 1:
+                occupied = size_along + (count - 1) * pitch
+                if pitch and abs(occupied - span) > 1e-6:
+                    diagnostics.add_warning(
+                        f"component '{component.id}' array repeat '{key}' does not align to span",
+                        subject=plan.id,
+                    )
+                if occupied - span > 1e-6:
+                    diagnostics.add_error(
+                        f"component '{component.id}' array repeat '{key}' exceeds span (occupied {occupied:.3f} vs span {span:.3f})",
+                        subject=plan.id,
+                    )
+
+            base_proj = direction_world[0] * base_center_tuple[0] + direction_world[1] * base_center_tuple[1] + direction_world[2] * base_center_tuple[2]
+            if min_proj is None:
+                start_proj = base_proj
+            else:
+                start_proj = min_proj + size_along / 2.0
+            start_offset = (
+                direction_world[0] * (start_proj - base_proj),
+                direction_world[1] * (start_proj - base_proj),
+                direction_world[2] * (start_proj - base_proj),
+            )
+            repeat_starts.append(start_offset)
+            offsets = [
+                (
+                    start_offset[0] + direction_world[0] * pitch * i,
+                    start_offset[1] + direction_world[1] * pitch * i,
+                    start_offset[2] + direction_world[2] * pitch * i,
+                )
+                for i in range(count)
+            ]
+            repeat_offset_sets.append(offsets)
+
+        if not repeat_offset_sets:
+            repeat_offset_sets = [[(0.0, 0.0, 0.0)]]
+
+        combined_offsets = [(0.0, 0.0, 0.0)]
+        for offsets in repeat_offset_sets:
+            combined_offsets = [
+                (base[0] + offset[0], base[1] + offset[1], base[2] + offset[2])
+                for base in combined_offsets
+                for offset in offsets
+            ]
+
         if array.through:
-            direction = (direction_components["x"], direction_components["y"], direction_components["z"])
+            if repeat_direction_worlds:
+                direction = repeat_direction_worlds[0]
+                if len(repeat_direction_worlds) > 1:
+                    for other in repeat_direction_worlds[1:]:
+                        cross = (
+                            direction[1] * other[2] - direction[2] * other[1],
+                            direction[2] * other[0] - direction[0] * other[2],
+                            direction[0] * other[1] - direction[1] * other[0],
+                        )
+                        if math.sqrt(cross[0] ** 2 + cross[1] ** 2 + cross[2] ** 2) > 1e-6:
+                            diagnostics.add_error(
+                                f"component '{component.id}' array.through requires a single repeat direction",
+                                subject=plan.id,
+                            )
+                            break
+                origin_point = (
+                    base_center_tuple[0] + (repeat_starts[0][0] if repeat_starts else 0.0),
+                    base_center_tuple[1] + (repeat_starts[0][1] if repeat_starts else 0.0),
+                    base_center_tuple[2] + (repeat_starts[0][2] if repeat_starts else 0.0),
+                )
+            else:
+                direction = (0.0, 0.0, 0.0)
+                origin_point = base_center_tuple
+                for axis in ("x", "y", "z"):
+                    anchor, sign = _axis_anchor(axis)
+                    span = axis_info[axis]["span"]
+                    if span is not None:
+                        direction = (
+                            direction[0] + (span * sign if axis == "x" else 0.0),
+                            direction[1] + (span * sign if axis == "y" else 0.0),
+                            direction[2] + (span * sign if axis == "z" else 0.0),
+                        )
             if abs(direction[0]) + abs(direction[1]) + abs(direction[2]) < 1e-9:
                 diagnostics.add_error(
                     f"component '{component.id}' array.through requires a non-zero direction vector",
@@ -1152,15 +1459,8 @@ class ConstraintSolver:
                     t_value: Optional[float] = None
                     valid = True
                     for axis, coord in constraints.items():
-                        dir_axis = direction_components.get(axis, 0.0)
-                        origin_axis = origin.get(axis)
-                        if origin_axis is None:
-                            diagnostics.add_error(
-                                f"component '{component.id}' array.through requires an anchor on {axis}",
-                                subject=plan.id,
-                            )
-                            valid = False
-                            break
+                        dir_axis = direction[AXIS_ORDER[axis]]
+                        origin_axis = origin_point[AXIS_ORDER[axis]]
                         if abs(dir_axis) < 1e-9:
                             if abs(origin_axis - coord) > 1e-6:
                                 valid = False
@@ -1178,26 +1478,28 @@ class ConstraintSolver:
                             subject=plan.id,
                         )
 
-        xs = axis_centers["x"]
-        ys = axis_centers["y"]
-        zs = axis_centers["z"]
         instances: List[Dict[str, Any]] = []
-        for x in xs:
-            for y in ys:
-                for z in zs:
-                    axis_values: Dict[str, float] = {}
-                    if x is not None:
-                        axis_values["x"] = x
-                    if y is not None:
-                        axis_values["y"] = y
-                    if z is not None:
-                        axis_values["z"] = z
-                    instances.append(
-                        {
-                            "axis_values": axis_values,
-                            "size_overrides": size_overrides,
-                        }
-                    )
+        axes_to_set = set(constrained_axes)
+        axes_to_set.update(repeat_axes_in_world)
+        for offset in combined_offsets:
+            center = (
+                base_center_tuple[0] + offset[0],
+                base_center_tuple[1] + offset[1],
+                base_center_tuple[2] + offset[2],
+            )
+            axis_values: Dict[str, float] = {}
+            if "x" in axes_to_set:
+                axis_values["x"] = center[0]
+            if "y" in axes_to_set:
+                axis_values["y"] = center[1]
+            if "z" in axes_to_set:
+                axis_values["z"] = center[2]
+            instances.append(
+                {
+                    "axis_values": axis_values,
+                    "size_overrides": size_overrides,
+                }
+            )
         return instances
 
     # ------------------------------------------------------------------ #

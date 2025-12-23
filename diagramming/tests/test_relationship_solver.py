@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import math
 import os
 from pathlib import Path
 from unittest import mock
@@ -149,14 +150,13 @@ class RelationshipSolverTests(unittest.TestCase):
               - id: runner
                 class: IfcBeam
                 size: [100, 50, 10]
-                relate:
-                  cy: { ref: origin }
-                  cz: { ref: origin }
                 array:
                   -x: { ref: start, pos: +x }
                   +x: { ref: end, pos: +x }
+                  cy: { ref: origin }
+                  cz: { ref: origin }
                   repeat:
-                    x: { count: 2 }
+                    "1,0,0": { count: 2 }
                 ifc:
                   predefined_type: BEAM
             """
@@ -174,6 +174,98 @@ class RelationshipSolverTests(unittest.TestCase):
         self.assertAlmostEqual(xs[1], 950.0)
         for comp in runners:
             self.assertAlmostEqual(comp.transform.rotation[2], 0.0)
+
+    def test_array_repeat_vector_positions(self) -> None:
+        spec_text = dedent(
+            """
+            schema: pond-relationship-test
+            info:
+              option: repeat-vector
+            components:
+              - id: origin
+                kind: reference
+                size: [0, 0, 0]
+              - id: runner
+                class: IfcBeam
+                size: [100, 50, 10]
+                relate:
+                  cz: { ref: origin }
+                array:
+                  cxcycz: { ref: origin, pos: cxcycz }
+                  repeat:
+                    "1,1,0": { count: 2, pitch: 100 }
+                ifc:
+                  predefined_type: BEAM
+            """
+        )
+        with TemporaryDirectory() as tmp:
+            path = Path(tmp) / "repeat-vector.yaml"
+            path.write_text(spec_text, encoding="utf-8")
+            spec = load_relationship_spec(path)
+        solver = ConstraintSolver(spec)
+        result = solver.solve()
+        runners = [comp for comp in result.components if comp.component.id == "runner"]
+        self.assertEqual(len(runners), 2)
+        positions = sorted([(comp.transform.position[0], comp.transform.position[1]) for comp in runners])
+        scale = 1.0 / math.sqrt(2.0)
+        self.assertAlmostEqual(positions[0][0], 0.0)
+        self.assertAlmostEqual(positions[0][1], 0.0)
+        self.assertAlmostEqual(positions[1][0], 100.0 * scale, places=5)
+        self.assertAlmostEqual(positions[1][1], 100.0 * scale, places=5)
+
+    def test_orientation_inferred_from_point_relations(self) -> None:
+        spec_text = dedent(
+            """
+            schema: pond-relationship-test
+            info:
+              option: inferred-orientation
+            components:
+              - id: origin
+                kind: reference
+                size: [0, 0, 0]
+              - id: p1
+                kind: reference
+                size: [0, 0, 0]
+                relate:
+                  cxcycz: { ref: origin }
+              - id: p2
+                kind: reference
+                size: [0, 0, 0]
+                relate:
+                  cx: { ref: origin }
+                  cy: { ref: origin, offset: 100 }
+                  cz: { ref: origin }
+              - id: p3
+                kind: reference
+                size: [0, 0, 0]
+                relate:
+                  cx: { ref: origin, offset: -100 }
+                  cy: { ref: origin }
+                  cz: { ref: origin }
+              - id: beam
+                class: IfcBeam
+                size: [100, 100, 20]
+                relate:
+                  -x-y-z: { ref: p1, pos: cxcycz, mode: point }
+                  +x-y-z: { ref: p2, pos: cxcycz, mode: point }
+                  -x+y-z: { ref: p3, pos: cxcycz, mode: point }
+                ifc:
+                  predefined_type: BEAM
+            """
+        )
+        with TemporaryDirectory() as tmp:
+            path = Path(tmp) / "orientation.yaml"
+            path.write_text(spec_text, encoding="utf-8")
+            spec = load_relationship_spec(path)
+        solver = ConstraintSolver(spec)
+        result = solver.solve()
+        beam = next(comp for comp in result.components if comp.instance_id == "beam")
+        x_axis, y_axis, z_axis = beam.transform.orientation
+        self.assertAlmostEqual(x_axis[0], 0.0, places=5)
+        self.assertAlmostEqual(x_axis[1], 1.0, places=5)
+        self.assertAlmostEqual(y_axis[0], -1.0, places=5)
+        self.assertAlmostEqual(y_axis[1], 0.0, places=5)
+        self.assertAlmostEqual(z_axis[2], 1.0, places=5)
 
     def test_axis_map_targets_explicit_face_when_signs_differ(self) -> None:
         spec_text = dedent(
@@ -235,16 +327,15 @@ class RelationshipSolverTests(unittest.TestCase):
               - id: runner
                 class: IfcBeam
                 size: [100, 50, 10]
-                relate:
-                  cx: { ref: origin }
-                  cz: { ref: origin }
                 array:
                   -y: { ref: start, pos: +y }
                   +y: { ref: end, pos: +y }
+                  cx: { ref: origin }
+                  cz: { ref: origin }
                   through:
                     - cy: { ref: origin, pos: cy, mode: plane }
                   repeat:
-                    y: { count: 1 }
+                    "0,1,0": { count: 1 }
                 ifc:
                   predefined_type: BEAM
             """
@@ -277,11 +368,10 @@ class RelationshipSolverTests(unittest.TestCase):
               - id: runner
                 class: IfcBeam
                 size: [282.842712, 10, 10]
-                relate:
-                  cz: { ref: origin }
                 array:
                   -x+y: { ref: frame, pos: -x+y, mode: point }
                   +x-y: { ref: frame, pos: +x-y, mode: point }
+                  cz: { ref: origin }
                 ifc:
                   predefined_type: BEAM
             """
@@ -441,12 +531,11 @@ class RelationshipSolverTests(unittest.TestCase):
               - id: runner
                 class: IfcBeam
                 size: [null, 50, 10]
-                relate:
-                  cy: { ref: origin }
-                  cz: { ref: origin }
                 array:
                   -x: { ref: start, pos: +x }
                   +x: { ref: start, pos: +x, offset: 200 }
+                  cy: { ref: origin }
+                  cz: { ref: origin }
                 ifc:
                   predefined_type: BEAM
             """
@@ -461,12 +550,12 @@ class RelationshipSolverTests(unittest.TestCase):
         self.assertAlmostEqual(runner.transform.position[0], 100.0)
         self.assertAlmostEqual(runner.primitive.size[0], 200.0)
 
-    def test_run_between_alias_is_preserved(self) -> None:
+    def test_array_repeat_alias_is_preserved(self) -> None:
         spec_text = dedent(
             """
             schema: pond-relationship-test
             info:
-              option: run-between-alias
+              option: array-alias
             components:
               - id: origin
                 kind: reference
@@ -484,20 +573,19 @@ class RelationshipSolverTests(unittest.TestCase):
               - id: runner
                 class: IfcBeam
                 size: [100, 50, 10]
-                relate:
-                  cy: { ref: origin }
-                  cz: { ref: origin }
-                run_between:
+                array:
                   -x: { ref: start, pos: +x }
                   +x: { ref: end, pos: +x }
+                  cy: { ref: origin }
+                  cz: { ref: origin }
                   repeat:
-                    x: { count: 2 }
+                    "1,0,0": { count: 2 }
                 ifc:
                   predefined_type: BEAM
             """
         )
         with TemporaryDirectory() as tmp:
-            path = Path(tmp) / "run-between-alias.yaml"
+            path = Path(tmp) / "array-alias.yaml"
             path.write_text(spec_text, encoding="utf-8")
             spec = load_relationship_spec(path)
         solver = ConstraintSolver(spec)
@@ -528,14 +616,13 @@ class RelationshipSolverTests(unittest.TestCase):
               - id: runner
                 class: IfcBeam
                 size: [50, 20, 10]
-                relate:
-                  cy: { ref: origin }
-                  cz: { ref: origin }
                 array:
                   -x: { ref: start, pos: +x }
                   +x: { ref: end, pos: +x }
+                  cy: { ref: origin }
+                  cz: { ref: origin }
                   repeat:
-                    x: { count: 3, pitch: 60 }
+                    "1,0,0": { count: 3, pitch: 60 }
                 ifc:
                   predefined_type: BEAM
             """
