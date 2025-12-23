@@ -454,6 +454,8 @@ class ReferenceResolver:
         )
 
     def coords_for_ref(self, ref: str) -> Optional[Dict[str, float]]:
+        if ref == "__world__":
+            return {"x": 0.0, "y": 0.0, "z": 0.0}
         if ref in self.component_states:
             pos = self.component_states[ref].transform.position
             return {"x": pos[0], "y": pos[1], "z": pos[2]}
@@ -476,6 +478,8 @@ class ReferenceResolver:
         mapped_axis: Optional[str] = None,
         mapped_sign: Optional[int] = None,
     ) -> Optional[float]:
+        if ref == "__world__":
+            return 0.0
         world_axis, world_sign, _ = self.world_axis_for(frame, ref, axis)
         if mapped_axis is not None:
             world_axis = mapped_axis

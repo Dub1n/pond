@@ -82,6 +82,21 @@ relate:
   +z: { ref: slab_top, pos: +z, mode: plane }
 ```
 
+Coordinate shorthand (world frame):
+
+```yaml
+relate:
+  cxcy: [0, 0]
+  cz: 150
+```
+
+Ref shorthand:
+
+```yaml
+relate:
+  -z: joist_top
+```
+
 Explicit orientation (align local +x to a vector):
 
 ```yaml

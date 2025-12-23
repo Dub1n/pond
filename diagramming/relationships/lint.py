@@ -282,7 +282,7 @@ def _ref_known(
     datum_planes: Set[str],
     datum_bundles: Set[str],
 ) -> bool:
-    if ref == "self":
+    if ref in {"self", "__world__"}:
         return True
     if "#" in ref:
         base, _, suffix = ref.partition("#")
@@ -405,7 +405,7 @@ def _ref_known_instance(
     datum_planes: Set[str],
     datum_bundles: Set[str],
 ) -> bool:
-    if ref == "self":
+    if ref in {"self", "__world__"}:
         return True
     if ref in instance_ids:
         return True

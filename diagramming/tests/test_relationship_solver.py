@@ -399,6 +399,34 @@ class RelationshipSolverTests(unittest.TestCase):
             self.assertAlmostEqual(y_axis[1], 0.0, places=5)
             self.assertAlmostEqual(z_axis[2], 1.0, places=5)
 
+    def test_axis_map_coordinate_shorthand(self) -> None:
+        spec_text = dedent(
+            """
+            schema: pond-relationship-test
+            info:
+              option: axis-map-coords
+            components:
+              - id: beam
+                class: IfcBeam
+                size: [100, 50, 20]
+                relate:
+                  cxcy: [100, 200]
+                  cz: 50
+                ifc:
+                  predefined_type: BEAM
+            """
+        )
+        with TemporaryDirectory() as tmp:
+            path = Path(tmp) / "axis-map-coords.yaml"
+            path.write_text(spec_text, encoding="utf-8")
+            spec = load_relationship_spec(path)
+        solver = ConstraintSolver(spec)
+        result = solver.solve()
+        beam = next(comp for comp in result.components if comp.instance_id == "beam")
+        self.assertAlmostEqual(beam.transform.position[0], 100.0)
+        self.assertAlmostEqual(beam.transform.position[1], 200.0)
+        self.assertAlmostEqual(beam.transform.position[2], 50.0)
+
     def test_orientation_residual_within_tolerance(self) -> None:
         spec_text = dedent(
             """

@@ -870,16 +870,7 @@ def _parse_axis_map(data: Any, dimensions: DimensionResolver) -> List[AxisRelati
             relations.extend(_parse_flush(payload, dimensions))
             continue
         subject = canonical_pos_token(raw_subject)
-        targets: List[Mapping[str, Any]] = []
-        if isinstance(payload, Mapping):
-            targets = [payload]
-        elif isinstance(payload, Sequence) and not isinstance(payload, (str, bytes)):
-            for entry in payload:
-                if not isinstance(entry, Mapping):
-                    raise SchemaError("axis-map entry must be a mapping")
-                targets.append(entry)
-        else:
-            raise SchemaError("axis-map entry must be a mapping")
+        targets: List[Mapping[str, Any]] = _coerce_axis_map_targets(subject, payload, dimensions)
         for target_payload in targets:
             ref_raw = target_payload.get("ref") or target_payload.get("component") or target_payload.get("to")
             if ref_raw is None:
@@ -910,6 +901,137 @@ def _parse_axis_map(data: Any, dimensions: DimensionResolver) -> List[AxisRelati
             )
     return relations
 
+
+def _coerce_axis_map_targets(
+    subject: PosToken,
+    payload: Any,
+    dimensions: DimensionResolver,
+) -> List[Mapping[str, Any]]:
+    if isinstance(payload, Mapping):
+        if _looks_like_axis_target(payload):
+            return [payload]
+        return [_axis_target_from_coordinates(subject, payload, dimensions)]
+
+    if isinstance(payload, Sequence) and not isinstance(payload, (str, bytes)):
+        if all(isinstance(entry, Mapping) for entry in payload):
+            return list(payload)
+        return [_axis_target_from_sequence(subject, payload, dimensions)]
+
+    if isinstance(payload, (int, float, str)):
+        return [_axis_target_from_scalar(subject, payload, dimensions)]
+
+    raise SchemaError("axis-map entry must be a mapping, list, or scalar")
+
+
+def _looks_like_axis_target(payload: Mapping[str, Any]) -> bool:
+    return any(
+        key in payload
+        for key in {"ref", "component", "to", "pos", "gap", "offset", "mode", "frame", "tolerance", "on_fail"}
+    )
+
+
+def _axis_target_from_scalar(
+    subject: PosToken,
+    payload: Any,
+    dimensions: DimensionResolver,
+) -> Mapping[str, Any]:
+    subject_axes = _axis_tokens_from_subject(subject)
+    if len(subject_axes) != 1:
+        raise SchemaError(f"axis-map entry '{subject}' requires a list or mapping for multi-axis coordinates")
+    axis_token = subject_axes[0]
+    if isinstance(payload, (int, float)):
+        value = float(payload)
+        return _world_coordinate_target(subject, {axis_token: value})
+    if isinstance(payload, str):
+        try:
+            value = _resolve_number(payload, dimensions)
+            return _world_coordinate_target(subject, {axis_token: value})
+        except SchemaError:
+            return {"ref": payload, "pos": subject}
+    raise SchemaError(f"axis-map entry '{subject}' has unsupported scalar target")
+
+
+def _axis_target_from_sequence(
+    subject: PosToken,
+    payload: Sequence[Any],
+    dimensions: DimensionResolver,
+) -> Mapping[str, Any]:
+    subject_axes = _axis_tokens_from_subject(subject)
+    values = list(payload)
+    if len(values) != len(subject_axes):
+        raise SchemaError(f"axis-map entry '{subject}' requires {len(subject_axes)} coordinate values")
+    coords: Dict[str, float] = {}
+    for axis_token, value in zip(subject_axes, values):
+        coords[axis_token] = _resolve_number(value, dimensions)
+    return _world_coordinate_target(subject, coords)
+
+
+def _axis_target_from_coordinates(
+    subject: PosToken,
+    payload: Mapping[str, Any],
+    dimensions: DimensionResolver,
+) -> Mapping[str, Any]:
+    subject_axes = _axis_tokens_from_subject(subject)
+    axis_map = _normalise_axis_coordinate_map(payload)
+    coords: Dict[str, float] = {}
+    for axis_token in subject_axes:
+        axis = axis_token[-1]
+        if axis_token in axis_map:
+            coords[axis_token] = _resolve_number(axis_map[axis_token], dimensions)
+            continue
+        if axis in axis_map:
+            coords[axis_token] = _resolve_number(axis_map[axis], dimensions)
+            continue
+        raise SchemaError(f"axis-map entry '{subject}' missing coordinate for {axis_token}")
+    extra_axes = set(axis_map.keys()) - {token[-1] for token in subject_axes} - set(subject_axes)
+    if extra_axes:
+        raise SchemaError(f"axis-map entry '{subject}' includes coordinates for unrelated axes {sorted(extra_axes)}")
+    return _world_coordinate_target(subject, coords)
+
+
+def _normalise_axis_coordinate_map(payload: Mapping[str, Any]) -> Dict[str, Any]:
+    axis_map: Dict[str, Any] = {}
+    for key, value in payload.items():
+        if not isinstance(key, str):
+            raise SchemaError("axis-map coordinate keys must be strings")
+        key_text = key.strip().lower()
+        if not key_text:
+            raise SchemaError("axis-map coordinate keys cannot be empty")
+        if key_text in {"x", "y", "z"}:
+            axis_map[key_text] = value
+            continue
+        if key_text in {"cx", "cy", "cz"}:
+            axis_map[key_text] = value
+            continue
+        if key_text[0] in {"+", "-"} and key_text[1:] in {"x", "y", "z"}:
+            axis_map[key_text] = value
+            continue
+        raise SchemaError(f"axis-map coordinate key '{key}' is invalid")
+    return axis_map
+
+
+def _axis_tokens_from_subject(subject: PosToken) -> List[str]:
+    tokens: List[str] = []
+    idx = 0
+    while idx < len(subject):
+        if subject[idx] == "c":
+            tokens.append(f"c{subject[idx + 1]}")
+            idx += 2
+            continue
+        sign = subject[idx]
+        axis = subject[idx + 1]
+        tokens.append(f"{sign}{axis}")
+        idx += 2
+    return tokens
+
+
+def _world_coordinate_target(subject: PosToken, coords: Mapping[str, float]) -> Mapping[str, Any]:
+    return {
+        "ref": "__world__",
+        "pos": subject,
+        "frame": "world",
+        "offset": dict(coords),
+    }
 
 def _parse_flush(payload: Any, dimensions: DimensionResolver) -> List[AxisRelation]:
     if not isinstance(payload, Mapping):

@@ -38,6 +38,7 @@ Tips:
 - Subject/pos accept multi-axis tokens, including centers (`cx`, `cy`, `cz`, `~x` etc.).
 - Axis-map refs can target rotated/mirrored clones; target faces are resolved using the clone’s
   orientation so world-aligned axes land on the nearest matching local face.
+- Coordinate shorthand is allowed in world frame: `cxcy: [0, 0]`, `cz: 150`, or `-z: joist_top`.
 - Use `relate.orient` to set a component basis explicitly. `vector` aligns a local axis, `frame` inherits another component’s orientation, and `axis` + `twist` can roll around the chosen axis (defaults to `+x` when omitted).
 - Use one X and one Y span when you want inference; extra face pairs can conflict with explicit sizes.
 - `flush` sugar expands to axis-map entries (`faces: all` by default, inset scalar or per-face map).
