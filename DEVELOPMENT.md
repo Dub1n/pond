@@ -113,7 +113,7 @@ flowchart LR
 ```
 
 - Install/venv: `python3 -m venv .venv && source .venv/bin/activate && python3 -m pip install -r requirements.txt`.
-- Lint: `python scripts/lint_specs.py --relationship-only` (runs solver + IFC validation, selector/coverage checks, collision reporting, mesh digests). Use `--legacy-only` to isolate legacy specs.
+- Lint: `python scripts/lint_specs.py --relationship-only` (runs solver + IFC validation, selector/coverage checks, collision reporting, mesh digests). Use `--legacy-only` to isolate legacy specs; `--ci` enforces relationship-only + fail-on-warn gating.
 - Build: `python scripts/build_diagrams.py --spec diagrams/specs/deck-framing.yaml --option A --outdir diagrams/output --force` with flags `--no-png`, `--no-gltf`, `--no-ifc`, `--gltf-format gltf`, `--orthographic`; `--step`/`--obj` emit additional exports when the CadQuery solver is active.
 - Baseline freshness: `./.venv/bin/python scripts/baseline_render_check.py --fresh-check` whenever you inspect rendered output; include a short note (“baseline render check passed…”) in logs.
 - Tests: `python -m unittest discover`. Useful spot checks: `diagramming/tests/test_layering_debug.py` (layering regressions), `scripts/check_water_area.py <spec> --option <key>` (water coverage sanity).

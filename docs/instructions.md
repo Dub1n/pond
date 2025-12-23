@@ -101,7 +101,7 @@ array:
 
 ## Run & Validate
 
-- Lint: `python scripts/lint_specs.py --relationship-only` (runs solver + IFC validation, size/selector checks, collision reporting, mesh digests).
+- Lint: `python scripts/lint_specs.py --relationship-only` (runs solver + IFC validation, size/selector checks, collision reporting, mesh digests). Use `--ci` in CI to enforce relationship-only + fail-on-warn gating.
 - Render: `DIAGRAM_RELATIONSHIPS=1 ./.venv/bin/python scripts/build_diagrams.py --spec <path> --option <id> --outdir <dir> --force`.
 - Baseline freshness: pair render checks with `./.venv/bin/python scripts/baseline_render_check.py --fresh-check` and note results in logs.
 - When adding helpers/ops, add axis-map + IFC regression tests and update authoring docs in the same change.

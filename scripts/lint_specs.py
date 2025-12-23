@@ -66,6 +66,11 @@ def parse_args(argv: List[str] | None) -> argparse.Namespace:
         action="store_true",
         help="Promote solver warnings to errors (sets DIAGRAM_RELATIONSHIPS_FAIL_ON_WARN=1).",
     )
+    parser.add_argument(
+        "--ci",
+        action="store_true",
+        help="CI gate: relationship-only lint with warnings treated as errors.",
+    )
     return parser.parse_args(argv)
 
 
@@ -111,6 +116,10 @@ def lint_path(path: Path, *, relationship_only: bool, legacy_only: bool) -> Tupl
 
 def main(argv: List[str] | None = None) -> int:
     args = parse_args(argv)
+    if args.ci:
+        args.fail_on_warn = True
+        if not args.legacy_only:
+            args.relationship_only = True
     if args.collision_mode:
         os.environ["DIAGRAM_RELATIONSHIPS_COLLISIONS"] = args.collision_mode
     if args.collision_ignore:

@@ -27,8 +27,7 @@
 - [x] Constraint solver meets prep goals (frames, DOF/tolerance-aware checks, deterministic transforms).
 - [x] CadQuery exporter builds solids; SVG/PNG derive from OCC projections.
 - [x] IFC exporter enforces the prep mapping table (Axis/Body, predefined type/material usage, mapped items, openings).
-- [ ] Lint/CI gating and docs/examples refreshed for the final relationship surface.
-- [ ] Migration playbook executed; legacy schema archived; release notes updated.
+- [x] Lint/CI gating and docs/examples refreshed for the final relationship surface.
 
 ## Backlog – relationship-first hardening
 
@@ -49,6 +48,7 @@
 - [ ] Delete unused legacy exporters/renderers/tests; collapse duplicated bundle/material logic into the relationship pipeline.
 - [ ] Prune docs/examples referencing legacy helpers; refresh onboarding docs to cover relationship-first only.
 - [ ] Run full lint/test/build suite to verify the single-path engine; record final teardown release notes.
+- [ ] Migration playbook executed; legacy schema archived; release notes updated.
 
 ## Backlog – richer modelling & integrations (Phase 5)
 

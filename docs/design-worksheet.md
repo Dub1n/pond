@@ -134,7 +134,7 @@ dimensions:
 
 ## 7) Component mapping plan (write before touching YAML)
 
-For each component group, write the intent, axis-map relates, arrays (`array`, legacy `run_between`), operations, and views. State which faces/points must coincide (e.g., “-x+y to deck corner”) to avoid floating geometry. Frames are honoured during placement.
+For each component group, write the intent, axis-map relates, arrays (`array`), operations, and views. State which faces/points must coincide (e.g., “-x+y to deck corner”) to avoid floating geometry. Frames are honoured during placement.
 
 ### 7a) Reference frames/planes
 
@@ -168,14 +168,13 @@ For each component group, write the intent, axis-map relates, arrays (`array`, l
     +x-y: { ref: <target>, pos: +x-y, gap: <expr_optional>, offset: <expr_optional> }
     +z:   { ref: <target>, pos: +z }
     -z:   { ref: <target>, pos: +z }
-  array:   # rename from run_between; optional
-    start:
-      +y: { ref: <target>, pos: +y }
-    end:
-      -y: { ref: <target>, pos: -y }
-    count: <n>           # enforce >=2; otherwise use relate only
-    include_seed: true
-    orient: along_run
+  array:   # optional
+    -y: { ref: <target>, pos: +y }
+    +y: { ref: <target>, pos: -y }
+    repeat:
+      "0,1,0": { count: <n> }
+    orient:
+      vector: "0,1,0"
   place:   # optional named placements (inline axis-map)
     - id: <placement_id>
       +x: { ref: <target>, pos: -x }

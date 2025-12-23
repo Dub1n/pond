@@ -30,7 +30,7 @@ python scripts/build_diagrams.py --spec diagrams/specs/deck-framing.yaml --optio
 ```
 
 - SVGs (and PNGs when `cairosvg` is available) land in `diagrams/output/<spec>/<option>/` alongside `model.glb` (or `.gltf` with `--gltf-format gltf`). IFC exports arrive for relationship builds; skip with `--no-ifc`. Add `--no-png` or `--no-gltf` when iterating. `--orthographic` writes a headless 3D snapshot (requires `pyrender`/`pyglet`); `--step`/`--obj` emit additional 3D exports when the CadQuery solver is active.
-- Lint specs before committing: `python scripts/lint_specs.py --relationship-only`. Pair render checks with `./.venv/bin/python scripts/baseline_render_check.py --fresh-check` and note the result.
+- Lint specs before committing: `python scripts/lint_specs.py --relationship-only` (use `--ci` in CI to enforce relationship-only + fail-on-warn gating). Pair render checks with `./.venv/bin/python scripts/baseline_render_check.py --fresh-check` and note the result.
 
 ## Relationship schema highlights
 
