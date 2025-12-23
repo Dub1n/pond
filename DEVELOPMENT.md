@@ -30,7 +30,7 @@ flowchart TD
 - **Arrays**: `array` (legacy alias: `run_between`) supplies axis-map entries for the array space plus directional `repeat` blocks (vector keys, optional `frame`); optional `through` blocks validate directionality. `array` is the canonical placement block (single-instance arrays replace `relate`); run instances (`base#n`) are valid refs/selectors.
 - **Operations & selectors**: typed `operations` (`rotate`, `mirror`, `translate`, `boolean`) accept selectors (`id`, `id.original`, `id.clones`). Rotations remap numbered clones; mirror reflects across axis-aligned planes while keeping orientations right-handed.
 - **Size inference & references**: components infer missing sizes from axis pairs; conflicts with explicit size lint. `kind: reference` components are geometry-less anchors with missing axes defaulting to 0.
-- **Checks & diagnostics**: checks reuse axis-map shapes and now honour `tolerance` + `on_fail: warn|error|ignore`, applying offsets/gaps/frames (with contextual projection warnings + per-frame summaries when frames are not axis-aligned) and escalating through `fail_on_warn` when requested. DOF reporting warns only when an axis can’t infer a position or size (remaining DOF), while explicit spans + sizes are permitted so long as they agree. Collisions report via OCC; severity driven by `DIAGRAM_RELATIONSHIPS_COLLISIONS=error|warn|ignore` (default `error`) with `DIAGRAM_RELATIONSHIPS_FAIL_ON_WARN=1` to promote warnings; `--collision-mode/--collision-ignore/--fail-on-warn` on the CLI set these without touching the environment. Footings (`IfcFooting`) are ignored in collision pairs by default (even when a custom ignore list is supplied) to keep pad supports from flooding reports.
+- **Checks & diagnostics**: checks reuse axis-map shapes and now honour `tolerance` + `on_fail: warn|error|ignore`, applying offsets/gaps/frames (with contextual projection warnings + per-frame summaries when frames are not axis-aligned) and escalating through `fail_on_warn` when requested. DOF reporting warns only when an axis can’t infer a position or size (remaining DOF), while explicit spans + sizes are permitted so long as they agree.
 - **Planner & renderers**: relationship planner projects footprints/section slices from solids and emits dimension polylines; renderers share styling with the legacy path.
 - **Exporters**: tessellated glTF/GLB with metadata in `extras`; IFC 4.3 Reference View (mm/deg units, Model/Axis/Body contexts, predefined-type/material expectations, mapped items/types for repeats, class-aligned property sets from metadata, RelVoids propagated to clones); STEP/OBJ reuse CadQuery solids.
 
@@ -60,6 +60,28 @@ Pulled from the latest implementation review:
 - Helper coverage is limited to axis-map `relate`/`flush`/`place` plus `array`/`run_between`; `relate_from` and assemblies have been removed.
 - IFC mapping table enforcement now covers predefined type/material usage, mapped items/types, cloned openings, and class-aligned property sets sourced from metadata across exporter/lint/validation.
 - Collision reporting exists, but DOF counts and richer diagnostics are shallow.
+
+## Warnings
+
+### Conflicting face constraints (rotated placements)
+
+When a component uses multi-reference axis-maps to infer a rotated orientation, the solver can
+see multiple face constraints on the same signed axis. These are expected in the rotation case,
+so face-conflict warnings are suppressed when orientation inference is active (repeated signed
+axes + full point-mode relations). If the rotation fit is poor, size/span errors or other checks
+should still surface; add a point-constraint check when you need a stricter guardrail.
+
+### Frame projection warnings
+
+Relations that use a non-axis-aligned frame emit a warning describing the local-to-world axis
+projection and a per-frame summary, so offsets/gaps remain auditable even when frames rotate.
+
+### Collision severity and promotion
+
+Collisions report via OCC and are controlled by `DIAGRAM_RELATIONSHIPS_COLLISIONS=error|warn|ignore`
+(default `error`), with `DIAGRAM_RELATIONSHIPS_FAIL_ON_WARN=1` to promote warnings. CLI helpers accept
+`--collision-mode`, `--collision-ignore`, and `--fail-on-warn` to set these without env vars; footings
+(`IfcFooting`) are ignored by default to keep pad overlaps from flooding reports.
 
 ## IFC alignment (working rules)
 

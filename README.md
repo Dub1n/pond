@@ -36,8 +36,8 @@ python scripts/build_diagrams.py --spec diagrams/specs/deck-framing.yaml --optio
 
 - Axis-map - an explicit axis-level constraint between components: `relate` entries map subject axes (`+x`, `-x+y`, `cxcy`, `~x`, etc.) to targets with explicit `ref`/`pos`/`gap`/`offset`/`mode`. `flush` sugar expands to these entries; `place` embeds per-placement axis-maps. Frames (`world`/`local`/`<component_id>`) are honoured during solving with size-axis remapping and contextual warnings + per-frame summaries when frames are not axis-aligned (component ids cannot be `world` or `local`); helper/assembly blocks are rejected in favour of explicit axis-maps.
 - Datums (points/planes/bundles) resolve dimension expressions and can be referenced anywhere a `ref` is accepted.
-- Arrays use `array` (legacy alias: `run_between`) with axis-map entries plus a per-axis `repeat` block; `through` blocks provide direction checks. Instances accept selectors (`id`, `id.original`, `id.clones`) in typed `operations` (rotate/mirror/translate/boolean); rotations remap numbered clones.
-- Components can be solids or geometry-less references (`kind: reference`). Missing sizes infer from relation pairs; conflicts lint. Checks reuse the same axis-map vocabulary, honour `tolerance` + `on_fail: warn|error|ignore`, and DOF reporting only warns when an axis remains unconstrained.
+- Arrays use `array` (legacy alias: `run_between`) with axis-map entries plus directional `repeat` vectors (`"x,y,z"`); `through` blocks provide direction checks. `array` is the canonical placement block (single-instance arrays replace `relate`). Instances accept selectors (`id`, `id.original`, `id.clones`) in typed `operations` (rotate/mirror/translate/boolean); rotations remap numbered clones.
+- Components can be solids or geometry-less references (`kind: reference`). Missing sizes infer from relation pairs; conflicts lint. Axis-maps support multi-reference entries for rotated placement. Checks reuse the same axis-map vocabulary, honour `tolerance` + `on_fail: warn|error|ignore`, and DOF reporting only warns when an axis remains unconstrained.
 
 ## What you can build
 

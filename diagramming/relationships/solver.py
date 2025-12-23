@@ -33,6 +33,7 @@ AxisName = str
 MM_TO_METERS = 0.001
 OrientationMatrix = Tuple[Tuple[float, float, float], Tuple[float, float, float], Tuple[float, float, float]]
 FRAME_ALIGNMENT_THRESHOLD = 0.995
+ORIENTATION_RESIDUAL_TOL = 1e-2
 IDENTITY_ORIENTATION: OrientationMatrix = (
     (1.0, 0.0, 0.0),
     (0.0, 1.0, 0.0),
@@ -602,6 +603,20 @@ class ConstraintSolver:
             for axis, value in overrides.items():
                 if axis in AXIS_ORDER:
                     size[AXIS_ORDER[axis]] = value
+            relations = plan.relations + (tuple(array.relations) if array else tuple())
+            orientation_candidate = self._orientation_candidate(relations)
+            orientation_override = None
+            orientation_ok = False
+            if orientation_candidate:
+                orientation_override, orientation_ok = self._infer_orientation_from_relations(
+                    component,
+                    relations,
+                    resolver,
+                    (size[0], size[1], size[2]),
+                    diagnostics,
+                    instance_id=instance["id"],
+                )
+
             final_center: Dict[str, float] = {}
 
             dof_count = 0
@@ -618,19 +633,13 @@ class ConstraintSolver:
                     allow_default_zero=component.kind == "reference",
                     instance_id=instance["id"],
                     size_axis=size_axis,
+                    allow_size_mismatch=orientation_ok,
+                    allow_face_conflicts=orientation_ok,
                 )
                 dof_count += axis_dof
                 final_center[axis] = center_value
                 size[AXIS_ORDER[axis]] = size_value
 
-            orientation_override = self._infer_orientation_from_relations(
-                component,
-                plan.relations + (tuple(array.relations) if array else tuple()),
-                resolver,
-                (size[0], size[1], size[2]),
-                diagnostics,
-                instance_id=instance["id"],
-            )
             orientation = orientation_override or instance.get("orientation", base_orientation)
             transform = ComponentTransform(
                 position=(final_center["x"], final_center["y"], final_center["z"]),
@@ -849,6 +858,8 @@ class ConstraintSolver:
         allow_default_zero: bool,
         instance_id: str,
         size_axis: Optional[str] = None,
+        allow_size_mismatch: bool = False,
+        allow_face_conflicts: bool = False,
     ) -> Tuple[float, float, int]:
         size_axis = size_axis or axis
         center = state.center
@@ -857,12 +868,20 @@ class ConstraintSolver:
         pos_minus_values = state.faces.get(-1) or []
         pos_plus = sum(pos_plus_values) / len(pos_plus_values) if pos_plus_values else None
         pos_minus = sum(pos_minus_values) / len(pos_minus_values) if pos_minus_values else None
-        if len(pos_plus_values) > 1 and (max(pos_plus_values) - min(pos_plus_values)) > 1e-6:
+        if (
+            len(pos_plus_values) > 1
+            and (max(pos_plus_values) - min(pos_plus_values)) > 1e-6
+            and not allow_face_conflicts
+        ):
             diagnostics.add_warning(
                 f"component '{component.id}' has conflicting +{axis} face constraints",
                 subject=instance_id,
             )
-        if len(pos_minus_values) > 1 and (max(pos_minus_values) - min(pos_minus_values)) > 1e-6:
+        if (
+            len(pos_minus_values) > 1
+            and (max(pos_minus_values) - min(pos_minus_values)) > 1e-6
+            and not allow_face_conflicts
+        ):
             diagnostics.add_warning(
                 f"component '{component.id}' has conflicting -{axis} face constraints",
                 subject=instance_id,
@@ -880,7 +899,12 @@ class ConstraintSolver:
             elif pos_minus is not None:
                 inferred_size = abs((center - pos_minus) * 2)
 
-        if size_value is not None and inferred_size is not None and abs(size_value - inferred_size) > 1e-6:
+        if (
+            size_value is not None
+            and inferred_size is not None
+            and abs(size_value - inferred_size) > 1e-6
+            and not allow_size_mismatch
+        ):
             diagnostics.add_error(
                 f"component '{component.id}' size on {size_axis} conflicts with inferred span ({size_value:.3f} vs {inferred_size:.3f})",
                 subject=instance_id,
@@ -926,20 +950,20 @@ class ConstraintSolver:
         diagnostics: SolveDiagnostics,
         *,
         instance_id: str,
-    ) -> Optional[OrientationMatrix]:
+    ) -> Tuple[Optional[OrientationMatrix], bool]:
         axis_counts: Dict[Tuple[str, int], int] = {}
         for relation in relations:
             for axis, sign in _axes_from_pos(relation.subject):
                 axis_counts[(axis, sign)] = axis_counts.get((axis, sign), 0) + 1
         if not any(count > 1 for count in axis_counts.values()):
-            return None
+            return None, False
 
         if any(value is None for value in size_values):
             diagnostics.add_warning(
                 f"component '{component.id}' orientation inference skipped due to missing size",
                 subject=instance_id,
             )
-            return None
+            return None, False
 
         local_points: List[Tuple[float, float, float]] = []
         world_points: List[Tuple[float, float, float]] = []
@@ -987,7 +1011,7 @@ class ConstraintSolver:
             )
 
         if len(local_points) < 3:
-            return None
+            return None, False
 
         local = np.array(local_points)
         world = np.array(world_points)
@@ -1001,11 +1025,35 @@ class ConstraintSolver:
         if np.linalg.det(rotation) < 0:
             v_t[2, :] *= -1
             rotation = v_t.T @ u_mat.T
+        transformed = (rotation @ local_centered.T).T + world_centroid
+        residuals = np.linalg.norm(transformed - world, axis=1)
+        max_residual = float(np.max(residuals)) if residuals.size else 0.0
+        if max_residual > ORIENTATION_RESIDUAL_TOL:
+            diagnostics.add_warning(
+                f"component '{component.id}' orientation inference residual {max_residual:.3f} exceeds tolerance",
+                subject=instance_id,
+            )
+            return None, False
         return (
             (float(rotation[0, 0]), float(rotation[1, 0]), float(rotation[2, 0])),
             (float(rotation[0, 1]), float(rotation[1, 1]), float(rotation[2, 1])),
             (float(rotation[0, 2]), float(rotation[1, 2]), float(rotation[2, 2])),
-        )
+        ), True
+
+    def _orientation_candidate(self, relations: Sequence[AxisRelation]) -> bool:
+        axis_counts: Dict[Tuple[str, int], int] = {}
+        for relation in relations:
+            for axis, sign in _axes_from_pos(relation.subject):
+                axis_counts[(axis, sign)] = axis_counts.get((axis, sign), 0) + 1
+        if not any(count > 1 for count in axis_counts.values()):
+            return False
+        full_point_relations = 0
+        for relation in relations:
+            if (relation.target.mode or "point").lower() != "point":
+                continue
+            if len(_axes_from_pos(relation.subject)) == 3 and len(_axes_from_pos(relation.target.pos)) == 3:
+                full_point_relations += 1
+        return full_point_relations >= 3
 
     def _array_positions(
         self,

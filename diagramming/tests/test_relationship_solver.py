@@ -267,6 +267,120 @@ class RelationshipSolverTests(unittest.TestCase):
         self.assertAlmostEqual(y_axis[1], 0.0, places=5)
         self.assertAlmostEqual(z_axis[2], 1.0, places=5)
 
+    def test_orientation_residual_within_tolerance(self) -> None:
+        spec_text = dedent(
+            """
+            schema: pond-relationship-test
+            info:
+              option: residual-ok
+            components:
+              - id: origin
+                kind: reference
+                size: [0, 0, 0]
+              - id: p1
+                kind: reference
+                size: [0, 0, 0]
+                relate:
+                  cx: { ref: origin, offset: 50 }
+                  cy: { ref: origin, offset: -50 }
+                  cz: { ref: origin }
+              - id: p2
+                kind: reference
+                size: [0, 0, 0]
+                relate:
+                  cx: { ref: origin, offset: 50 }
+                  cy: { ref: origin, offset: 50 }
+                  cz: { ref: origin }
+              - id: p3
+                kind: reference
+                size: [0, 0, 0]
+                relate:
+                  cx: { ref: origin, offset: -50 }
+                  cy: { ref: origin, offset: -50 }
+                  cz: { ref: origin }
+              - id: beam
+                class: IfcBeam
+                size: [100, 100, 20]
+                relate:
+                  -x-y-z: { ref: p1, pos: cxcycz, mode: point }
+                  +x-y-z: { ref: p2, pos: cxcycz, mode: point }
+                  -x+y-z: { ref: p3, pos: cxcycz, mode: point }
+                ifc:
+                  predefined_type: BEAM
+            """
+        )
+        with TemporaryDirectory() as tmp:
+            path = Path(tmp) / "residual-ok.yaml"
+            path.write_text(spec_text, encoding="utf-8")
+            spec = load_relationship_spec(path)
+        solver = ConstraintSolver(spec)
+        result = solver.solve()
+        beam = next(comp for comp in result.components if comp.instance_id == "beam")
+        x_axis, y_axis, z_axis = beam.transform.orientation
+        self.assertAlmostEqual(x_axis[0], 0.0, places=5)
+        self.assertAlmostEqual(x_axis[1], 1.0, places=5)
+        self.assertAlmostEqual(y_axis[0], -1.0, places=5)
+        self.assertAlmostEqual(y_axis[1], 0.0, places=5)
+        self.assertAlmostEqual(z_axis[2], 1.0, places=5)
+
+    def test_orientation_residual_exceeds_tolerance(self) -> None:
+        spec_text = dedent(
+            """
+            schema: pond-relationship-test
+            info:
+              option: residual-high
+            components:
+              - id: origin
+                kind: reference
+                size: [0, 0, 0]
+              - id: p1
+                kind: reference
+                size: [0, 0, 0]
+                relate:
+                  cx: { ref: origin, offset: 50 }
+                  cy: { ref: origin, offset: -50 }
+                  cz: { ref: origin }
+              - id: p2
+                kind: reference
+                size: [0, 0, 0]
+                relate:
+                  cx: { ref: origin, offset: 50.2 }
+                  cy: { ref: origin, offset: 50 }
+                  cz: { ref: origin }
+              - id: p3
+                kind: reference
+                size: [0, 0, 0]
+                relate:
+                  cx: { ref: origin, offset: -50 }
+                  cy: { ref: origin, offset: -50 }
+                  cz: { ref: origin }
+              - id: beam
+                class: IfcBeam
+                size: [100, 100, 20]
+                relate:
+                  -x-y-z: { ref: p1, pos: cxcycz, mode: point }
+                  +x-y-z: { ref: p2, pos: cxcycz, mode: point }
+                  -x+y-z: { ref: p3, pos: cxcycz, mode: point }
+                ifc:
+                  predefined_type: BEAM
+            """
+        )
+        with TemporaryDirectory() as tmp:
+            path = Path(tmp) / "residual-high.yaml"
+            path.write_text(spec_text, encoding="utf-8")
+            spec = load_relationship_spec(path)
+        solver = ConstraintSolver(spec)
+        result = solver.solve()
+        warning_texts = [warning.message for warning in result.diagnostics.warnings]
+        beam = next(comp for comp in result.components if comp.instance_id == "beam")
+        x_axis, y_axis, z_axis = beam.transform.orientation
+        self.assertAlmostEqual(x_axis[0], 1.0, places=5)
+        self.assertAlmostEqual(x_axis[1], 0.0, places=5)
+        self.assertAlmostEqual(y_axis[0], 0.0, places=5)
+        self.assertAlmostEqual(y_axis[1], 1.0, places=5)
+        self.assertAlmostEqual(z_axis[2], 1.0, places=5)
+        self.assertTrue(any("orientation inference residual" in msg for msg in warning_texts))
+
     def test_axis_map_targets_explicit_face_when_signs_differ(self) -> None:
         spec_text = dedent(
             """
