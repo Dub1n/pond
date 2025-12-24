@@ -21,6 +21,7 @@ dimensions:
     corner_diagonal_length_outer: 1281.277488
     corner_diagonal_length_inner: 480.8326
     corner_tie_spacing: 500
+    corner_tie_length: 453
     J_offset: 90
     J2_offset: -J_offset + ((pond_span - 2 * cantilever_inner) / 6)
   finishes:
@@ -81,7 +82,7 @@ components:
     label_id: "O"
     relate:
       -x+y-y: { ref: deck_frame }
-      +z: {ref: deck_surface, pos: -z }
+      +z: { ref: deck_surface, pos: -z }
     ifc: { predefined_type: BEAM }
 
   - id: inner_beam_west
@@ -93,7 +94,7 @@ components:
     relate:
       +x: { ref: pond_frame, pos: -x }
       -y+y: { ref: deck_frame, offset: { -y: beam_width, +y: -beam_width } }
-      +z: {ref: deck_surface, pos: -z }
+      +z: { ref: deck_surface, pos: -z }
     ifc: { predefined_type: BEAM }
 
   - id: joist_run_south_outer
@@ -105,7 +106,7 @@ components:
     array:
       -y: { ref: outer_beam_south, pos: +y }
       -x+x: { ref: opening_frame, offset: { -x: -J_offset, +x: J_offset } }
-      +z: {ref: deck_surface, pos: -z }
+      +z: { ref: deck_surface, pos: -z }
       repeat: { x: { count: 2 } }
     ifc: { predefined_type: JOIST }
 
@@ -118,7 +119,7 @@ components:
     array:
       -y: { ref: outer_beam_south, pos: +y }
       -x+x: { ref: opening_frame, offset: { -x: J2_offset, +x: -J2_offset } }
-      +z: {ref: deck_surface, pos: -z }
+      +z: { ref: deck_surface, pos: -z }
       repeat: { x: { count: 5 } }
     ifc: { predefined_type: JOIST }
 
@@ -126,7 +127,7 @@ components:
     class: IfcBeam
     size: [corner_diagonal_length_outer, joist_width, joist_depth]
     material: joist
-    label: "47x75mm Joist from deck corner to inner beam corner | 1414mm"
+    label: "47x75mm Joist from deck corner to inner beam corner | 1281mm"
     label_id: "C1"
     relate:
       -xcy:
@@ -135,7 +136,7 @@ components:
       +xcy:
         - { ref: inner_beam_west, pos: -x }
         - { ref: inner_beam_south, pos: -y }
-      +z: {ref: deck_surface, pos: -z }
+      +z: { ref: deck_surface, pos: -z }
     ifc: { predefined_type: JOIST }
 
   - id: corner_diagonal_inner_to_opening_sw
@@ -151,31 +152,19 @@ components:
       +xcy:
         - { ref: opening_frame, pos: -x }
         - { ref: opening_frame, pos: -y }
-      +z: {ref: deck_surface, pos: -z }
+      +z: { ref: deck_surface, pos: -z }
     ifc: { predefined_type: JOIST }
 
   - id: corner_tie_horizontal_nw
     class: IfcBeam
-    size: [corner_tie_spacing, joist_width, joist_depth]
+    size: [corner_tie_length, joist_width, joist_depth]
     material: joist
-    label: "47x75mm Corner tie to diagonal | 533mm"
+    label: "47x75mm Corner tie to diagonal | 453mm"
     label_id: "T"
     relate:
       -x: { ref: outer_beam_west, pos: +x }
       +y: { ref: deck_frame, offset: -corner_tie_spacing + joist_width / 2 }
-      +z: {ref: deck_surface, pos: -z }
-    ifc: { predefined_type: JOIST }
-
-  - id: corner_tie_vertical_nw
-    class: IfcBeam
-    size: [joist_width, corner_tie_spacing, joist_depth]
-    material: joist
-    label: "47x75mm Corner tie to diagonal"
-    label_id: "T"
-    relate:
-      -x: { ref: deck_frame, offset: corner_tie_spacing - joist_width / 2 }
-      +y: { ref: outer_beam_north, pos: -y }
-      +z: {ref: deck_surface, pos: -z }
+      +z: { ref: deck_surface, pos: -z }
     ifc: { predefined_type: JOIST }
 
   - id: overhang_tip_nw
@@ -183,7 +172,7 @@ components:
     size: [0, 0, 0]
     relate:
       -x+y: { ref: opening_frame, offset: { -x: -cantilever_inner, +y: cantilever_inner } }
-      +z: {ref: deck_surface, pos: -z }
+      +z: { ref: deck_surface, pos: -z }
 
   - id: corner_diagonal_inner_span_check_nw
     kind: reference
@@ -197,72 +186,39 @@ components:
     class: IfcSlab
     size: [deck_span + pad_size, deck_span + pad_size, water_depth]
     material: soil
-    label: "Soil fill"
     views: [section]
     relate:
       cxcy: [0, 0]
       -z+z: { ref: pond_water }
     ifc: { predefined_type: FLOOR}
 
-  - id: pad_corner_nw
+  - id: pad_west
     class: IfcFooting
     size: [pad_size, pad_size, pad_height]
     material: pad
     label: "600x600x50mm Shallow pad foundation"
     label_id: "P"
-    relate:
-      +x: { ref: pond_frame, pos: -x }
-      -y: { ref: pond_frame, pos: +y }
-      +z: pad_top_z
-    ifc: { predefined_type: PAD_FOOTING }
-
-  - id: pad_edge_center_west
-    class: IfcFooting
-    size: [pad_size, pad_size, pad_height]
-    material: pad
-    label: "600x600x50mm Shallow pad foundation"
-    relate:
-      +x: { ref: inner_beam_west }
-      cy: { ref: pond_frame }
-      +z: pad_top_z
-    label_id: "P"
-    ifc: { predefined_type: PAD_FOOTING }
-
-  - id: pad_outer_corner_nw
-    class: IfcFooting
-    size: [pad_size, pad_size, pad_height]
-    material: pad
-    label: "600x600x50mm Shallow pad foundation"
-    label_id: "P"
-    relate:
-      cx: { ref: deck_frame, pos: -x, offset: beam_width / 2 }
-      cy: { ref: deck_frame, pos: +y, offset: -beam_width / 2 }
-      +z: pad_top_z
-    ifc: { predefined_type: PAD_FOOTING }
-
-
-  - id: pad_run2_west
-    class: IfcFooting
-    size: [pad_size, pad_size, pad_height]
-    material: pad
-    label: "600x600x50mm Shallow pad foundation"
-    label_id: "P"
-    relate:
-      cx: { ref: deck_frame, pos: -x, offset: beam_width / 2 }
-      cy: { ref: joist_run_west_inner }
-      +z: pad_top_z
-    ifc: { predefined_type: PAD_FOOTING }
-
-  - id: pad_run6_west
-    class: IfcFooting
-    size: [pad_size, pad_size, pad_height]
-    material: pad
-    label: "600x600x50mm Shallow pad foundation"
-    label_id: "P"
-    relate:
-      cx: { ref: deck_frame, pos: -x, offset: beam_width / 2 }
-      cy: { ref: joist_run_west_inner#4 }
-      +z: pad_top_z
+    place:
+      - id: pad_corner_nw
+        +x: { ref: pond_frame, pos: -x }
+        -y: { ref: pond_frame, pos: +y }
+        +z: pad_top_z
+      - id: pad_edge_center_west
+        +x: { ref: inner_beam_west }
+        cy: { ref: pond_frame }
+        +z: pad_top_z
+      - id: pad_outer_corner_nw
+        cx: { ref: deck_frame, pos: -x, offset: beam_width / 2 }
+        cy: { ref: deck_frame, pos: +y, offset: -beam_width / 2 }
+        +z: pad_top_z
+      - id: pad_run2_west
+        cx: { ref: deck_frame, pos: -x, offset: beam_width / 2 }
+        cy: { ref: joist_run_west_inner }
+        +z: pad_top_z
+      - id: pad_run6_west
+        cx: { ref: deck_frame, pos: -x, offset: beam_width / 2 }
+        cy: { ref: joist_run_west_inner#4 }
+        +z: pad_top_z
     ifc: { predefined_type: PAD_FOOTING }
 
   - id: joist_span_check_west
@@ -273,21 +229,24 @@ components:
       +x: { ref: opening_frame, pos: -x }
 
 operations:
+  - type: mirror
+    targets:
+      - corner_tie_horizontal_nw
+    plane:
+      axis: x
+      coordinate: 0
+    include_seed: true
+
   - type: rotate
     targets:
       - outer_beam_west
       - inner_beam_west
       - joist_run_south_outer
       - joist_run_south_inner
-      - pad_corner_nw
-      - pad_edge_center_west
-      - pad_outer_corner_nw
-      - pad_run2_west
-      - pad_run6_west
+      - pad_west
       - corner_diagonal_deck_to_inner_sw
       - corner_diagonal_inner_to_opening_sw
       - corner_tie_horizontal_nw
-      - corner_tie_vertical_nw
     about: { ref: origin, axis: +z }
     count: 4
     include_seed: true
@@ -303,18 +262,14 @@ operations:
       pad_run6_west: [pad_run6_west, pad_run6_south, pad_run6_east, pad_run6_north]
       corner_diagonal_inner_to_opening_sw: [corner_diagonal_inner_to_opening_sw, corner_diagonal_inner_to_opening_se, corner_diagonal_inner_to_opening_ne, corner_diagonal_inner_to_opening_nw]
       corner_diagonal_deck_to_inner_sw: [corner_diagonal_deck_to_inner_sw, corner_diagonal_deck_to_inner_se, corner_diagonal_deck_to_inner_ne, corner_diagonal_deck_to_inner_nw]
-      corner_tie_horizontal_nw: [corner_tie_horizontal_nw, corner_tie_horizontal_sw, corner_tie_horizontal_se, corner_tie_horizontal_ne]
-      corner_tie_vertical_nw: [corner_tie_vertical_nw, corner_tie_vertical_sw, corner_tie_vertical_se, corner_tie_vertical_ne]
+      corner_tie_horizontal_nw: [corner_tie_horizontal_nw, corner_tie_vertical_sw, corner_tie_horizontal_se, corner_tie_vertical_ne]
+      corner_tie_horizontal_nw_mirrored: [corner_tie_horizontal_ne, corner_tie_vertical_se, corner_tie_horizontal_sw, corner_tie_vertical_nw]
 
   - type: boolean
     target: soil_fill
     subtract:
       - pond_water
-      - pad_corner_nw
-      - pad_edge_center_west
-      - pad_outer_corner_nw
-      - pad_run2_west
-      - pad_run6_west
+      - pad_west
 
 views:
   plan:

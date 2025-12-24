@@ -5,7 +5,16 @@ from tempfile import TemporaryDirectory
 from textwrap import dedent
 import unittest
 
-from diagramming.relationships import SchemaError, canonical_pos_token, lint_relationship_spec, load_relationship_spec
+from diagramming.relationships import (
+    BooleanOperation,
+    MirrorOperation,
+    RotateOperation,
+    SchemaError,
+    TranslateOperation,
+    canonical_pos_token,
+    lint_relationship_spec,
+    load_relationship_spec,
+)
 
 
 class RelationshipSchemaTests(unittest.TestCase):
@@ -153,6 +162,181 @@ class RelationshipSchemaTests(unittest.TestCase):
             spec = load_relationship_spec(path)
         errors = lint_relationship_spec(spec)
         self.assertTrue(any("unknown selector" in err for err in errors))
+
+    def test_rotate_operation_parses_fields(self) -> None:
+        spec_text = dedent(
+            """
+            schema: pond-relationship-test
+            info:
+              option: op-rotate
+            components:
+              - id: origin
+                kind: reference
+                size: [0, 0, 0]
+            operations:
+              - type: rotate
+                targets: [origin]
+                about: { ref: origin, axis: -y }
+                count: 3
+                include_seed: true
+                id_map:
+                  origin: [origin, origin_b, origin_c]
+            """
+        )
+        with TemporaryDirectory() as tmp:
+            path = Path(tmp) / "op-rotate.yaml"
+            path.write_text(spec_text, encoding="utf-8")
+            spec = load_relationship_spec(path)
+        self.assertEqual(len(spec.operations), 1)
+        op = spec.operations[0]
+        self.assertIsInstance(op, RotateOperation)
+        assert isinstance(op, RotateOperation)
+        self.assertEqual(op.about, "origin")
+        self.assertEqual(op.axis, "-y")
+        self.assertEqual(op.count, 3)
+        self.assertTrue(op.include_seed)
+        self.assertEqual(op.id_map["origin"][1], "origin_b")
+
+    def test_mirror_operation_parses_normal_and_point(self) -> None:
+        spec_text = dedent(
+            """
+            schema: pond-relationship-test
+            info:
+              option: op-mirror-normal
+            components:
+              - id: origin
+                kind: reference
+                size: [0, 0, 0]
+            operations:
+              - type: mirror
+                targets: [origin]
+                plane:
+                  normal: [1, -1, 0]
+                  point: [0, 0, 0]
+            """
+        )
+        with TemporaryDirectory() as tmp:
+            path = Path(tmp) / "op-mirror-normal.yaml"
+            path.write_text(spec_text, encoding="utf-8")
+            spec = load_relationship_spec(path)
+        op = spec.operations[0]
+        self.assertIsInstance(op, MirrorOperation)
+        assert isinstance(op, MirrorOperation)
+        self.assertEqual(op.normal, (1.0, -1.0, 0.0))
+        self.assertEqual(op.point, (0.0, 0.0, 0.0))
+
+    def test_mirror_operation_axis_sugar_expands(self) -> None:
+        spec_text = dedent(
+            """
+            schema: pond-relationship-test
+            info:
+              option: op-mirror-axis
+            components:
+              - id: origin
+                kind: reference
+                size: [0, 0, 0]
+            operations:
+              - type: mirror
+                targets: [origin]
+                plane:
+                  axis: -x
+                  coordinate: 50
+            """
+        )
+        with TemporaryDirectory() as tmp:
+            path = Path(tmp) / "op-mirror-axis.yaml"
+            path.write_text(spec_text, encoding="utf-8")
+            spec = load_relationship_spec(path)
+        op = spec.operations[0]
+        self.assertIsInstance(op, MirrorOperation)
+        assert isinstance(op, MirrorOperation)
+        self.assertEqual(op.normal, (-1.0, 0.0, 0.0))
+        self.assertEqual(op.point, (50.0, 0.0, 0.0))
+
+    def test_mirror_operation_rejects_mixed_plane_fields(self) -> None:
+        spec_text = dedent(
+            """
+            schema: pond-relationship-test
+            info:
+              option: op-mirror-mixed
+            components:
+              - id: origin
+                kind: reference
+                size: [0, 0, 0]
+            operations:
+              - type: mirror
+                targets: [origin]
+                plane:
+                  axis: x
+                  coordinate: 0
+                  normal: [1, 0, 0]
+                  point: [0, 0, 0]
+            """
+        )
+        with TemporaryDirectory() as tmp:
+            path = Path(tmp) / "op-mirror-mixed.yaml"
+            path.write_text(spec_text, encoding="utf-8")
+            with self.assertRaises(SchemaError):
+                load_relationship_spec(path)
+
+    def test_translate_operation_parses_vector(self) -> None:
+        spec_text = dedent(
+            """
+            schema: pond-relationship-test
+            info:
+              option: op-translate
+            components:
+              - id: origin
+                kind: reference
+                size: [0, 0, 0]
+            operations:
+              - type: translate
+                targets: [origin]
+                vector: { x: 1, y: -2, z: 3 }
+            """
+        )
+        with TemporaryDirectory() as tmp:
+            path = Path(tmp) / "op-translate.yaml"
+            path.write_text(spec_text, encoding="utf-8")
+            spec = load_relationship_spec(path)
+        op = spec.operations[0]
+        self.assertIsInstance(op, TranslateOperation)
+        assert isinstance(op, TranslateOperation)
+        self.assertEqual(op.vector, (1.0, -2.0, 3.0))
+
+    def test_boolean_operation_parses_targets(self) -> None:
+        spec_text = dedent(
+            """
+            schema: pond-relationship-test
+            info:
+              option: op-boolean
+            components:
+              - id: origin
+                kind: reference
+                size: [0, 0, 0]
+              - id: slab
+                class: IfcSlab
+                size: [100, 100, 10]
+                relate:
+                  cxcy: { ref: origin }
+                  cz: { ref: origin }
+                ifc:
+                  predefined_type: FLOOR
+            operations:
+              - type: boolean
+                target: slab
+                subtract: [origin]
+            """
+        )
+        with TemporaryDirectory() as tmp:
+            path = Path(tmp) / "op-boolean.yaml"
+            path.write_text(spec_text, encoding="utf-8")
+            spec = load_relationship_spec(path)
+        op = spec.operations[0]
+        self.assertIsInstance(op, BooleanOperation)
+        assert isinstance(op, BooleanOperation)
+        self.assertEqual(op.target, "slab")
+        self.assertEqual(op.subtract, ("origin",))
 
     def test_loader_resolves_datums_and_dimension_expressions(self) -> None:
         spec_text = dedent(

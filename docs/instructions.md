@@ -68,7 +68,7 @@ array:
 - The axis-map defines the array space; `repeat` defines how many instances along each direction. Without `repeat`, an array is a single instance and behaves like a placement constraint.
 - `array` is the canonical placement block; do not combine `array` and `relate` on the same component.
 - `array.orient` sets the orientation of each instance (same shape as `relate.orient`).
-- Use `through` blocks inside `array` for direction checks; they do not infer size.
+- Use `through` blocks inside `array` for setting direction and as checks; they do not infer size.
 - Use `frame: <component_id>` when you need a relation to borrow another component’s orientation instead of the target’s local axes. Component ids cannot be `world` or `local`.
 - For corner-to-corner spans (e.g. diagonals), multi-axis keys like `-x+y` in `array` are treated as point anchors when `mode: point` (the default), so the span is based on the actual corner point rather than drifting due to face/size assumptions.
 - You can reference run instances directly (e.g. `joist_run_west#1`) anywhere a `ref` is accepted.
@@ -77,6 +77,19 @@ array:
 ## Operations & Selectors
 
 - Typed operations: `rotate`, `mirror`, `translate`, `boolean`.
+- Mirror reflects across a plane using a `normal` + `point` (both world-space unless you supply a frame); axis-aligned planes can use `axis` + `coordinate` as sugar:
+
+```yaml
+operations:
+  - type: mirror
+    targets: [corner_tie_horizontal_nw]
+    plane:
+      normal: [1, -1, 0]
+      point: [0, 0, 0]
+    include_seed: true
+```
+- Axis sugar: `plane: { axis: x|y|z, coordinate: 0 }` expands to the equivalent `normal` + `point` and remains accepted for backward compatibility.
+
 - Selectors: `id` (all instances), `id.original` (seeds/place entries), `id.clones` (generated copies). Work in operations, booleans, groups, checks.
 - Axis-map refs can target clone ids produced by operations, letting placements and checks anchor directly to rotated/mirrored faces.
 - Boolean subtract uses selectors against a target component (void references to `IfcOpeningElement` propagate to clones for IFC openings; other voids only drive plan cutouts).

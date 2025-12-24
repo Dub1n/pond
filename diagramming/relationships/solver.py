@@ -196,24 +196,44 @@ def _rotate_orientation(orientation: OrientationMatrix, axis_vec: Tuple[float, f
     )
 
 
-def _reflect_point(point: Tuple[float, float, float], axis: str, coordinate: float) -> Tuple[float, float, float]:
-    idx = AXIS_ORDER[axis]
-    reflected = list(point)
-    reflected[idx] = coordinate - (point[idx] - coordinate)
-    return (reflected[0], reflected[1], reflected[2])
+def _reflect_point_plane(
+    point: Tuple[float, float, float],
+    normal: Tuple[float, float, float],
+    point_on_plane: Tuple[float, float, float],
+) -> Tuple[float, float, float]:
+    normal_unit = _normalise_vector(normal)
+    offset = (
+        point[0] - point_on_plane[0],
+        point[1] - point_on_plane[1],
+        point[2] - point_on_plane[2],
+    )
+    distance = offset[0] * normal_unit[0] + offset[1] * normal_unit[1] + offset[2] * normal_unit[2]
+    return (
+        point[0] - 2.0 * distance * normal_unit[0],
+        point[1] - 2.0 * distance * normal_unit[1],
+        point[2] - 2.0 * distance * normal_unit[2],
+    )
 
 
-def _reflect_vector(vector: Tuple[float, float, float], axis: str) -> Tuple[float, float, float]:
-    if axis == "x":
-        return (-vector[0], vector[1], vector[2])
-    if axis == "y":
-        return (vector[0], -vector[1], vector[2])
-    return (vector[0], vector[1], -vector[2])
+def _reflect_vector_plane(
+    vector: Tuple[float, float, float],
+    normal: Tuple[float, float, float],
+) -> Tuple[float, float, float]:
+    normal_unit = _normalise_vector(normal)
+    projection = vector[0] * normal_unit[0] + vector[1] * normal_unit[1] + vector[2] * normal_unit[2]
+    return (
+        vector[0] - 2.0 * projection * normal_unit[0],
+        vector[1] - 2.0 * projection * normal_unit[1],
+        vector[2] - 2.0 * projection * normal_unit[2],
+    )
 
 
-def _reflect_orientation(orientation: OrientationMatrix, axis: str) -> OrientationMatrix:
-    x_axis = _normalise_vector(_reflect_vector(orientation[0], axis))
-    y_axis = _normalise_vector(_reflect_vector(orientation[1], axis))
+def _reflect_orientation_plane(
+    orientation: OrientationMatrix,
+    normal: Tuple[float, float, float],
+) -> OrientationMatrix:
+    x_axis = _normalise_vector(_reflect_vector_plane(orientation[0], normal))
+    y_axis = _normalise_vector(_reflect_vector_plane(orientation[1], normal))
     z_axis = _normalise_vector(
         (
             x_axis[1] * y_axis[2] - x_axis[2] * y_axis[1],
@@ -222,7 +242,7 @@ def _reflect_orientation(orientation: OrientationMatrix, axis: str) -> Orientati
         )
     )
     if z_axis == (0.0, 0.0, 0.0):
-        z_axis = _normalise_vector(orientation[2])
+        z_axis = _normalise_vector(_reflect_vector_plane(orientation[2], normal))
     # Re-orthogonalise to keep a right-handed basis after the reflection.
     y_axis = _normalise_vector(
         (
@@ -2281,20 +2301,20 @@ class ConstraintSolver:
         if not selected_ids:
             diagnostics.add_error(f"mirror operation matched no components for targets {op.targets}")
             return created
-        axis = op.axis
-        coordinate = op.coordinate
+        normal = op.normal
+        point_on_plane = op.point
         for instance_id in selected_ids:
             base = next((s for s in solved if s.instance_id == instance_id), None)
             if base is None:
                 continue
             if not op.include_seed and base.origin == "original":
                 continue
-            mirrored_pos = _reflect_point(base.transform.position, axis, coordinate)
-            orientation = _reflect_orientation(base.transform.orientation, axis)
+            mirrored_pos = _reflect_point_plane(base.transform.position, normal, point_on_plane)
+            orientation = _reflect_orientation_plane(base.transform.orientation, normal)
             rotation = _rotation_from_orientation(orientation)
             transform = ComponentTransform(position=mirrored_pos, rotation=rotation, orientation=orientation)
             new_id = f"{instance_id}_mirrored"
-            guid = self._stable_guid(base.template_id, new_id, coordinate)
+            guid = self._stable_guid(base.template_id, new_id, point_on_plane[0] + point_on_plane[1] + point_on_plane[2])
             primitive = self._neutral_primitive(
                 base.component,
                 new_id,

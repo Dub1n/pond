@@ -1163,8 +1163,8 @@ class RelationshipSolverTests(unittest.TestCase):
               - type: mirror
                 targets: [beam]
                 plane:
-                  axis: x
-                  coordinate: 0
+                  normal: [1, -1, 0]
+                  point: [0, 0, 0]
                 include_seed: true
             """
         )
@@ -1178,8 +1178,8 @@ class RelationshipSolverTests(unittest.TestCase):
         mirrored = beams.get("beam_mirrored")
         self.assertIsNotNone(mirrored)
         assert mirrored is not None
-        self.assertAlmostEqual(mirrored.transform.position[0], -200.0)
-        self.assertAlmostEqual(mirrored.transform.position[1], 0.0)
+        self.assertAlmostEqual(mirrored.transform.position[0], 0.0)
+        self.assertAlmostEqual(mirrored.transform.position[1], 200.0)
         x_axis = mirrored.transform.orientation[0]
         y_axis = mirrored.transform.orientation[1]
         z_axis = mirrored.transform.orientation[2]

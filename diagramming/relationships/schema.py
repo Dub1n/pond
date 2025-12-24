@@ -505,8 +505,8 @@ class RotateOperation(Operation):
 @dataclass(slots=True)
 class MirrorOperation(Operation):
     targets: Tuple[str, ...]
-    axis: str
-    coordinate: float = 0.0
+    normal: Tuple[float, float, float]
+    point: Tuple[float, float, float]
     include_seed: bool = False
 
 
@@ -1302,12 +1302,41 @@ def _parse_mirror_operation(entry: Mapping[str, Any], dimensions: DimensionResol
     plane_raw = entry.get("plane") or {}
     if not isinstance(plane_raw, Mapping):
         raise SchemaError("mirror.plane must be a mapping")
-    axis_raw = plane_raw.get("axis", "x")
-    axis_token = _canonical_axis(axis_raw)[-1]
-    coordinate = _resolve_number(plane_raw.get("coordinate", 0.0), dimensions)
+    has_normal = "normal" in plane_raw or "point" in plane_raw
+    if has_normal and ("axis" in plane_raw or "coordinate" in plane_raw):
+        raise SchemaError("mirror.plane must use either normal/point or axis/coordinate, not both")
+    if has_normal:
+        if "normal" not in plane_raw or "point" not in plane_raw:
+            raise SchemaError("mirror.plane requires both normal and point")
+        normal = _parse_direction_vector(plane_raw.get("normal"), dimensions, source="mirror.plane.normal")
+        point = _parse_direction_vector(plane_raw.get("point"), dimensions, source="mirror.plane.point")
+        if sum(value * value for value in normal) <= 1e-12:
+            raise SchemaError("mirror.plane.normal must be a non-zero vector")
+    else:
+        axis_raw = plane_raw.get("axis", "x")
+        axis_token = _canonical_axis(axis_raw)
+        coordinate = _resolve_number(plane_raw.get("coordinate", 0.0), dimensions)
+        if axis_token == "+x":
+            normal = (1.0, 0.0, 0.0)
+            point = (coordinate, 0.0, 0.0)
+        elif axis_token == "-x":
+            normal = (-1.0, 0.0, 0.0)
+            point = (coordinate, 0.0, 0.0)
+        elif axis_token == "+y":
+            normal = (0.0, 1.0, 0.0)
+            point = (0.0, coordinate, 0.0)
+        elif axis_token == "-y":
+            normal = (0.0, -1.0, 0.0)
+            point = (0.0, coordinate, 0.0)
+        elif axis_token == "+z":
+            normal = (0.0, 0.0, 1.0)
+            point = (0.0, 0.0, coordinate)
+        else:
+            normal = (0.0, 0.0, -1.0)
+            point = (0.0, 0.0, coordinate)
     targets = _parse_targets(entry)
     include_seed = bool(entry.get("include_seed", False))
-    return MirrorOperation(type="mirror", targets=targets, axis=axis_token, coordinate=coordinate, include_seed=include_seed)
+    return MirrorOperation(type="mirror", targets=targets, normal=normal, point=point, include_seed=include_seed)
 
 
 def _parse_translate_operation(entry: Mapping[str, Any], dimensions: DimensionResolver) -> TranslateOperation:
