@@ -323,6 +323,7 @@ views:
     renders: [svg, png]
   section:
     title: "Section — compact relationship schema sketch"
+    scale_hint: 0.3
     plane:
       axis: y
-      coordinate: pond_span / 2
+      coordinate: 820
