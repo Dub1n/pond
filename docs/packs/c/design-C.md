@@ -26,7 +26,7 @@
 
 | member                | size      | spacing/notes                           |
 | --------------------- | --------- | --------------------------------------- |
-| joists (J, C)          | 47×75 mm  | ≈409 mm c/c (7 per side across 2.5 m)  |
+| joists (J, C)         | 47×75 mm  | ≈409 mm c/c (7 per side across 2.5 m)   |
 | beams (outer & inner) | 47×150 mm | continuous, flush with joist tops       |
 | blocking              | 47×150 mm | solid between joists at both beam lines |
 | deck boards           | 28×145 mm | 5–6 mm gaps, 20–30 mm overhang          |
