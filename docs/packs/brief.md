@@ -1,4 +1,6 @@
-I read through your three deck docs and pulled the key facts I’ll reference below (5×5 m outer frame with a 3×3 m pond opening; 1 m walkway backspan; 250mm inward cantilever; C24 UC4 47×150 joists/beams at 400mm c/c; saddle hangers/straps at the pond edge; face‑mount hangers and X‑brace at the outer edge; 28×145 decking; 1–2% fall away from pond, etc.).
+> **Historical brief:** this document was written for the former 250 mm/seven-joist geometry. Current Design C uses a 350 mm projection and eight straight joists per side, with a 170 mm clear gap between the centre pair. Use `design-C.md` and `option-c-dimensions.md` for current dimensions; recalculate every numerical example below before issue.
+
+I read through your three deck docs and pulled the key facts referenced below. The narrative remains useful as a pack outline, but its geometry is superseded as noted above.
 
 Below are two things your reviewers will instantly recognize:
 
@@ -208,20 +210,20 @@ Project / Location / MS No. / Rev / Date / Prepared by / Reviewed by / Approved 
 
 *(Modelled on common UK ITP structure; add **H**old/**W**itness points where you want stop/go control. Keep evidence: photos, test records, check sheets.)* ([Consig][5])
 
-| Activity / Stage   | Inspection / Test                 | **Acceptance criteria & reference**                                                                     | Freq | Responsible (C/S/BC*) | Records                  | HP/WP |
-| ------------------ | --------------------------------- | ------------------------------------------------------------------------------------------------------- | ---: | --------------------- | ------------------------ | :---: |
-| Set‑out            | Check grid, levels, pond aperture | Overall 5x5m, aperture 3x3m; line/square within +-5mm over 3m; levels <=+-5mm                           | 100% | C/S                   | Survey sheet, photos     |  WP   |
-| Pads formed        | Dim./position check; bearing      | 300x300x100mm; centred under joist lines; founding on compacted granular; DPC/EPDM placed               | 100% | C/S                   | ITP check, photos        | **H** |
-| Beams in place     | Line/level; fixings               | Tops **flush with joists**; rebates clean; fixings per manufacturer                                     | 100% | C/S                   | Check sheet              |  WP   |
-| Inner beam hangers | Seat & fixings                    | Top‑flange saddle hangers rebated flush; fasteners per schedule; no damage to timber                    | 100% | C                     | Photo; datasheet mark‑up | **H** |
-| Uplift restraint   | Straps + toe‑screws               | Strap type (LSTA or specified), tensioned; opposed toe‑screws (Ø6–8×120–160) high into beam             | 100% | C                     | Photos                   |  WP   |
-| Joists             | Spacing/line                      | **47×150 C24 UC4 @ 400mm c/c**; cantilever 250mm beyond inner beam; blocking tight each beam line       | 100% | C/S                   | Check sheet              |  WP   |
-| Outer beam         | Face‑mount hangers                | Installed to spec; **toe‑screw** option used if required to eliminate play                              | 100% | C                     | Photos                   |  WP   |
-| Bracing            | X‑strap                           | Galv. flat‑strap (30–40mm×1–1.5mm), taut, fixings every other hole                                      | 100% | C                     | Photos                   |  WP   |
-| Liner interface    | Protection & clamp                | Liner protected from metal edges; clamp/fixings **above waterline**; anchor trench backfilled           | 100% | C/S                   | Photos                   |  WP   |
-| Decking            | Fixings, fall, gaps               | 28×145 boards; **1–2% fall away from pond**; 5–6mm gaps; drip kerf 10–15mm inboard; stainless fixings   | 100% | C/S                   | Check sheet              | **H** |
-| Materials          | Certification                     | **UC4 incised** treatment certs; C24 grading; stainless/class‑4 fixings; product datasheets             |  Lot | C                     | Certs in Appendix        |   H   |
-| Final QA           | Close‑out                         | Torque spot‑checks; snag‑free; area safe; as‑built photos                                               | 100% | C/S/BC                | QA form                  |   H   |
+| Activity / Stage   | Inspection / Test                 | **Acceptance criteria & reference**                                                                   | Freq | Responsible (C/S/BC*) | Records                  | HP/WP |
+| ------------------ | --------------------------------- | ----------------------------------------------------------------------------------------------------- | ---: | --------------------- | ------------------------ | :---: |
+| Set‑out            | Check grid, levels, pond aperture | Overall 5x5m, aperture 3x3m; line/square within +-5mm over 3m; levels <=+-5mm                         | 100% | C/S                   | Survey sheet, photos     |  WP   |
+| Pads formed        | Dim./position check; bearing      | 300x300x100mm; centred under joist lines; founding on compacted granular; DPC/EPDM placed             | 100% | C/S                   | ITP check, photos        | **H** |
+| Beams in place     | Line/level; fixings               | Tops **flush with joists**; rebates clean; fixings per manufacturer                                   | 100% | C/S                   | Check sheet              |  WP   |
+| Inner beam hangers | Seat & fixings                    | Top‑flange saddle hangers rebated flush; fasteners per schedule; no damage to timber                  | 100% | C                     | Photo; datasheet mark‑up | **H** |
+| Uplift restraint   | Straps + toe‑screws               | Strap type (LSTA or specified), tensioned; opposed toe‑screws (Ø6–8×120–160) high into beam           | 100% | C                     | Photos                   |  WP   |
+| Joists             | Spacing/line                      | **47×150 C24 UC4 @ 400mm c/c**; cantilever 250mm beyond inner beam; blocking tight each beam line     | 100% | C/S                   | Check sheet              |  WP   |
+| Outer beam         | Face‑mount hangers                | Installed to spec; **toe‑screw** option used if required to eliminate play                            | 100% | C                     | Photos                   |  WP   |
+| Bracing            | X‑strap                           | Galv. flat‑strap (30–40mm×1–1.5mm), taut, fixings every other hole                                    | 100% | C                     | Photos                   |  WP   |
+| Liner interface    | Protection & clamp                | Liner protected from metal edges; clamp/fixings **above waterline**; anchor trench backfilled         | 100% | C/S                   | Photos                   |  WP   |
+| Decking            | Fixings, fall, gaps               | 28×145 boards; **1–2% fall away from pond**; 5–6mm gaps; drip kerf 10–15mm inboard; stainless fixings | 100% | C/S                   | Check sheet              | **H** |
+| Materials          | Certification                     | **UC4 incised** treatment certs; C24 grading; stainless/class‑4 fixings; product datasheets           |  Lot | C                     | Certs in Appendix        |   H   |
+| Final QA           | Close‑out                         | Torque spot‑checks; snag‑free; area safe; as‑built photos                                             | 100% | C/S/BC                | QA form                  |   H   |
 
 *C – Contractor; S – Supervisor; BC – Building Control (if involved)
 

@@ -1,13 +1,13 @@
-# pond deck design – rev 4
+# pond deck design – rev 5
 
-> 1 m walk + 340 mm overhang; compact, low-profile build
+> 1 m walk + 350 mm overhang; compact, low-profile build
 
 ---
 
 ## overview
 
 * pond: 3 m × 3 m × ≈ 0.9 m deep
-* desired: 1 m walk-around, 340 mm overhang into pond
+* as built: 1 m walk-around, 350 mm overhang into pond
 * deck finish: ≈100 mm above max water level
 * priorities: minimal build-up, tidy liner interface, clean edge detailing
 
@@ -19,14 +19,15 @@
 
 * rectangular deck frame around pond.
 * joists span between **outer beam** and **inner beam**, both continuous.
-* joists cantilever 340 mm beyond the inner beam for the inner five runs; the outer two runs stay shorter to avoid diagonal conflicts.
+* all eight straight joists per side project 350 mm beyond the inner beam.
+* the former centre joist on each side is replaced by a pair whose inside faces are 170 mm apart.
 * corners infilled with a diagonal joist plus short perpendicular ties so the mitered corner boards stay fully supported.
 
 **member sizes (C24 UC4-treated softwood):**
 
 | member                | size      | spacing/notes                           |
 | --------------------- | --------- | --------------------------------------- |
-| joists (J, C)         | 47×75 mm  | ≈409 mm c/c (7 per side across 2.5 m)   |
+| joists (J, C)         | 47×75 mm  | 8 per side; maximum spacing ≈420 mm c/c |
 | beams (outer & inner) | 47×150 mm | continuous, flush with joist tops       |
 | blocking              | 47×150 mm | solid between joists at both beam lines |
 | deck boards           | 28×145 mm | 5–6 mm gaps, 20–30 mm overhang          |
@@ -77,12 +78,13 @@
 
 ---
 
-## corner infill (rev 4)
+## corner infill (rev 5)
 
 * extend the **outer beam (C4)** and **inner beam (C4B)** so their ends fan toward the deck corners, sharing elevation with the joists; lock with blocking/hangers where members cross.
-* add a **diagonal corner joist** from each deck corner to the pond opening corner (longer than the original 250 mm overhang), rotated through all four corners.
+* add a **diagonal corner joist** from each deck corner to the 350 mm pond opening corner, rotated through all four corners.
 * add two short **perpendicular ties** from the perimeter to that diagonal at 500 mm from each corner (e.g., (0, 0.5) → (0.5, 0.5) and (0.5, 0) → (0.5, 0.5)), also rotated 4×.
-* re-space the side joist arrays evenly across the 2.5 m overhang width: **7 joists (~409 mm c/c)**, first face flush to the overhang edge at the pond opening; the inner five runs extend to the 340 mm overhang while the two outer runs stay shorter so the diagonal and outer corners remain clear.
+* use the eight as-built straight-joist centres recorded in `design-c-placements.md`: 1 273.5, 1 660.2, 2 080.1, 2 391.5, 2 608.5, 2 919.9, 3 339.8, and 3 726.5 mm from the end of each beam.
+* the 2 391.5/2 608.5 mm pair replaces the old centre joist and has a 170 mm clear gap between inside faces. Keep these lateral positions independent from the 350 mm pond projection.
 
 ---
 
@@ -129,7 +131,7 @@
 
 ---
 
-## build sequence (rev 4)
+## build sequence (rev 5)
 
 1. dig and backfill anchor trench; lay underlay/liner.
 2. set pads/ground screws, install outer and inner beams (rebate inner).

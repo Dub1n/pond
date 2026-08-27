@@ -15,9 +15,9 @@ Keep the option-C specifics; fill the placeholders with project, people, and seq
 
 ## Scope and references
 
-- Build low-profile timber deck around 3 × 3 m pond with 1 m walk-around and 250 mm inward overhang; finish ≈100 mm above max water level.
-- Use C24 UC4 incised 47 × 150 joists/beams @ 400 mm c/c; 28 × 145 decking; saddle hangers + straps at pond edge; face-mount hangers + X-brace at outer edge; blocking both beam lines; pads 300 × 300 × 100 on gravel with DPC/EPDM.
-- References: design-C.md (rev 3); option-c-dimensions.md; timber-options.md; TDCA deck guidance; manufacturer instructions for hangers/straps/screws.
+- Build low-profile timber deck around a 3 × 3 m pond with a 1 m walk-around and 350 mm inward overhang; finish ≈100 mm above maximum water level.
+- Use the as-built eight-joist layout on each side: 47 × 75 mm joists with a maximum spacing of approximately 420 mm, including the centre pair with a 170 mm clear gap. Use 47 × 150 mm beams, 28 × 145 decking, saddle hangers + straps at the pond edge, face-mount hangers + X-brace at the outer edge, and blocking at both beam lines.
+- References: design-C.md (rev 5); option-c-dimensions.md; design-c-placements.md; timber-options.md; TDCA deck guidance; manufacturer instructions for hangers/straps/screws.
 
 > If any scope deviates (different spans, materials, hardware), note it explicitly here.
 
@@ -56,10 +56,10 @@ Instructions: record risk ratings and specific controls per task using the HSE r
 
 ## Sequence of works (rev 3 aligned)
 
-1. **Set out**: Mark 5 × 5 m deck, 3 × 3 m pond aperture; mark pad centres (1.5–1.6 m along beams); confirm levels.
+1. **Set out**: Mark the 5 × 5 m deck, 3 × 3 m pond, 2.3 × 2.3 m finished opening, and the eight joist centres from design-c-placements.md; confirm the centre-pair inside faces are 170 mm apart and confirm levels.
 2. **Pads**: Form 300 × 300 × 100 mm concrete pads on compacted gravel; place DPC/EPDM isolators; verify positions align to joist centrelines.
 3. **Beams**: Install outer and inner beams level/flush; rebate inner beam for top-flange saddle hangers.
-4. **Inner beam hangers/joists**: Fit saddle hangers; hang joists; fix opposed toe-screws high into beam; install top straps over joists; keep tops flush.
+4. **Inner beam hangers/joists**: Fit saddle hangers; hang the 1 303 mm straight joists with 350 mm beyond the inner beam; fix opposed toe-screws high into the beam; install top straps; keep tops flush.
 5. **Outer beam**: Fit face-mount hangers; seat joists; add blocking along both beam lines; add optional toe-screws if play remains.
 6. **Bracing**: Install galvanised flat-strap X-brace at outer edge; tension and fix every other hole.
 7. **Liner interface**: Form anchor trench 200–300 mm back from pond edge, 200–300 mm deep; fold liner over inner beam face; backfill; add timber clamp/fascia above waterline; isolate metal edges with EPDM/underlay.

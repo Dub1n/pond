@@ -10,20 +10,27 @@ dimensions:
     deck_span: 5000
     pond_span: 3000
     backspan: 1000
-    cantilever: 250
-    cantilever_inner: 340
+    cantilever: 350
     joist_spacing: 400
     joist_width: 47
     joist_depth: 75
     beam_width: 47
     beam_height: 150
-    opening_width: pond_span - 2 * (cantilever_inner)
+    opening_width: pond_span - 2 * cantilever
     corner_diagonal_length_outer: 1281.277488
-    corner_diagonal_length_inner: 480.8326
+    corner_diagonal_length_inner: 494.974747
     corner_tie_spacing: 500
     corner_tie_length: 453
-    J_offset: 90
-    J2_offset: -J_offset + ((pond_span - 2 * cantilever_inner) / 6)
+    joist_outer_low_center: 1273.5
+    joist_inner_low_center: 1660.166667
+    joist_inner_mid_low_center: 2080.083333
+    joist_pair_clear_gap: 170
+    joist_pair_offset: joist_pair_clear_gap / 2 + joist_width / 2
+    joist_pair_low_center: deck_span / 2 - joist_pair_offset
+    joist_pair_high_center: deck_span / 2 + joist_pair_offset
+    joist_inner_mid_high_center: deck_span - joist_inner_mid_low_center
+    joist_inner_high_center: deck_span - joist_inner_low_center
+    joist_outer_high_center: deck_span - joist_outer_low_center
   finishes:
     deck_thickness: 28
   site:
@@ -97,30 +104,45 @@ components:
       +z: { ref: deck_surface, pos: -z }
     ifc: { predefined_type: BEAM }
 
-  - id: joist_run_south_outer
+  - id: joist_run_south
     class: IfcBeam
     size: [joist_width, backspan + cantilever - beam_width, joist_depth]
     material: timber
-    label: "47x75mm Joist (outer) | backspan + 250mm cantilever"
+    label: "47x75mm Joist | 953mm backspan + 350mm overhang"
     label_id: "J"
-    array:
-      -y: { ref: outer_beam_south, pos: +y }
-      -x+x: { ref: opening_frame, offset: { -x: -J_offset, +x: J_offset } }
-      +z: { ref: deck_surface, pos: -z }
-      repeat: { x: { count: 2 } }
-    ifc: { predefined_type: JOIST }
-
-  - id: joist_run_south_inner
-    class: IfcBeam
-    size: [joist_width, backspan + cantilever_inner - beam_width, joist_depth]
-    material: timber
-    label: "47x75mm Joist (inner) | backspan + 340mm cantilever"
-    label_id: "J"
-    array:
-      -y: { ref: outer_beam_south, pos: +y }
-      -x+x: { ref: opening_frame, offset: { -x: J2_offset, +x: -J2_offset } }
-      +z: { ref: deck_surface, pos: -z }
-      repeat: { x: { count: 5 } }
+    place:
+      - id: joist_run_south_1
+        cx: { ref: deck_frame, pos: -x, offset: joist_outer_low_center }
+        -y: { ref: outer_beam_south, pos: +y }
+        +z: { ref: deck_surface, pos: -z }
+      - id: joist_run_south_2
+        cx: { ref: deck_frame, pos: -x, offset: joist_inner_low_center }
+        -y: { ref: outer_beam_south, pos: +y }
+        +z: { ref: deck_surface, pos: -z }
+      - id: joist_run_south_3
+        cx: { ref: deck_frame, pos: -x, offset: joist_inner_mid_low_center }
+        -y: { ref: outer_beam_south, pos: +y }
+        +z: { ref: deck_surface, pos: -z }
+      - id: joist_run_south_4
+        cx: { ref: deck_frame, pos: -x, offset: joist_pair_low_center }
+        -y: { ref: outer_beam_south, pos: +y }
+        +z: { ref: deck_surface, pos: -z }
+      - id: joist_run_south_5
+        cx: { ref: deck_frame, pos: -x, offset: joist_pair_high_center }
+        -y: { ref: outer_beam_south, pos: +y }
+        +z: { ref: deck_surface, pos: -z }
+      - id: joist_run_south_6
+        cx: { ref: deck_frame, pos: -x, offset: joist_inner_mid_high_center }
+        -y: { ref: outer_beam_south, pos: +y }
+        +z: { ref: deck_surface, pos: -z }
+      - id: joist_run_south_7
+        cx: { ref: deck_frame, pos: -x, offset: joist_inner_high_center }
+        -y: { ref: outer_beam_south, pos: +y }
+        +z: { ref: deck_surface, pos: -z }
+      - id: joist_run_south_8
+        cx: { ref: deck_frame, pos: -x, offset: joist_outer_high_center }
+        -y: { ref: outer_beam_south, pos: +y }
+        +z: { ref: deck_surface, pos: -z }
     ifc: { predefined_type: JOIST }
 
   - id: corner_diagonal_deck_to_inner_sw
@@ -143,7 +165,7 @@ components:
     class: IfcBeam
     size: [corner_diagonal_length_inner, joist_width, joist_depth]
     material: joist
-    label: "47x75mm Joist from inner beam corner to pond opening corner | 481mm"
+    label: "47x75mm Joist from inner beam corner to pond opening corner | 495mm"
     label_id: "C2"
     relate:
       -xcy:
@@ -171,12 +193,12 @@ components:
     kind: reference
     size: [0, 0, 0]
     relate:
-      -x+y: { ref: opening_frame, offset: { -x: -cantilever_inner, +y: cantilever_inner } }
+      -x+y: { ref: opening_frame, offset: { -x: -cantilever, +y: cantilever } }
       +z: { ref: deck_surface, pos: -z }
 
   - id: corner_diagonal_inner_span_check_nw
     kind: reference
-    size: [cantilever_inner, 0, 0]
+    size: [cantilever, 0, 0]
     relate:
       +x: { ref: opening_frame, pos: -x }
       -x: { ref: overhang_tip_nw, pos: -x }
@@ -213,11 +235,11 @@ components:
         +z: pad_top_z
       - id: pad_run2_west
         cx: { ref: deck_frame, pos: -x, offset: beam_width / 2 }
-        cy: { ref: joist_run_west_inner }
+        cy: { ref: joist_run_west_2 }
         +z: pad_top_z
       - id: pad_run6_west
         cx: { ref: deck_frame, pos: -x, offset: beam_width / 2 }
-        cy: { ref: joist_run_west_inner#4 }
+        cy: { ref: joist_run_west_7 }
         +z: pad_top_z
     ifc: { predefined_type: PAD_FOOTING }
 
@@ -225,7 +247,7 @@ components:
     kind: reference
     size: [null, 0, 0]
     relate:
-      -x: { ref: joist_run_west_inner }
+      -x: { ref: joist_run_west_2 }
       +x: { ref: opening_frame, pos: -x }
 
 operations:
@@ -241,8 +263,7 @@ operations:
     targets:
       - outer_beam_west
       - inner_beam_west
-      - joist_run_south_outer
-      - joist_run_south_inner
+      - joist_run_south
       - pad_west
       - corner_diagonal_deck_to_inner_sw
       - corner_diagonal_inner_to_opening_sw
@@ -253,8 +274,14 @@ operations:
     id_map:
       outer_beam_west: [outer_beam_west, outer_beam_south, outer_beam_east, outer_beam_north]
       inner_beam_west: [inner_beam_west, inner_beam_south, inner_beam_east, inner_beam_north]
-      joist_run_south_outer: [joist_run_south_outer, joist_run_east_outer, joist_run_north_outer, joist_run_west_outer]
-      joist_run_south_inner: [joist_run_south_inner, joist_run_east_inner, joist_run_north_inner, joist_run_west_inner]
+      joist_run_south_1: [joist_run_south_1, joist_run_east_1, joist_run_north_1, joist_run_west_1]
+      joist_run_south_2: [joist_run_south_2, joist_run_east_2, joist_run_north_2, joist_run_west_2]
+      joist_run_south_3: [joist_run_south_3, joist_run_east_3, joist_run_north_3, joist_run_west_3]
+      joist_run_south_4: [joist_run_south_4, joist_run_east_4, joist_run_north_4, joist_run_west_4]
+      joist_run_south_5: [joist_run_south_5, joist_run_east_5, joist_run_north_5, joist_run_west_5]
+      joist_run_south_6: [joist_run_south_6, joist_run_east_6, joist_run_north_6, joist_run_west_6]
+      joist_run_south_7: [joist_run_south_7, joist_run_east_7, joist_run_north_7, joist_run_west_7]
+      joist_run_south_8: [joist_run_south_8, joist_run_east_8, joist_run_north_8, joist_run_west_8]
       pad_corner_nw: [pad_corner_nw, pad_corner_sw, pad_corner_se, pad_corner_ne]
       pad_edge_center_west: [pad_edge_center_west, pad_edge_center_south, pad_edge_center_east, pad_edge_center_north]
       pad_outer_corner_nw: [pad_outer_corner_nw, pad_outer_corner_sw, pad_outer_corner_se, pad_outer_corner_ne]

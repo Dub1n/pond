@@ -37,6 +37,8 @@ total decking needed: 19.75m^2
 
 ## Structural joists
 
+> The cut list below predates the as-built framing update. The current model has eight straight joists per side (32 total), each with a 953 mm backspan and 350 mm pond projection. Use 32 × 1 303 mm = **41.696 m** for the straight joists before cutting allowance; recalculate the remaining corner and blocking stock before purchasing.
+
 ### 150mm
 
 oxfordbuildingsupplies.com:
@@ -81,10 +83,10 @@ Total: 50.67m
 (J): 5x 906mm + 1x 250mm
 (K): 5x 906mm + 1x 250mm
 
-250mm -> 350mm ?
+250mm -> 350mm (confirmed)
 50.668m -> 53.188m
 
-28 × 340 mm: (I) 1x; (J) 14x; (K) 13x;
+28 × 340 mm: historical estimate, superseded by 32 × 350 mm pond projections.
 36 × 906 mm: (A) 2x; (B:G) 5x; (H) 4x;
 4 × 1410 mm: (A) 2x; (L) 2x;
 4 × 481 mm: (I) 4x;

@@ -1,26 +1,24 @@
 # Design C placements
 
-Positions along the outer/inner beams for option C from `diagrams/specs/option-c.yaml`.
-Offsets are measured from the deck-frame +Y (north) face along the beam toward -Y.
-Values are in mm; apply the same offsets on every side (rotated).
+Positions along the outer/inner beams for Option C from `option-c.yaml`. Offsets are measured from one outside corner along the 5 m beam. Values are in millimetres and apply to every side by rotation.
 
-## Outer beam (O)
+## Straight joists
 
-T (corner_tie_vertical_nw) faces are 0.0 and 500.0 along O.
-T (corner_tie_horizontal_nw) faces are 476.5 and 523.5 along O.
-J (joist_run_west_outer) #1 faces are 1250.0 and 1297.0 along O.
-J (joist_run_west_outer) #2 faces are 3703.0 and 3750.0 along O.
-J (joist_run_west_inner) #1 faces are 1636.7 and 1683.7 along O.
-J (joist_run_west_inner) #2 faces are 2056.6 and 2103.6 along O.
-J (joist_run_west_inner) #3 faces are 2476.5 and 2523.5 along O.
-J (joist_run_west_inner) #4 faces are 2896.4 and 2943.4 along O.
-J (joist_run_west_inner) #5 faces are 3316.3 and 3363.3 along O.
-P (pad_outer_corner_nw) edges are -276.5 and 323.5 along O (negative means outside the deck edge).
-P (pad_run2_west) edges are 1360.2 and 1960.2 along O.
-P (pad_run6_west) edges are 3039.8 and 3639.8 along O.
+| Joist |  Centre |           Faces |
+| ----: | ------: | --------------: |
+|    J1 | 1 273.5 | 1 250.0–1 297.0 |
+|    J2 | 1 660.2 | 1 636.7–1 683.7 |
+|    J3 | 2 080.1 | 2 056.6–2 103.6 |
+|    J4 | 2 391.5 | 2 368.0–2 415.0 |
+|    J5 | 2 608.5 | 2 585.0–2 632.0 |
+|    J6 | 2 919.9 | 2 896.4–2 943.4 |
+|    J7 | 3 339.8 | 3 316.3–3 363.3 |
+|    J8 | 3 726.5 | 3 703.0–3 750.0 |
 
-## Inner beam (I)
+J4 and J5 replace the former centre joist. Their inside faces are 170 mm apart. Every straight joist has a 953 mm backspan and a 350 mm projection over the pond, for a 1 303 mm modelled length.
 
-P (pad_corner_nw) edges are 447.0 and 1047.0 along I.
-P (pad_edge_center_west) edges are 2200.0 and 2800.0 along I.
-Joist offsets along I match the O list above (same Y placements).
+## Other members and pads
+
+- Corner ties occupy 0–500 mm and 4 500–5 000 mm corner zones.
+- The intermediate outer-beam pads remain centred at joists J2 and J7 (approximately 1 660.2 and 3 339.8 mm).
+- The pond-edge centre pad remains at 2 500 mm; it is a beam support and does not imply a joist at the centreline.

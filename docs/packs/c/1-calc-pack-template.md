@@ -29,8 +29,8 @@ Use this template to produce the audit-ready calc pack the reviewers expect. Kee
 
 ## 2. Inputs and assumptions
 
-- **Geometry**: 5 000 × 5 000 mm deck with 3 000 × 3 000 mm pond opening; 1 000 mm backspan; 250 mm inward cantilever each side; finished deck ≈100 mm above max water level.
-- **Members**: Joists and beams 47 × 150 mm C24 UC4 incised; joists @ 400 mm c/c; solid blocking at both beam lines; decking 28 × 145 mm with 5–6 mm gaps and 20–30 mm overhang.
+- **Geometry**: 5 000 × 5 000 mm deck around a 3 000 × 3 000 mm pond; 1 000 mm nominal backspan; 350 mm inward projection each side; 2 300 × 2 300 mm finished opening; finished deck ≈100 mm above maximum water level.
+- **Members**: Straight joists 47 × 75 mm C24 UC4 incised, eight per side at the as-built centres in option-c-dimensions.md (maximum spacing ≈420 mm); beams 47 × 150 mm; solid blocking at both beam lines; decking 28 × 145 mm with 5–6 mm gaps and 20–30 mm outer overhang.
 - **Details**: Inner beam uses top-flange saddle hangers rebated flush + top strap + opposed toe-screws; outer beam uses face-mount hangers; galvanised flat-strap X-brace at outer edge; pads 300 × 300 × 100 mm on gravel with DPC/EPDM isolation.
 - **Service class / durability**: Service Class 3; preservative UC4 throughout framing; stainless A2/A4 or class 4 fasteners; reseal cut ends.
 - **Environmental**: External exposure adjacent to pond; drainage slope 1–2% away from pond; liner clamp/fixings above waterline.
@@ -72,9 +72,9 @@ Use this table to build Gk (kN/m²) from densities. Enter sources (supplier/EN 1
 
 ## 4. Global model and idealisations
 
-- Joists span between outer and inner beams, simply supported with 250 mm cantilever past the inner beam.
+- Joists span 953 mm between the outer and inner beam faces and project 350 mm past the inner beam. The former centre joist is replaced by a 170 mm-clear pair.
 - Beams continuous, tops flush with joists; bearing height aligned with pad datum (0 mm) per option-c-dimensions.md.
-- Tributary width per joist: 0.4 m (400 mm c/c).
+- Tributary widths are derived from the irregular as-built centres; use 0.420 m as the conservative maximum straight-joist spacing.
 - Support spacing for beams: 1.5–1.6 m centres on 300 × 300 pads (confirm actual spacing used).
 - Bracing: Deck diaphragm + blocking; outer beam X-strap fixed every other hole, tensioned.
 - Idealisation placeholders: Note any model simplifications (e.g., neglecting diaphragm stiffness, end fixity) and justify.
@@ -98,7 +98,7 @@ Use the worksheet in Section 7 for each member type. Keep the provided sizes; in
 - **Outer beam**: Face-mount hanger shear/bearing; optional toe-screws to remove play.
 - **Bracing**: Flat-strap X-brace axial capacity and fixings; confirm strap grade and screw/nail type.
 - **Uplift/peel**: State calculation of uplift forces if applicable; otherwise record “not governing” with justification.
-- **Perimeter pad ballast**: Refer to `uplift-pad-check.md` — worst uplift from Q on cantilever only = 0.21 kN per interior pad (7 joists), pad self-weight 0.216 kN (300×300×100); note if thicker pad/ballast adopted for margin.
+- **Perimeter pad ballast**: Recalculate for the 350 mm projection and eight-joist layout before issue; the former seven-joist/250 mm result in `uplift-pad-check.md` is superseded.
 - **Corrosion**: Confirm stainless/class 4 fasteners and compatibility with hangers/straps.
 
 Placeholders: insert manufacturer references, fastener schedules, and utilisation ratios once known.
@@ -114,8 +114,8 @@ WORKED EXAMPLE – OPTION C (fill blanks)
 
 1. MEMBER
    Joist – 47×150 C24 UC4
-   Span: backspan 1 000 mm – beam width 180 mm = 820 mm; cantilever 250 mm; total length 1.07 m. [Ref: option-c-dimensions.md]
-   Spacing: 400 mm c/c; tributary width = 0.4 m.
+   Span: backspan between beam faces 953 mm; projection 350 mm; total length 1.303 m. [Ref: option-c-dimensions.md]
+   Spacing: irregular; use maximum tributary width = 0.420 m unless a joist-specific width is calculated.
 
 2. INPUT DATA
    Gk (self-weight + finishes) = 0.457 kN/m²
@@ -123,7 +123,7 @@ WORKED EXAMPLE – OPTION C (fill blanks)
    Material: C24; Service class: 3; Treatment: UC4 incised; kmod/kdef/γM per EN 1995-1-1 (UK NA).
 
 3. TO FIND
-   Example: Check joist (47×150) with 250 mm cantilever for bending, shear, deflection (ULS/SLS).
+   Example: Check joist (47×75) with 350 mm projection for bending, shear, deflection (ULS/SLS).
 
 4. ACTIONS
    Permanent (Gk): 0.457 kN/m² (from Table 3A)
@@ -131,8 +131,8 @@ WORKED EXAMPLE – OPTION C (fill blanks)
    Load combinations (EN 1990 A1): ULS = γG·Gk + γQ·Qk = 1.35·Gk + 1.50·Qk; SLS (char/freq/quasi-perm) = Gk + Qk; Gk + ψ1·Qk; Gk + ψ2·Qk.
 
 5. ANALYSIS
-   Line load w = (Gk + Qk) × 0.4 = (0.457+3.0)×0.4 = 1.383 kN/m
-   Backspan Lb = 0.82 m; cantilever a = 0.25 m; total joist length L = 1.07 m
+   Line load w = (Gk + Qk) × 0.420 = (0.457+3.0)×0.420 = 1.452 kN/m
+   Backspan Lb = 0.953 m; projection a = 0.350 m; total joist length L = 1.303 m
    Reactions/internal forces at hanger line: V = ___; M = ___  [add free-body sketch reference]
 
 6. DESIGN CHECKS (EN 1995-1-1)

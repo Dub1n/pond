@@ -1,26 +1,28 @@
 # option C – joist depth check (load-driven)
 
+> **Superseded geometry:** the calculations below use seven joists and a 250 mm projection. The as-built Design C has eight joists, a 350 mm projection, a maximum spacing of approximately 420 mm, and a 1 303 mm total straight-joist length. Do not use the results below for construction approval until they are recalculated and independently checked.
+
 Inputs pulled from `design-C.md` and `0-Appendix-A-key-design-factors-&-material-data.md`:
 
 - Actions: Gk = 0.457 kN/m², Qk = 3.0 kN/m²; γG = 1.35; γQ = 1.50.
 - Material: C24, SC3 → fm,k = 24 N/mm², fv,k = 2.5 N/mm², kmod (imposed, SC3) = 0.70, γM = 1.30, E0,mean = 11 000 N/mm².
-- Geometry: joist spacing ≈0.409 m (7 joists across 2.453 m), tributary width per joist = 0.409 m. Walkway span between hangers = 0.953 m with a 0.25 m cantilever (total 1.203 m).
+- Historical geometry used below: joist spacing ≈0.409 m (7 joists across 2.453 m), tributary width per joist = 0.409 m, and a 0.953 m span with a 0.25 m projection (1.203 m total). Current geometry is recorded in option-c-dimensions.md.
 - Corner infill spacing: ties set at 500 mm, diagonal split at 0.707 m + 1.061 m; first/last metre of C4B sits in this corner field.
 
 All numbers below were produced with Python shell commands so nothing is hand-waved.
 
 ## Derived actions (per metre of member)
 
-| Case                 | Formula                                    | Result |
-| -------------------- | ------------------------------------------ | ------ |
-| fmd                  | fm,k × kmod ÷ γM                           | 12.9 N/mm² |
-| fvd                  | fv,k × kmod ÷ γM                           | 1.35 N/mm² |
-| w<sub>SLS</sub>      | (Gk + Qk) × 0.409                          | 1.414 kN/m |
-| w<sub>ULS</sub>      | (1.35·Gk + 1.5·Qk) × 0.409                 | 2.093 kN/m |
+| Case            | Formula                    | Result     |
+| --------------- | -------------------------- | ---------- |
+| fmd             | fm,k × kmod ÷ γM           | 12.9 N/mm² |
+| fvd             | fv,k × kmod ÷ γM           | 1.35 N/mm² |
+| w<sub>SLS</sub> | (Gk + Qk) × 0.409          | 1.414 kN/m |
+| w<sub>ULS</sub> | (1.35·Gk + 1.5·Qk) × 0.409 | 2.093 kN/m |
 
 ## Member checks (separated at each intersection as requested)
 
-### Walkway joists (outer beam to inner beam + 250 mm cantilever)
+### Historical walkway-joist calculation (outer beam to inner beam + 250 mm projection)
 
 - Span model: simple span 0.953 m with 0.25 m overhang past the pond-edge support.
 - ULS results: R<sub>outer</sub> = 0.93 kN, R<sub>pond</sub> = 1.59 kN; M<sub>max</sub> = 0.206 kN·m (positive), M<sub>pond</sub> = –0.065 kN·m (hogging at the hanger).

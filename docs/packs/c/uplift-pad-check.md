@@ -1,6 +1,8 @@
 # Perimeter uplift / pad ballast check – Option C
 
-Scope: uplift at the outer beam (C4) pads from the 250 mm cantilever over the pond edge, and resulting bending in C4 at midspan.
+> **Superseded geometry:** this check uses seven joists and a 250 mm projection. Design C now has eight joists and a 350 mm projection. The results and pad-ballast conclusion below must be recalculated before they are relied upon.
+
+Scope of the historical calculation: uplift at the outer beam (C4) pads from the former 250 mm projection over the pond edge, and resulting bending in C4 at midspan.
 
 ## Inputs and assumptions
 
