@@ -151,3 +151,115 @@ If the single spine remains level and stable during asymmetric loading, a 50 mm 
 6. Build the comparative side prototype and test full drained load, eccentric loading, twist, uplift, one removed support, creep, chafe, flooding and drainage.
 7. Perform the basket-slide-and-lift operation beneath a full-size finished deck-edge mock-up.
 8. Choose single- or twin-rail construction from those results, then complete the joist, connection, uplift and foundation checks before issuing any batch cut list.
+
+---
+
+A twin-rail system would be moderately more expensive and somewhat more complex, but not prohibitively so. It would solve a real weakness—the balanced single-spine seat—but it would not eliminate most of the project’s survey, planting-depth, suspension or maintenance work.
+
+## Twin rail versus R3
+
+| Issue | Single-spine R3 | Twin rail |
+| --- | --- | --- |
+| Longitudinal GRP | Two 6 m main lengths | Likely four 6 m lengths if both rails run around all sides |
+| Basket support | Cantilevered crossbars balanced on one spine | Crossbars supported at two points, or baskets seated directly on two rails |
+| Torsional stability | Depends on crossbar restraint, spine torsion and completed ring | Much better locally |
+| Corners | Four structural corners | Eight for concentric rings; none if built as four independent ladder modules |
+| Suspension | 32 cords | Could use the same 32 locations, but each support must level or connect both rails |
+| Adjustability | Easy with local crossbars and risers | Similar if local cradles remain; worse if rail separation is fixed around the whole pond |
+| Visibility/debris | One continuous line | Two lines and more connecting pieces |
+| Repair | Whole ring interconnected | Independent side modules could be easier to remove |
+
+Using the same 38 mm profile throughout would approximately double the longitudinal-profile expenditure. At the current listed price, two additional 6 m lengths would add roughly £110 including VAT before delivery, connectors and fabrication. [F.H. Brundle profile](https://www.fhbrundle.co.uk/products/3305385GY__GRP_Hollow_Section_38_x_38_x_5mm_x_6m_Grey)
+
+That is meaningful relative to the rail itself, but small relative to the complete pond and deck. A lighter 25 mm secondary rail might be sufficient structurally, subject to handling and connection tests.
+
+Four independent ladder-like side modules would be preferable to two complete concentric rings. They avoid eight elaborate mitred corners and permit one side to be repaired independently.
+
+## Issues twin rails would share
+
+A comparable survey and prototype programme would still be required for:
+
+- Actual basket bases, reinforced zones and completed soaked masses.
+- Deck-edge, joist, liner and water-level geometry.
+- The *Butomus* and crowfoot crown elevations.
+- Cord creep, chafe, adjustment and inaccessible joist terminations.
+- Drained-pond joist and foundation reactions.
+- Basket retention against uplift.
+- Flooding and drainage of hollow GRP.
+- Finished-deck removal clearance.
+- Pond-safe finishes and cut-edge treatment.
+
+Thus twin rails do not shorten the development process dramatically. Their main advantage is better-defined mechanical behaviour once developed.
+
+## Unique twin-rail issues
+
+Twin rails introduce several new questions:
+
+- One fixed spacing may not suit both tapered basket sizes or their reinforced base bands.
+- Small height errors between rails can make baskets rock or place nearly all load on one rail.
+- Supports must share load between both rails; simply hanging each independently could create persistent differential levels.
+- The outer rail might lie close to or beneath the deck edge, while the inner rail remains exposed in gaps between baskets.
+- More tube length means more flooding points, joints, surfaces for biofouling and underwater obstructions.
+- Independent side modules need positive lateral restraint; two parallel rails alone can still swing as a unit.
+- Full concentric rings create corner congestion and a larger lowering envelope.
+
+These are manageable. Fixed rail spacing is the most troublesome, which is why I would retain measured local crossbars or removable cradle frames even with twin longitudinal rails.
+
+## Replacing the cord crossbar bindings
+
+Yes, positive crossbar location would provide a real benefit. But I would not automatically use generic stainless “+” clamps.
+
+The present binding performs three jobs:
+
+1. prevents the crossbar translating;
+2. prevents it rotating in plan;
+3. prevents uplift.
+
+Cord is inexpensive and compliant, but its friction, knot bedding and chafe determine all three. A positive locator would make the first two functions geometric rather than friction-dependent.
+
+Generic handrail fittings are not automatically appropriate. Although 316 square-section connectors exist, they are generally designed around 40 mm stainless handrail, screws or adhesive—not a 38 mm pultruded GRP spine crossed by a 25 mm GRP tube. Published structural capacity on GRP is generally absent. [Example 316 square connector](https://www.dahshi.com.tw/en/product/SS-40017SQ.html) A4 clips specifically intended for GRP also exist, but the common products are designed for open grating rather than intersecting hollow tubes. [A4 GRP clips](https://www.kitegroupltd.com/product-page/grp-fixings-clips)
+
+A clamp tightened around the tubes could introduce:
+
+- concentrated compression and crushing of the pultruded walls;
+- point loads from grub screws;
+- exposed threads or sharp corners;
+- stagnant crevices;
+- additional holes requiring resin sealing;
+- uncertain capacity across the weak material direction;
+- 26 relatively expensive underwater fittings.
+
+## Preferred crossbar connection
+
+I would use a **positive but non-clamping saddle**:
+
+- The crossbar continues to bear directly on top of the spine.
+- Two rounded GRP, HDPE or formed 316 keeper cheeks attach to the underside of the crossbar and straddle the spine with slight clearance.
+- Those cheeks prevent translation and plan rotation without squeezing the spine.
+- A smooth captive 316 pin, rounded strap or short replaceable cord loop beneath the spine prevents uplift.
+- No load-bearing hole is drilled through the main spine.
+- All metal ends remain capped and accessible.
+
+This preserves the simple gravity load path while removing reliance on lashing friction. Twenty-six identical saddles could be fabricated from one drilling template.
+
+An even simpler compromise is to install the proposed rounded stops on both sides of every crossing as standard—not conditionally—and retain one short cord lashing solely for uplift. That probably captures most of the benefit at the lowest cost.
+
+I would avoid:
+
+- stainless U-bolts directly around square GRP;
+- grub-screw handrail clamps;
+- one vertical bolt through both hollow sections;
+- adhesive-only crossover joints;
+- any fitting without broad bearing surfaces and a demonstrated 316 grade.
+
+## Recommendation
+
+Prototype three connection variants on the proposed one-side rig:
+
+1. Cord binding alone.
+2. Positive keeper blocks plus a light uplift lashing.
+3. A purpose-made broad-bearing 316 or multidirectional-GRP saddle.
+
+Test each under eccentric basket loading, repeated 50 mm removal movement, temporary uplift, soaking, and deliberate loosening of one retention element. My expectation is that option 2 will give nearly all the security of a metal clamp with lower cost, fewer crevices and easier pond-side replacement.
+
+For the carrier itself, make the prototype’s second rail detachable. If the single spine with positive saddles passes the asymmetric, support-loss and handling tests, it remains the simpler choice. If it exhibits meaningful roll, binding movement or corner dependence, the added cost of four twin-rail side modules would be justified.
