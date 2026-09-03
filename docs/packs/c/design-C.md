@@ -10,6 +10,9 @@
 * as built: 1 m walk-around, 350 mm overhang into pond
 * deck finish: ≈100 mm above max water level
 * priorities: minimal build-up, tidy liner interface, clean edge detailing
+* planted-edge system: see [plants.md](plants.md) for the final planting/basket
+  schedule, [rail.md](rail.md) for the submerged GRP carrier and its design
+  record, and [R3_guide.md](R3_guide.md) for purchasing and installation
 
 ---
 
@@ -150,6 +153,11 @@
 * verify **strap material** and corrosion class.
 * confirm **pad layout** for load distribution.
 * log **perimeter pad uplift ballast** decision (300×300×100 pad self-weight vs 0.21 kN uplift; thicken/add ballast if margin needed) per `uplift-pad-check.md`.
+* survey the planting-rail water datum and 450 mm exposure line, then finalise
+  the all-joist cord lengths and attachment access in [rail.md](rail.md).
+* weigh soaked B23/B28 prototypes, model the **13 drained-wet basket positions**
+  plus rail self-weight, and apply the resulting cord reactions at the actual
+  joist tips in the connection and uplift/pad checks.
 * optional: **small fascia** to hide liner clamp if visible.
 
 ---

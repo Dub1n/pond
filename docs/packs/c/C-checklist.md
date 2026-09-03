@@ -17,6 +17,7 @@ Use this as a step-by-step to turn the templates into an issue-ready pack. Tick 
 ## 3) Actions and load inputs
 
 - [ ] Build Gk table (Section 3A): compute decking, joist, blocking, beam allowance, membranes, fixings using chosen densities; fill Result column and sources.
+- [ ] Model the rail/support self-weight and actual fully soaked, pond-drained masses at all 13 basket positions, then apply the resulting 32 cord reactions at the actual joist tips; do not use submerged apparent weight.
 - [ ] Record imposed load (3.0 kN/m² balcony/terrace) with NA reference in Section 3.
 - [ ] List combination factors γG/γQ/ψ and serviceability limits; ensure match Appendix-A.
 - [ ] If beam self-weight kept as line load, note it in the beam worksheet.
@@ -35,6 +36,7 @@ Use this as a step-by-step to turn the templates into an issue-ready pack. Tick 
 - [ ] Top strap uplift: compute tension from cantilever peel (if considered) and check strap capacity.
 - [ ] Toe-screws: check withdrawal/shear values for uplift/anti-roll per manufacturer.
 - [ ] Flat-strap X-brace: size axial force from lateral restraint assumption; check strap and fixings.
+- [ ] Planting rail: follow [R3_guide.md](R3_guide.md), close [rail.md](rail.md) measurement hold points, check GRP spans/joints, every joist cord support and each basket seat, then record the loaded prototype/proof test.
 
 ## 6) Supports and bearing
 
