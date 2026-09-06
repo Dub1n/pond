@@ -42,7 +42,8 @@ Primary geometry sources are [design-C.md](design-C.md),
 [design-c-placements.md](../../designs/design-c-placements.md) and
 [option-c.yaml](../../../diagrams/specs/option-c.yaml). This document also
 records the decisions developed in the
-[design discussion](https://chatgpt.com/share/6a983593-962c-83ed-b6dc-8478b204f2a2).
+[design discussion](https://chatgpt.com/share/6a983593-962c-83ed-b6dc-8478b204f2a2), with renders in
+[r3](../../../diagrams/output/r3-spine/r3/)
 
 ### Requirements and constraints
 

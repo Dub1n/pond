@@ -8,7 +8,8 @@ one above and one below the spine**. This is the working plate-seat concept
 for iteration. Start with one basket and accept the local detail by a simple
 loaded trial before repeating it.
 
-[r5-plates.yaml](../../../diagrams/specs/rail/r5-plates.yaml) shows the complete
+[r5-plates.yaml](../../../diagrams/specs/rail/r5-plates.yaml) and
+[r5](../../../diagrams/output/r5-plates/r5/) shows the complete
 ring, representative joist attachments and one B28 plate seat. The dimensions
 below are a coherent starting example. Basket bases, plate grade and connection
 fit still need measuring; the model is not a certified fabrication drawing.
@@ -48,6 +49,7 @@ capacity established by the R3 tube-bending calculation.
 Measure the basket's loaded base and its widening sides near the base. Size
 both plates to cover that base and leave the fasteners outside it. For a square
 basket, start with a plate side of the larger of the rim width or **base width
+
 + 80 mm**, rounded up to 10 mm. Keep the upper nuts and washers clear of the
 tapered basket; enlarge the plate/bolt margin if the real basket needs it.
 

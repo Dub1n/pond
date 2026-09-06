@@ -130,3 +130,5 @@ If one is proposed, test that complete detail on dry ground, including full
 drained load, an eccentric basket, handling uplift and one lost support. Only
 then resolve the corners, full planting layout and reactions against the load
 envelope in [design-C.md](design-C.md).
+
+Renders are in [r4](../../../diagrams/output/r3-double-rail/r4/)
