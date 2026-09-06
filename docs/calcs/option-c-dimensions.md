@@ -43,10 +43,16 @@ These along-beam centres are deliberately independent of the overhang dimension 
 
 ## Section datums
 
-- The deck underside is at the top of the 150 mm beams.
+- Water surface and pad tops are **Z = 0**, coplanar with the bottom faces of
+  the inner and outer beams. `water_surface_z` follows `pad_top_z`.
+- The deck underside is at the top of the 150 mm beams, Z = +150 mm;
+  the nominal 28 mm deck top is Z = +178 mm.
 - Straight walkway joists are 75 mm deep in the current design; their tops align with the beam and decking underside.
-- Pads in `option-c.yaml` are 600 × 600 × 50 mm.
-- Pond water and surrounding soil are modelled to 900 mm depth.
+- Straight joist undersides are Z = +75 mm.
+- Pads in `option-c.yaml` are 600 × 600 × 50 mm, from Z = −50 to 0 mm.
+- Pond water and surrounding soil are modelled to 900 mm depth, from Z = −900
+  to 0 mm. The rail studies share this coordinate system and use water Z = 0
+  as their minimum-water design reference, subject to the operating-level survey.
 
 ## Calculation status
 

@@ -8,11 +8,19 @@ decking boards have not been installed.** The open framing is deliberate and
 must be kept accessible while the submerged planting rail is surveyed,
 prototyped and attached.
 
-The next work is the rail and planting system described in [rail.md](rail.md),
+The next work is the rail and planting system described in [R3-rail.md](R3-rail.md),
 reviewed in [R3-review.md](R3-review.md), and populated to
 [plants.md](plants.md). The old deck calculation pack, method statement,
 inspection plan and construction checklists are historical records in
 `docs/packs/archive/`; they are not active instructions for the remaining work.
+
+Compare the original [R3 Spine](R3-rail.md), the
+[R4 Double Rail](R4-double-rail.md) suspension study and the
+[R5 Plates](R5-plates.md) basket seat. The three editable YAML models and their
+build/integration instructions are in
+[the rail diagram guide](../../../diagrams/specs/rail/README.md).
+R4's independent same-bank cord suspension remains unresolved; R5 retains
+R3's connected ring while changing the local basket support.
 
 The remaining sequence is:
 
@@ -33,19 +41,25 @@ The following is the retained interface for the work still to come. It records
 the framing that the rail will load; it is not a checklist for rebuilding or
 rechecking completed work.
 
-| Item | As-built or intended condition |
-| --- | --- |
-| Overall deck / pond | 5,000 × 5,000 mm deck around a centred 3,000 × 3,000 mm pond |
-| Finished opening | 2,300 × 2,300 mm after the 350 mm inward deck overhang |
-| Straight joists | Eight per side, 47 × 75 mm C24 UC4 softwood |
-| Joist geometry | 953 mm between beam faces, plus 350 mm projection; 1,303 mm total length |
-| Joist centres | 1,273.5, 1,660.2, 2,080.1, 2,391.5, 2,608.5, 2,919.9, 3,339.8 and 3,726.5 mm from each beam end |
-| Maximum joist pitch | Approximately 420 mm; the centre pair has 170 mm clear between inside faces |
-| Beams | 47 × 150 mm C24 UC4; inner and outer beam tops flush with joist tops |
-| Inner connection | Rebated top-flange saddle hanger, top strap, opposed toe-screws and tight blocking |
-| Outer connection | Face-mount hanger, tight blocking and outer flat-strap bracing |
-| Supports | 600 × 600 × 50 mm precast slabs on compacted gravel and geotextile, isolated from timber with DPC; intermediate perimeter supports align with joists 2 and 7 |
-| Decking still to fit | 28 × 145 mm boards, 5–6 mm gaps, 20–30 mm outside overhang and 1–2% fall away from the pond |
+| Item                  | As-built or intended condition                                                                                                 |
+| --------------------- | ------------------------------------------------------------------------------------------------------------------------------ |
+| Overall deck / pond   | 5,000 × 5,000 mm deck around a centred 3,000 × 3,000 mm pond                                                                   |
+| Finished opening      | 2,300 × 2,300 mm after the 350 mm inward deck overhang                                                                         |
+| Straight joists       | Eight per side, 47 × 75 mm C24 UC4 softwood                                                                                    |
+| Joist geometry        | 953 mm between beam faces, plus 350 mm projection; 1,303 mm total length                                                       |
+| Joist centres         | 1,273.5, 1,660.2, 2,080.1, 2,391.5, 2,608.5, 2,919.9, 3,339.8 and 3,726.5 mm from each beam end                                |
+| Maximum joist pitch   | Approximately 420 mm; the centre pair has 170 mm clear between inside faces                                                    |
+| Beams                 | 47 × 150 mm C24 UC4; inner and outer beam tops flush with joist tops                                                           |
+| Inner connection      | Rebated top-flange saddle hanger, top strap, opposed toe-screws and tight blocking                                             |
+| Outer connection      | Face-mount hanger, tight blocking and outer flat-strap bracing                                                                 |
+| Supports              | 600 × 600 × 50 mm slabs on compacted gravel and geotextile, DPC before timber; intermediate supports align with joists 2 and 7 |
+| Decking still to fit  | 28 × 145 mm boards, 5–6 mm gaps, 20–30 mm outside overhang and 1–2% fall away from the pond                                    |
+| Shared vertical datum | Water surface and pad tops at Z = 0; beam and joist tops +150 mm, joist undersides +75 mm, nominal deck top +178 mm            |
+
+The water volume remains 900 mm deep, so the modelled pond bottom is Z =
+−900 mm. Rail studies use Z = 0 as the minimum-water design reference; verify
+operational water variation during the survey. This datum is shared with
+`option-c.yaml` and all three rail models.
 
 The rail may use all 32 straight joists, but its 450 mm planting line is
 independent of the joist positions. Record the actual attachment point on each
@@ -75,13 +89,13 @@ use the lowest spare capacity of the joist, inner and outer connections, beam,
 bracing where relevant, and supporting slab/ground after allowing for the deck
 dead load and imposed deck load.
 
-| Limit to record after the current-geometry check | Approved characteristic load |
-| --- | ---: |
-| Maximum permanent downward load at any one rail support | **TBC kN** |
-| Maximum permanent horizontal load at any one rail support, in either plan direction | **TBC kN** |
-| Maximum combined permanent downward load on any two adjacent supports | **TBC kN** |
-| Maximum total permanent downward rail-and-plant load on one pond side | **TBC kN** |
-| Maximum temporary upward/handling load at one support | **TBC kN** |
+| Limit to record after the current-geometry check                                    | Approved characteristic load |
+| ----------------------------------------------------------------------------------- | ---------------------------: |
+| Maximum permanent downward load at any one rail support                             |                   **TBC kN** |
+| Maximum permanent horizontal load at any one rail support, in either plan direction |                   **TBC kN** |
+| Maximum combined permanent downward load on any two adjacent supports               |                   **TBC kN** |
+| Maximum total permanent downward rail-and-plant load on one pond side               |                   **TBC kN** |
+| Maximum temporary upward/handling load at one support                               |                   **TBC kN** |
 
 These values are deliberately still TBC. The archived calculations used seven
 joists and a 250 mm projection, while the installed frame has eight joists and
@@ -92,18 +106,18 @@ a safe residual capacity.
 Retain this compact calculation basis when the envelope is set. These are
 inputs, not proof that the installed load path passes:
 
-| Design input | Retained value |
-| --- | ---: |
-| C24 characteristic bending strength, `fm,k` | 24 N/mm² |
-| C24 characteristic shear strength, `fv,k` | 2.5 N/mm² |
-| C24 mean modulus parallel to grain, `E0,mean` | 11,000 N/mm² |
-| 47 × 75 mm joist second moment of area, strong axis | 1.652 × 10⁶ mm⁴ |
-| 47 × 75 mm joist section modulus, strong axis | 44,063 mm³ |
-| Timber service class | 3 |
-| Permanent-action `kmod` / `kdef` / timber `γM` | 0.50 / 2.00 / 1.30 |
-| Permanent / leading variable action factors, `γG` / `γQ` | 1.35 / 1.50 |
-| Characteristic deck imposed load, `Qk` | 3.0 kN/m² |
-| Adopted walking-surface deflection limit | L/250 |
+| Design input                                             |     Retained value |
+| -------------------------------------------------------- | -----------------: |
+| C24 characteristic bending strength, `fm,k`              |           24 N/mm² |
+| C24 characteristic shear strength, `fv,k`                |          2.5 N/mm² |
+| C24 mean modulus parallel to grain, `E0,mean`            |       11,000 N/mm² |
+| 47 × 75 mm joist second moment of area, strong axis      |    1.652 × 10⁶ mm⁴ |
+| 47 × 75 mm joist section modulus, strong axis            |         44,063 mm³ |
+| Timber service class                                     |                  3 |
+| Permanent-action `kmod` / `kdef` / timber `γM`           | 0.50 / 2.00 / 1.30 |
+| Permanent / leading variable action factors, `γG` / `γQ` |        1.35 / 1.50 |
+| Characteristic deck imposed load, `Qk`                   |          3.0 kN/m² |
+| Adopted walking-surface deflection limit                 |              L/250 |
 
 Rebuild the deck dead load from the actual 47 × 75 framing, selected boards
 and installed details. Do not reuse the archived 0.457 kN/m² total unchanged:
@@ -143,7 +157,7 @@ envelope for the final decision.
 ## Rail survey, prototype and installation gates
 
 R3 remains selected for survey and prototype, rather than for batch
-fabrication. Keep the detailed design record in [rail.md](rail.md) and use the
+fabrication. Keep the detailed design record in [R3-rail.md](R3-rail.md) and use the
 independent findings in [R3-review.md](R3-review.md) to close these gates:
 
 1. Buy and measure one B23 and one B28 basket: top, load-bearing base,
@@ -173,9 +187,10 @@ independent findings in [R3-review.md](R3-review.md) to close these gates:
 9. Standardise positive rounded crossbar locators if bindings permit movement.
    Confirm every hollow member has deliberate resin-sealed vent and drain
    openings and cannot retain a persistent air pocket.
-10. Choose the single-spine ring or four independent twin-rail side modules
-    from the prototype results, then close the load envelope before batch
-    cutting.
+10. Compare the R3 crossbars with the R5 plate seat on the connected ring.
+    Pursue independent R4 modules only if their missing horizontal and roll
+    restraint has a practical solution. Choose the complete system from the
+    prototype results, then close the load envelope before batch cutting.
 
 Fabricate and test over dry ground. Collect GRP dust at source and keep it away
 from the pond. Round and resin-seal every cut or drilled fibre, use A4/316 or

@@ -1,4 +1,4 @@
-# Pack C submerged planting rail
+# R3 — Spine: Pack C submerged planting rail
 
 ## Decision status
 
@@ -15,6 +15,12 @@ risers. The crowfoot needs a separate downstand detail.
 The active work sequence, deck-load interface and pre-decking access gates are
 in [design-C.md](design-C.md). This document explains why R3 was chosen and
 records its engineering basis.
+
+The comparison designs are [R4 — Double Rail](R4-double-rail.md) and
+[R5 — Plates](R5-plates.md). R3 remains the original prototype baseline;
+these alternatives do not retrospectively change its design history.
+The editable model is [r3-spine.yaml](../../../diagrams/specs/rail/r3-spine.yaml).
+It shows the ring, two representative joist supports and one shallow B28 seat.
 
 ## Part 1 — Context and design record
 
@@ -217,6 +223,13 @@ deck by only about 15 mm for B23 and 35–40 mm for B28, preserving useful
 central water area without burying the crown in shade.
 
 ### Vertical arrangement
+
+The shared Option C drawing datum is **water surface Z = 0**, coplanar with
+pad tops and the bottom faces of both inner and outer beams. Beam/joist tops
+are Z = +150 mm and straight joist undersides Z = +75 mm. The rail models use
+this water surface as their minimum-water design datum; survey operational
+variation before fixing cord lengths. Nominal R3 basket bearing is Z = −200 mm
+and spine top Z = −225 mm.
 
 Use actual basket measurements in this relationship:
 

@@ -13,7 +13,7 @@ My provisional preference was modular twin-rail side carriers. They distribute l
 
 The controlling unknowns were the surveyed geometry, real basket bases and reinforced zones, completed soaked masses, planting-pot/crown geometry, rail bending and torsion, hanger reactions, failure of one support, creep and chafe, and a full-scale removal test beneath a mock deck edge.
 
-## 2. What `rail.md` proposes
+## 2. What `R3-rail.md` proposes
 
 R3 is a 2,100 × 2,100 mm square ring of 38 mm structural GRP box section. Its centreline is 450 mm from each pond wall—nominally 100 mm beyond the deck edge—and it hangs from 32 adjustable polyester-cord supports, one at every straight joist.
 

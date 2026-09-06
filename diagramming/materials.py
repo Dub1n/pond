@@ -21,6 +21,34 @@ class MaterialStyle:
 
 
 _MATERIALS: Dict[str, MaterialStyle] = {
+    "grp": MaterialStyle(
+        key="grp",
+        css_class="material-grp",
+        svg_fill="#adb5bb",
+        svg_stroke="#37434d",
+        gltf_color=(0.678, 0.710, 0.733, 1.0),
+    ),
+    "polyester": MaterialStyle(
+        key="polyester",
+        css_class="material-polyester",
+        svg_fill="#48515b",
+        svg_stroke="#202830",
+        gltf_color=(0.282, 0.318, 0.357, 1.0),
+    ),
+    "a4-stainless": MaterialStyle(
+        key="a4-stainless",
+        css_class="material-a4-stainless",
+        svg_fill="#e0e7ed",
+        svg_stroke="#526473",
+        gltf_color=(0.878, 0.906, 0.929, 1.0),
+    ),
+    "basket-polymer": MaterialStyle(
+        key="basket-polymer",
+        css_class="material-basket-polymer",
+        svg_fill="#a1b5a5",
+        svg_stroke="#344b3c",
+        gltf_color=(0.631, 0.710, 0.647, 1.0),
+    ),
     "decking": MaterialStyle(
         key="decking",
         css_class="material-decking",

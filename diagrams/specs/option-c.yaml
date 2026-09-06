@@ -34,6 +34,8 @@ dimensions:
   finishes:
     deck_thickness: 28
   site:
+    # Water surface is coplanar with pad tops and beam undersides (Z = 0).
+    water_surface_z: pad_top_z
     water_depth: 900
     pad_size: 600
     pad_height: 50
@@ -54,8 +56,8 @@ components:
     label_id: "W"
     relate:
       +x+y-x-y: { ref: pond_frame }
-      +z:   { ref: origin, offset: -pad_height }
-      -z:   { ref: origin, offset: -pad_height - water_depth }
+      +z:   water_surface_z
+      -z:   water_surface_z - water_depth
     ifc: { predefined_type: ELEMENT }
 
   - id: pond_opening

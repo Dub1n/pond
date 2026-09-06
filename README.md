@@ -42,6 +42,9 @@ python scripts/build_diagrams.py --spec diagrams/specs/option-c.yaml --option C 
 ## What you can build
 
 - Relationship-first Option C sketch (see `diagrams/specs/option-c.yaml`) with responsive SVG output, legends, and synchronized plan/section slices derived from the canonical 3D scene.
+- [R3 Spine, R4 Double Rail and R5 Plates](diagrams/specs/rail/README.md):
+  editable rail studies with one basket each, sharing Option C's coordinates
+  and water/pad-top datum. Pass these nested specs explicitly to build/lint.
 - 3D deliverables for downstream tools: glTF/GLB with component metadata, IFC 4.3 Reference View (mm/deg units, Model/Axis/Body contexts, mapped items/types, class-aligned property sets from metadata, material usages, and cloned RelVoids), optional STEP/OBJ, and orthographic snapshots for quick QA.
 
 ## Usage tips and gotchas

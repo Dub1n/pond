@@ -1,0 +1,825 @@
+# R5 Plates — editable comparison model, millimetres.
+# Read docs/packs/c/R5-plates.md and README.md in this directory.
+# Same origin/orientation as option-c.yaml: pond centre X/Y=0, water/pad tops Z=0.
+# CONTEXT components are removable when combining with Option C; reuse its datums/joists.
+# One B28 station only. Basket base is assumed; no final planting layout is implied.
+# Hollow GRP, cord wraps and hardware are envelope solids, not manufacturing bores.
+# Use --collision-mode ignore for declared envelope overlaps; audit with warn first.
+# Sloping cord lengths below are explicit because expressions have no sqrt().
+# If changing water/rail/joist dimensions, recompute these lengths from the shown vectors.
+# Ring corners and contact overlaps are documented in README.md; no hidden structural credit.
+schema: pond-relationship-rail-study
+info:
+  option: R5
+  title: "R5 — Plates"
+  description: "Single-spine ring with one editable basket seat; see the Pack C design document."
+
+dimensions:
+  interface:
+    pad_top_z: 0
+    water_surface_z: pad_top_z
+    deck_span: 5000
+    pond_span: 3000
+    cantilever: 350
+    beam_height: 150
+    joist_depth: 75
+    joist_width: 47
+    beam_width: 47
+    backspan: 1000
+    deck_thickness: 28
+    opening_width: pond_span - 2 * cantilever
+  rail:
+    r5_line: pond_span / 2 - 450
+    r5_rail_size: 38
+    r5_bearing_depth: 200
+    r5_seat_depth: r5_plate_thickness
+    r5_rail_top: water_surface_z - r5_bearing_depth - r5_seat_depth
+    r5_basket_x: -260
+    r5_basket_rim: 280
+    r5_basket_base: 200
+    r5_basket_height: 190
+    r5_bar_spacing: r5_basket_base - 40
+    r5_plate_side: 280
+    r5_plate_thickness: 6
+    r5_sleeve_length: 39
+    r5_bolt_x: r5_basket_base / 2 + 20
+    r5_bolt_y: r5_rail_size / 2 + 7
+    r5_collar_envelope: 8
+    r5_joist_1_x: -1226.5
+    r5_joist_2_x: -839.833333
+    r5_joist_3_x: -419.916667
+    r5_joist_4_x: -108.5
+    r5_joist_5_x: 108.5
+    r5_joist_6_x: 419.916667
+    r5_joist_7_x: 839.833333
+    r5_joist_8_x: 1226.5
+
+components:
+  # CONTEXT: reuse the identically named Option C reference.
+  - id: origin
+    kind: reference
+    size: [0, 0, 0]
+
+  # CONTEXT: reuse the identically named Option C reference.
+  - id: deck_frame
+    kind: reference
+    size: [deck_span, deck_span, 0]
+
+  # CONTEXT: reuse the identically named Option C reference.
+  - id: pond_frame
+    kind: reference
+    size: [pond_span, pond_span, 0]
+
+  # CONTEXT: reuse the identically named Option C reference.
+  - id: opening_frame
+    kind: reference
+    size: [opening_width, opening_width, 0]
+
+  # CONTEXT: identical south joist IDs/positions to Option C; omit on integration.
+  - id: joist_run_south
+    class: IfcBuildingElementProxy
+    size: [joist_width, backspan + cantilever - beam_width, joist_depth]
+    material: timber
+    ifc: {predefined_type: ELEMENT}
+    views: [plan, section, suspension]
+    label: 'Context: as-built south joists; upper wraps need future access'
+    label_id: J
+    place:
+      - id: joist_run_south_1
+        cx: r5_joist_1_x
+        -y: -deck_span / 2 + beam_width
+        +z: beam_height
+      - id: joist_run_south_2
+        cx: r5_joist_2_x
+        -y: -deck_span / 2 + beam_width
+        +z: beam_height
+      - id: joist_run_south_3
+        cx: r5_joist_3_x
+        -y: -deck_span / 2 + beam_width
+        +z: beam_height
+      - id: joist_run_south_4
+        cx: r5_joist_4_x
+        -y: -deck_span / 2 + beam_width
+        +z: beam_height
+      - id: joist_run_south_5
+        cx: r5_joist_5_x
+        -y: -deck_span / 2 + beam_width
+        +z: beam_height
+      - id: joist_run_south_6
+        cx: r5_joist_6_x
+        -y: -deck_span / 2 + beam_width
+        +z: beam_height
+      - id: joist_run_south_7
+        cx: r5_joist_7_x
+        -y: -deck_span / 2 + beam_width
+        +z: beam_height
+      - id: joist_run_south_8
+        cx: r5_joist_8_x
+        -y: -deck_span / 2 + beam_width
+        +z: beam_height
+
+  # CONTEXT display line only; delete on integration.
+  - id: r5_water_line
+    class: IfcBuildingElementProxy
+    size: [600, 500, 1]
+    material: water
+    ifc: {predefined_type: ELEMENT}
+    views: [section, suspension]
+    label: Water datum Z=0 = pad tops / beam undersides (line only)
+    label_id: W
+    relate:
+      cx: r5_basket_x
+      cy: -r5_line
+      cz: water_surface_z
+
+  # CONTEXT display strip only; delete on integration.
+  - id: r5_deck_edge
+    class: IfcBuildingElementProxy
+    size: [600, 1, deck_thickness]
+    material: decking
+    ifc: {predefined_type: ELEMENT}
+    views: [plan, section, suspension]
+    label: Finished deck edge; 350 mm overhang (line only)
+    label_id: D
+    relate:
+      cx: r5_basket_x
+      cy: {pos: -y, ref: opening_frame}
+      -z: beam_height
+
+  # Square-ended envelope stands for the mitred south member. See R3 corner detail.
+  - id: r5_rail_south
+    class: IfcBuildingElementProxy
+    size: [2 * r5_line + r5_rail_size, r5_rail_size, r5_rail_size]
+    material: grp
+    ifc: {predefined_type: ELEMENT}
+    views: [plan, section, connection, suspension]
+    label: 38 x 38 x 5 GRP spine; solid envelope, mitres/vents noted
+    label_id: R
+    relate:
+      cx: {pos: cx, ref: pond_frame}
+      cy: {offset: 450, pos: -y, ref: pond_frame}
+      +z: r5_rail_top
+
+  # EDIT THIS STATION to move the entire basket and local support together.
+  # South side: X along rail, +Y pondward. CZ is basket bearing surface.
+  - id: r5_station
+    kind: reference
+    size: [0, 0, 0]
+    relate:
+      cx: r5_basket_x
+      cy: {offset: 450, pos: -y, ref: pond_frame}
+      cz: water_surface_z - r5_bearing_depth
+
+  - id: r5_upper_3
+    kind: reference
+    size: [0, 0, 0]
+    relate:
+      cx: {pos: cx, ref: joist_run_south_3}
+      cy: {offset: -50, pos: +y, ref: joist_run_south_3}
+      cz: {offset: -3, pos: -z, ref: joist_run_south_3}
+
+  - id: r5_joist_wrap_cross_3
+    class: IfcBuildingElementProxy
+    size: [53, 6, 6]
+    material: polyester
+    ifc: {predefined_type: ELEMENT}
+    views: [plan, section, suspension]
+    label: '6 mm polyester support: two turns, chafe sleeves, backed knot; keeper omitted'
+    label_id: C
+    place:
+      - id: r5_joist_wrap_bottom_3
+        cx: {offset: 0, pos: cx, ref: r5_upper_3}
+        cy: {offset: 0, pos: cy, ref: r5_upper_3}
+        cz: {offset: 0, pos: cz, ref: r5_upper_3}
+      - id: r5_joist_wrap_top_3
+        cx: {offset: 0, pos: cx, ref: r5_upper_3}
+        cy: {offset: 0, pos: cy, ref: r5_upper_3}
+        cz: {offset: 81, pos: cz, ref: r5_upper_3}
+
+  - id: r5_joist_wrap_sides_3
+    class: IfcBuildingElementProxy
+    size: [6, 6, 75]
+    material: polyester
+    ifc: {predefined_type: ELEMENT}
+    views: [plan, section, suspension]
+    place:
+      - id: r5_joist_wrap_left_3
+        cx: {offset: -26.5, pos: cx, ref: r5_upper_3}
+        cy: {offset: 0, pos: cy, ref: r5_upper_3}
+        cz: {offset: 40.5, pos: cz, ref: r5_upper_3}
+      - id: r5_joist_wrap_right_3
+        cx: {offset: 26.5, pos: cx, ref: r5_upper_3}
+        cy: {offset: 0, pos: cy, ref: r5_upper_3}
+        cz: {offset: 40.5, pos: cz, ref: r5_upper_3}
+
+  # Cord centreline vector (0, 128, rail_top - 91); length is its Euclidean norm.
+  # End stations land at rail ends; other stations align with actual joist X.
+  - id: r5_drop_3_1
+    class: IfcBuildingElementProxy
+    size: [323.408411, 6, 6]
+    material: polyester
+    ifc: {predefined_type: ELEMENT}
+    views: [plan, section, suspension]
+    relate:
+      cx: {offset: 0.0, pos: cx, ref: r5_upper_3}
+      cy: {offset: 64.0, pos: cy, ref: r5_upper_3}
+      cz: {offset: (r5_rail_top - 19 - (beam_height - joist_depth - 3)) / 2, pos: cz, ref: r5_upper_3}
+      orient: {axis: +x, vector: [0.0, 128, r5_rail_top - 19 - (beam_height - joist_depth - 3)]}
+
+  - id: r5_lower_3_1
+    kind: reference
+    size: [0, 0, 0]
+    relate:
+      cx: -419.916667
+      cy: {pos: cy, ref: r5_rail_south}
+      cz: {pos: cz, ref: r5_rail_south}
+
+  - id: r5_lower_wrap_cross_3_1
+    class: IfcBuildingElementProxy
+    size: [6, 44, 6]
+    material: polyester
+    ifc: {predefined_type: ELEMENT}
+    views: [plan, section, suspension]
+    place:
+      - id: r5_lower_wrap_top_3_1
+        cx: {offset: 0, pos: cx, ref: r5_lower_3_1}
+        cy: {offset: 0, pos: cy, ref: r5_lower_3_1}
+        cz: {offset: 22, pos: cz, ref: r5_lower_3_1}
+      - id: r5_lower_wrap_bottom_3_1
+        cx: {offset: 0, pos: cx, ref: r5_lower_3_1}
+        cy: {offset: 0, pos: cy, ref: r5_lower_3_1}
+        cz: {offset: -22, pos: cz, ref: r5_lower_3_1}
+
+  # One envelope turn shown; use two actual turns and collars either side, per R3.
+  - id: r5_lower_wrap_sides_3_1
+    class: IfcBuildingElementProxy
+    size: [6, 6, 38]
+    material: polyester
+    ifc: {predefined_type: ELEMENT}
+    views: [plan, section, suspension]
+    place:
+      - id: r5_lower_wrap_bank_3_1
+        cx: {offset: 0, pos: cx, ref: r5_lower_3_1}
+        cy: {offset: -22, pos: cy, ref: r5_lower_3_1}
+        cz: {offset: 0, pos: cz, ref: r5_lower_3_1}
+      - id: r5_lower_wrap_pond_3_1
+        cx: {offset: 0, pos: cx, ref: r5_lower_3_1}
+        cy: {offset: 22, pos: cy, ref: r5_lower_3_1}
+        cz: {offset: 0, pos: cz, ref: r5_lower_3_1}
+
+  - id: r5_upper_4
+    kind: reference
+    size: [0, 0, 0]
+    relate:
+      cx: {pos: cx, ref: joist_run_south_4}
+      cy: {offset: -50, pos: +y, ref: joist_run_south_4}
+      cz: {offset: -3, pos: -z, ref: joist_run_south_4}
+
+  - id: r5_joist_wrap_cross_4
+    class: IfcBuildingElementProxy
+    size: [53, 6, 6]
+    material: polyester
+    ifc: {predefined_type: ELEMENT}
+    views: [plan, section, suspension]
+    label: '6 mm polyester support: two turns, chafe sleeves, backed knot; keeper omitted'
+    label_id: C
+    place:
+      - id: r5_joist_wrap_bottom_4
+        cx: {offset: 0, pos: cx, ref: r5_upper_4}
+        cy: {offset: 0, pos: cy, ref: r5_upper_4}
+        cz: {offset: 0, pos: cz, ref: r5_upper_4}
+      - id: r5_joist_wrap_top_4
+        cx: {offset: 0, pos: cx, ref: r5_upper_4}
+        cy: {offset: 0, pos: cy, ref: r5_upper_4}
+        cz: {offset: 81, pos: cz, ref: r5_upper_4}
+
+  - id: r5_joist_wrap_sides_4
+    class: IfcBuildingElementProxy
+    size: [6, 6, 75]
+    material: polyester
+    ifc: {predefined_type: ELEMENT}
+    views: [plan, section, suspension]
+    place:
+      - id: r5_joist_wrap_left_4
+        cx: {offset: -26.5, pos: cx, ref: r5_upper_4}
+        cy: {offset: 0, pos: cy, ref: r5_upper_4}
+        cz: {offset: 40.5, pos: cz, ref: r5_upper_4}
+      - id: r5_joist_wrap_right_4
+        cx: {offset: 26.5, pos: cx, ref: r5_upper_4}
+        cy: {offset: 0, pos: cy, ref: r5_upper_4}
+        cz: {offset: 40.5, pos: cz, ref: r5_upper_4}
+
+  # Cord centreline vector (0, 128, rail_top - 91); length is its Euclidean norm.
+  # End stations land at rail ends; other stations align with actual joist X.
+  - id: r5_drop_4_1
+    class: IfcBuildingElementProxy
+    size: [323.408411, 6, 6]
+    material: polyester
+    ifc: {predefined_type: ELEMENT}
+    views: [plan, section, suspension]
+    relate:
+      cx: {offset: 0.0, pos: cx, ref: r5_upper_4}
+      cy: {offset: 64.0, pos: cy, ref: r5_upper_4}
+      cz: {offset: (r5_rail_top - 19 - (beam_height - joist_depth - 3)) / 2, pos: cz, ref: r5_upper_4}
+      orient: {axis: +x, vector: [0.0, 128, r5_rail_top - 19 - (beam_height - joist_depth - 3)]}
+
+  - id: r5_lower_4_1
+    kind: reference
+    size: [0, 0, 0]
+    relate:
+      cx: -108.5
+      cy: {pos: cy, ref: r5_rail_south}
+      cz: {pos: cz, ref: r5_rail_south}
+
+  - id: r5_lower_wrap_cross_4_1
+    class: IfcBuildingElementProxy
+    size: [6, 44, 6]
+    material: polyester
+    ifc: {predefined_type: ELEMENT}
+    views: [plan, section, suspension]
+    place:
+      - id: r5_lower_wrap_top_4_1
+        cx: {offset: 0, pos: cx, ref: r5_lower_4_1}
+        cy: {offset: 0, pos: cy, ref: r5_lower_4_1}
+        cz: {offset: 22, pos: cz, ref: r5_lower_4_1}
+      - id: r5_lower_wrap_bottom_4_1
+        cx: {offset: 0, pos: cx, ref: r5_lower_4_1}
+        cy: {offset: 0, pos: cy, ref: r5_lower_4_1}
+        cz: {offset: -22, pos: cz, ref: r5_lower_4_1}
+
+  # One envelope turn shown; use two actual turns and collars either side, per R3.
+  - id: r5_lower_wrap_sides_4_1
+    class: IfcBuildingElementProxy
+    size: [6, 6, 38]
+    material: polyester
+    ifc: {predefined_type: ELEMENT}
+    views: [plan, section, suspension]
+    place:
+      - id: r5_lower_wrap_bank_4_1
+        cx: {offset: 0, pos: cx, ref: r5_lower_4_1}
+        cy: {offset: -22, pos: cy, ref: r5_lower_4_1}
+        cz: {offset: 0, pos: cz, ref: r5_lower_4_1}
+      - id: r5_lower_wrap_pond_4_1
+        cx: {offset: 0, pos: cx, ref: r5_lower_4_1}
+        cy: {offset: 22, pos: cy, ref: r5_lower_4_1}
+        cz: {offset: 0, pos: cz, ref: r5_lower_4_1}
+
+  - id: r5_plate_upper
+    class: IfcBuildingElementProxy
+    size: [r5_plate_side, r5_plate_side, r5_plate_thickness]
+    material: grp
+    ifc: {predefined_type: ELEMENT}
+    views: [plan, seat-plan, section, connection, suspension]
+    label: 'Upper GRP square: basket bearing; drain/tie holes omitted'
+    label_id: U
+    relate:
+      cx: {pos: cx, ref: r5_station}
+      cy: {pos: cy, ref: r5_station}
+      +z: {pos: cz, ref: r5_station}
+
+  - id: r5_plate_lower
+    class: IfcBuildingElementProxy
+    size: [r5_plate_side, r5_plate_side, r5_plate_thickness]
+    material: grp
+    ifc: {predefined_type: ELEMENT}
+    views: [plan, seat-plan, section, connection, suspension]
+    label: Lower GRP square captures uplift; 1 mm beneath rail
+    label_id: P
+    relate:
+      cx: {pos: cx, ref: r5_plate_upper}
+      cy: {pos: cy, ref: r5_plate_upper}
+      +z: {offset: -r5_sleeve_length, pos: -z, ref: r5_plate_upper}
+
+  # 12 mm envelope, 39 mm high; 1 mm rail-side gap. Bolts run inside sleeves.
+  - id: r5_sleeves
+    class: IfcBuildingElementProxy
+    size: [12, 12, r5_sleeve_length]
+    material: a4-stainless
+    ifc: {predefined_type: ELEMENT}
+    views: [plan, seat-plan, section, connection, suspension]
+    label: Smooth rigid sleeves beside spine; M6 bores omitted
+    label_id: V
+    place:
+      - id: r5_sleeve_1
+        cx: {offset: -1 * r5_bolt_x, pos: cx, ref: r5_station}
+        cy: {offset: -1 * r5_bolt_y, pos: cy, ref: r5_station}
+        cz: {offset: -r5_plate_thickness - r5_sleeve_length / 2, pos: cz, ref: r5_station}
+      - id: r5_sleeve_2
+        cx: {offset: -1 * r5_bolt_x, pos: cx, ref: r5_station}
+        cy: {offset: 1 * r5_bolt_y, pos: cy, ref: r5_station}
+        cz: {offset: -r5_plate_thickness - r5_sleeve_length / 2, pos: cz, ref: r5_station}
+      - id: r5_sleeve_3
+        cx: {offset: 1 * r5_bolt_x, pos: cx, ref: r5_station}
+        cy: {offset: -1 * r5_bolt_y, pos: cy, ref: r5_station}
+        cz: {offset: -r5_plate_thickness - r5_sleeve_length / 2, pos: cz, ref: r5_station}
+      - id: r5_sleeve_4
+        cx: {offset: 1 * r5_bolt_x, pos: cx, ref: r5_station}
+        cy: {offset: 1 * r5_bolt_y, pos: cy, ref: r5_station}
+        cz: {offset: -r5_plate_thickness - r5_sleeve_length / 2, pos: cz, ref: r5_station}
+
+  # Square prism envelopes; nominal stack bottom -53 to shank tip +17 from bearing.
+  - id: r5_bolts
+    class: IfcBuildingElementProxy
+    size: [6, 6, 70]
+    material: a4-stainless
+    ifc: {predefined_type: ELEMENT}
+    views: [plan, seat-plan, section, connection, suspension]
+    label: M6 x 70 A4 bolts beside rail; upward threads capped
+    label_id: B
+    place:
+      - id: r5_bolt_1
+        cx: {offset: -1 * r5_bolt_x, pos: cx, ref: r5_station}
+        cy: {offset: -1 * r5_bolt_y, pos: cy, ref: r5_station}
+        cz: {offset: -(2 * r5_plate_thickness + r5_sleeve_length + 2) + 35, pos: cz, ref: r5_station}
+      - id: r5_bolt_2
+        cx: {offset: -1 * r5_bolt_x, pos: cx, ref: r5_station}
+        cy: {offset: 1 * r5_bolt_y, pos: cy, ref: r5_station}
+        cz: {offset: -(2 * r5_plate_thickness + r5_sleeve_length + 2) + 35, pos: cz, ref: r5_station}
+      - id: r5_bolt_3
+        cx: {offset: 1 * r5_bolt_x, pos: cx, ref: r5_station}
+        cy: {offset: -1 * r5_bolt_y, pos: cy, ref: r5_station}
+        cz: {offset: -(2 * r5_plate_thickness + r5_sleeve_length + 2) + 35, pos: cz, ref: r5_station}
+      - id: r5_bolt_4
+        cx: {offset: 1 * r5_bolt_x, pos: cx, ref: r5_station}
+        cy: {offset: 1 * r5_bolt_y, pos: cy, ref: r5_station}
+        cz: {offset: -(2 * r5_plate_thickness + r5_sleeve_length + 2) + 35, pos: cz, ref: r5_station}
+
+  - id: r5_washer_upper
+    class: IfcBuildingElementProxy
+    size: [24, 24, 2]
+    material: a4-stainless
+    ifc: {predefined_type: ELEMENT}
+    views: [plan, seat-plan, section, connection, suspension]
+    label: Broad washers both plates; locking nuts and smooth caps
+    label_id: F
+    place:
+      - id: r5_washer_upper_1
+        cx: {offset: -1 * r5_bolt_x, pos: cx, ref: r5_station}
+        cy: {offset: -1 * r5_bolt_y, pos: cy, ref: r5_station}
+        cz: {offset: 1, pos: cz, ref: r5_station}
+      - id: r5_washer_upper_2
+        cx: {offset: -1 * r5_bolt_x, pos: cx, ref: r5_station}
+        cy: {offset: 1 * r5_bolt_y, pos: cy, ref: r5_station}
+        cz: {offset: 1, pos: cz, ref: r5_station}
+      - id: r5_washer_upper_3
+        cx: {offset: 1 * r5_bolt_x, pos: cx, ref: r5_station}
+        cy: {offset: -1 * r5_bolt_y, pos: cy, ref: r5_station}
+        cz: {offset: 1, pos: cz, ref: r5_station}
+      - id: r5_washer_upper_4
+        cx: {offset: 1 * r5_bolt_x, pos: cx, ref: r5_station}
+        cy: {offset: 1 * r5_bolt_y, pos: cy, ref: r5_station}
+        cz: {offset: 1, pos: cz, ref: r5_station}
+
+  - id: r5_washer_lower
+    class: IfcBuildingElementProxy
+    size: [24, 24, 2]
+    material: a4-stainless
+    ifc: {predefined_type: ELEMENT}
+    views: [plan, seat-plan, section, connection, suspension]
+    place:
+      - id: r5_washer_lower_1
+        cx: {offset: -1 * r5_bolt_x, pos: cx, ref: r5_station}
+        cy: {offset: -1 * r5_bolt_y, pos: cy, ref: r5_station}
+        cz: {offset: -(2 * r5_plate_thickness + r5_sleeve_length) - 1, pos: cz, ref: r5_station}
+      - id: r5_washer_lower_2
+        cx: {offset: -1 * r5_bolt_x, pos: cx, ref: r5_station}
+        cy: {offset: 1 * r5_bolt_y, pos: cy, ref: r5_station}
+        cz: {offset: -(2 * r5_plate_thickness + r5_sleeve_length) - 1, pos: cz, ref: r5_station}
+      - id: r5_washer_lower_3
+        cx: {offset: 1 * r5_bolt_x, pos: cx, ref: r5_station}
+        cy: {offset: -1 * r5_bolt_y, pos: cy, ref: r5_station}
+        cz: {offset: -(2 * r5_plate_thickness + r5_sleeve_length) - 1, pos: cz, ref: r5_station}
+      - id: r5_washer_lower_4
+        cx: {offset: 1 * r5_bolt_x, pos: cx, ref: r5_station}
+        cy: {offset: 1 * r5_bolt_y, pos: cy, ref: r5_station}
+        cz: {offset: -(2 * r5_plate_thickness + r5_sleeve_length) - 1, pos: cz, ref: r5_station}
+
+  - id: r5_head
+    class: IfcBuildingElementProxy
+    size: [10, 10, 4]
+    material: a4-stainless
+    ifc: {predefined_type: ELEMENT}
+    views: [plan, seat-plan, section, connection, suspension]
+    place:
+      - id: r5_head_1
+        cx: {offset: -1 * r5_bolt_x, pos: cx, ref: r5_station}
+        cy: {offset: -1 * r5_bolt_y, pos: cy, ref: r5_station}
+        cz: {offset: -(2 * r5_plate_thickness + r5_sleeve_length) - 4, pos: cz, ref: r5_station}
+      - id: r5_head_2
+        cx: {offset: -1 * r5_bolt_x, pos: cx, ref: r5_station}
+        cy: {offset: 1 * r5_bolt_y, pos: cy, ref: r5_station}
+        cz: {offset: -(2 * r5_plate_thickness + r5_sleeve_length) - 4, pos: cz, ref: r5_station}
+      - id: r5_head_3
+        cx: {offset: 1 * r5_bolt_x, pos: cx, ref: r5_station}
+        cy: {offset: -1 * r5_bolt_y, pos: cy, ref: r5_station}
+        cz: {offset: -(2 * r5_plate_thickness + r5_sleeve_length) - 4, pos: cz, ref: r5_station}
+      - id: r5_head_4
+        cx: {offset: 1 * r5_bolt_x, pos: cx, ref: r5_station}
+        cy: {offset: 1 * r5_bolt_y, pos: cy, ref: r5_station}
+        cz: {offset: -(2 * r5_plate_thickness + r5_sleeve_length) - 4, pos: cz, ref: r5_station}
+
+  - id: r5_nut
+    class: IfcBuildingElementProxy
+    size: [10, 10, 8]
+    material: a4-stainless
+    ifc: {predefined_type: ELEMENT}
+    views: [plan, seat-plan, section, connection, suspension]
+    place:
+      - id: r5_nut_1
+        cx: {offset: -1 * r5_bolt_x, pos: cx, ref: r5_station}
+        cy: {offset: -1 * r5_bolt_y, pos: cy, ref: r5_station}
+        cz: {offset: 6, pos: cz, ref: r5_station}
+      - id: r5_nut_2
+        cx: {offset: -1 * r5_bolt_x, pos: cx, ref: r5_station}
+        cy: {offset: 1 * r5_bolt_y, pos: cy, ref: r5_station}
+        cz: {offset: 6, pos: cz, ref: r5_station}
+      - id: r5_nut_3
+        cx: {offset: 1 * r5_bolt_x, pos: cx, ref: r5_station}
+        cy: {offset: -1 * r5_bolt_y, pos: cy, ref: r5_station}
+        cz: {offset: 6, pos: cz, ref: r5_station}
+      - id: r5_nut_4
+        cx: {offset: 1 * r5_bolt_x, pos: cx, ref: r5_station}
+        cy: {offset: 1 * r5_bolt_y, pos: cy, ref: r5_station}
+        cz: {offset: 6, pos: cz, ref: r5_station}
+
+  - id: r5_cap
+    class: IfcBuildingElementProxy
+    size: [10, 10, 62 - (2 * r5_plate_thickness + r5_sleeve_length + 2)]
+    material: a4-stainless
+    ifc: {predefined_type: ELEMENT}
+    views: [plan, seat-plan, section, connection, suspension]
+    place:
+      - id: r5_cap_1
+        cx: {offset: -1 * r5_bolt_x, pos: cx, ref: r5_station}
+        cy: {offset: -1 * r5_bolt_y, pos: cy, ref: r5_station}
+        cz: {offset: 10 + (62 - (2 * r5_plate_thickness + r5_sleeve_length + 2)) / 2, pos: cz, ref: r5_station}
+      - id: r5_cap_2
+        cx: {offset: -1 * r5_bolt_x, pos: cx, ref: r5_station}
+        cy: {offset: 1 * r5_bolt_y, pos: cy, ref: r5_station}
+        cz: {offset: 10 + (62 - (2 * r5_plate_thickness + r5_sleeve_length + 2)) / 2, pos: cz, ref: r5_station}
+      - id: r5_cap_3
+        cx: {offset: 1 * r5_bolt_x, pos: cx, ref: r5_station}
+        cy: {offset: -1 * r5_bolt_y, pos: cy, ref: r5_station}
+        cz: {offset: 10 + (62 - (2 * r5_plate_thickness + r5_sleeve_length + 2)) / 2, pos: cz, ref: r5_station}
+      - id: r5_cap_4
+        cx: {offset: 1 * r5_bolt_x, pos: cx, ref: r5_station}
+        cy: {offset: 1 * r5_bolt_y, pos: cy, ref: r5_station}
+        cz: {offset: 10 + (62 - (2 * r5_plate_thickness + r5_sleeve_length + 2)) / 2, pos: cz, ref: r5_station}
+
+  - id: r5_collar_left_cross
+    class: IfcBuildingElementProxy
+    size: [r5_collar_envelope, 46, 8]
+    material: polyester
+    ifc: {predefined_type: ELEMENT}
+    views: [plan, seat-plan, section, connection, suspension]
+    label: Multi-turn cord collars abut both plate edges; test against slip
+    label_id: L
+    place:
+      - id: r5_collar_left_top
+        cx: {offset: -1 * (r5_plate_side / 2 + r5_collar_envelope / 2), pos: cx, ref: r5_station}
+        cy: {offset: 0, pos: cy, ref: r5_station}
+        cz: {offset: -r5_plate_thickness + 4, pos: cz, ref: r5_station}
+      - id: r5_collar_left_bottom
+        cx: {offset: -1 * (r5_plate_side / 2 + r5_collar_envelope / 2), pos: cx, ref: r5_station}
+        cy: {offset: 0, pos: cy, ref: r5_station}
+        cz: {offset: -r5_plate_thickness - r5_rail_size - 4, pos: cz, ref: r5_station}
+
+  - id: r5_collar_left_sides
+    class: IfcBuildingElementProxy
+    size: [r5_collar_envelope, 8, 38]
+    material: polyester
+    ifc: {predefined_type: ELEMENT}
+    views: [plan, seat-plan, section, connection, suspension]
+    place:
+      - id: r5_collar_left_bank
+        cx: {offset: -1 * (r5_plate_side / 2 + r5_collar_envelope / 2), pos: cx, ref: r5_station}
+        cy: {offset: -23, pos: cy, ref: r5_station}
+        cz: {offset: -r5_plate_thickness - r5_rail_size / 2, pos: cz, ref: r5_station}
+      - id: r5_collar_left_pond
+        cx: {offset: -1 * (r5_plate_side / 2 + r5_collar_envelope / 2), pos: cx, ref: r5_station}
+        cy: {offset: 23, pos: cy, ref: r5_station}
+        cz: {offset: -r5_plate_thickness - r5_rail_size / 2, pos: cz, ref: r5_station}
+
+  - id: r5_collar_right_cross
+    class: IfcBuildingElementProxy
+    size: [r5_collar_envelope, 46, 8]
+    material: polyester
+    ifc: {predefined_type: ELEMENT}
+    views: [plan, seat-plan, section, connection, suspension]
+    label: Multi-turn cord collars abut both plate edges; test against slip
+    label_id: L
+    place:
+      - id: r5_collar_right_top
+        cx: {offset: 1 * (r5_plate_side / 2 + r5_collar_envelope / 2), pos: cx, ref: r5_station}
+        cy: {offset: 0, pos: cy, ref: r5_station}
+        cz: {offset: -r5_plate_thickness + 4, pos: cz, ref: r5_station}
+      - id: r5_collar_right_bottom
+        cx: {offset: 1 * (r5_plate_side / 2 + r5_collar_envelope / 2), pos: cx, ref: r5_station}
+        cy: {offset: 0, pos: cy, ref: r5_station}
+        cz: {offset: -r5_plate_thickness - r5_rail_size - 4, pos: cz, ref: r5_station}
+
+  - id: r5_collar_right_sides
+    class: IfcBuildingElementProxy
+    size: [r5_collar_envelope, 8, 38]
+    material: polyester
+    ifc: {predefined_type: ELEMENT}
+    views: [plan, seat-plan, section, connection, suspension]
+    place:
+      - id: r5_collar_right_bank
+        cx: {offset: 1 * (r5_plate_side / 2 + r5_collar_envelope / 2), pos: cx, ref: r5_station}
+        cy: {offset: -23, pos: cy, ref: r5_station}
+        cz: {offset: -r5_plate_thickness - r5_rail_size / 2, pos: cz, ref: r5_station}
+      - id: r5_collar_right_pond
+        cx: {offset: 1 * (r5_plate_side / 2 + r5_collar_envelope / 2), pos: cx, ref: r5_station}
+        cy: {offset: 23, pos: cy, ref: r5_station}
+        cz: {offset: -r5_plate_thickness - r5_rail_size / 2, pos: cz, ref: r5_station}
+
+  # Open stepped basket envelope; real tapered mesh and media omitted.
+  # Base is a bearing envelope; the four 3 mm walls are diagrammatic, not a material specification.
+  - id: r5_basket_base
+    class: IfcBuildingElementProxy
+    size: [r5_basket_base, r5_basket_base, 5]
+    material: basket-polymer
+    ifc: {predefined_type: ELEMENT}
+    views: [plan, seat-plan, section, connection, suspension]
+    label: 'B28: assumed 200 mm base, 280 mm rim, 190 mm tall; mesh/taper simplified'
+    label_id: Q
+    relate:
+      cx: {pos: cx, ref: r5_station}
+      cy: {pos: cy, ref: r5_station}
+      -z: {pos: cz, ref: r5_station}
+
+  - id: r5_basket_walls_x
+    class: IfcBuildingElementProxy
+    size: [3, r5_basket_base, r5_basket_height - 13]
+    material: basket-polymer
+    ifc: {predefined_type: ELEMENT}
+    views: [plan, section]
+    place:
+      - id: r5_basket_wall_x_minus
+        cx: {offset: -1 * (r5_basket_base / 2 - 1.5), pos: cx, ref: r5_station}
+        cy: {offset: 0, pos: cy, ref: r5_station}
+        cz: {offset: (r5_basket_height - 13) / 2 + 5, pos: cz, ref: r5_station}
+      - id: r5_basket_wall_x_plus
+        cx: {offset: 1 * (r5_basket_base / 2 - 1.5), pos: cx, ref: r5_station}
+        cy: {offset: 0, pos: cy, ref: r5_station}
+        cz: {offset: (r5_basket_height - 13) / 2 + 5, pos: cz, ref: r5_station}
+
+  - id: r5_basket_rims_x
+    class: IfcBuildingElementProxy
+    size: [(r5_basket_rim - r5_basket_base) / 2 + 3, r5_basket_rim, 8]
+    material: basket-polymer
+    ifc: {predefined_type: ELEMENT}
+    views: [plan, section]
+    place:
+      - id: r5_basket_rim_x_minus
+        cx: {offset: -1 * (r5_basket_rim / 2 - ((r5_basket_rim - r5_basket_base) / 2 + 3) / 2), pos: cx, ref: r5_station}
+        cy: {offset: 0, pos: cy, ref: r5_station}
+        cz: {offset: r5_basket_height - 4, pos: cz, ref: r5_station}
+      - id: r5_basket_rim_x_plus
+        cx: {offset: 1 * (r5_basket_rim / 2 - ((r5_basket_rim - r5_basket_base) / 2 + 3) / 2), pos: cx, ref: r5_station}
+        cy: {offset: 0, pos: cy, ref: r5_station}
+        cz: {offset: r5_basket_height - 4, pos: cz, ref: r5_station}
+
+  - id: r5_basket_walls_y
+    class: IfcBuildingElementProxy
+    size: [r5_basket_base - 6, 3, r5_basket_height - 13]
+    material: basket-polymer
+    ifc: {predefined_type: ELEMENT}
+    views: [plan, section]
+    place:
+      - id: r5_basket_wall_y_minus
+        cx: {offset: 0, pos: cx, ref: r5_station}
+        cy: {offset: -1 * (r5_basket_base / 2 - 1.5), pos: cy, ref: r5_station}
+        cz: {offset: (r5_basket_height - 13) / 2 + 5, pos: cz, ref: r5_station}
+      - id: r5_basket_wall_y_plus
+        cx: {offset: 0, pos: cx, ref: r5_station}
+        cy: {offset: 1 * (r5_basket_base / 2 - 1.5), pos: cy, ref: r5_station}
+        cz: {offset: (r5_basket_height - 13) / 2 + 5, pos: cz, ref: r5_station}
+
+  - id: r5_basket_rims_y
+    class: IfcBuildingElementProxy
+    size: [r5_basket_base - 6, (r5_basket_rim - r5_basket_base) / 2 + 3, 8]
+    material: basket-polymer
+    ifc: {predefined_type: ELEMENT}
+    views: [plan, section]
+    place:
+      - id: r5_basket_rim_y_minus
+        cx: {offset: 0, pos: cx, ref: r5_station}
+        cy: {offset: -1 * (r5_basket_rim / 2 - ((r5_basket_rim - r5_basket_base) / 2 + 3) / 2), pos: cy, ref: r5_station}
+        cz: {offset: r5_basket_height - 4, pos: cz, ref: r5_station}
+      - id: r5_basket_rim_y_plus
+        cx: {offset: 0, pos: cx, ref: r5_station}
+        cy: {offset: 1 * (r5_basket_rim / 2 - ((r5_basket_rim - r5_basket_base) / 2 + 3) / 2), pos: cy, ref: r5_station}
+        cz: {offset: r5_basket_height - 4, pos: cz, ref: r5_station}
+
+  - id: r5_basket_ties
+    class: IfcBuildingElementProxy
+    size: [4, 4, 30]
+    material: polyester
+    ifc: {predefined_type: ELEMENT}
+    views: [plan, seat-plan, section, connection, suspension]
+    label: Four removable lower basket ties; loops/holes/mesh engagement schematic
+    label_id: T
+    place:
+      - id: r5_basket_tie_1
+        cx: {offset: -80, pos: cx, ref: r5_station}
+        cy: {offset: -102, pos: cy, ref: r5_station}
+        cz: {offset: 5, pos: cz, ref: r5_station}
+      - id: r5_basket_tie_2
+        cx: {offset: -80, pos: cx, ref: r5_station}
+        cy: {offset: 102, pos: cy, ref: r5_station}
+        cz: {offset: 5, pos: cz, ref: r5_station}
+      - id: r5_basket_tie_3
+        cx: {offset: 80, pos: cx, ref: r5_station}
+        cy: {offset: -102, pos: cy, ref: r5_station}
+        cz: {offset: 5, pos: cz, ref: r5_station}
+      - id: r5_basket_tie_4
+        cx: {offset: 80, pos: cx, ref: r5_station}
+        cy: {offset: 102, pos: cy, ref: r5_station}
+        cz: {offset: 5, pos: cz, ref: r5_station}
+
+  # Return rail envelopes shown in overall plan / 3D only, keeping south connection slices local.
+  - id: r5_rail_north
+    class: IfcBuildingElementProxy
+    size: [2 * r5_line + r5_rail_size, r5_rail_size, r5_rail_size]
+    material: grp
+    ifc: {predefined_type: ELEMENT}
+    views: [plan]
+    label: Ring return sides; 24 other-bank supports and bolted mitres omitted
+    label_id: N
+    relate:
+      cx: 0
+      cy: r5_line
+      +z: r5_rail_top
+
+  # Butted envelope solids give the same outside ring as four mitred members.
+  # Actual corners: paired 6 mm GRP L plates, four M6 bolts per corner; see R3-rail.md.
+  - id: r5_rail_returns
+    class: IfcBuildingElementProxy
+    size: [r5_rail_size, 2 * r5_line - r5_rail_size, r5_rail_size]
+    material: grp
+    ifc: {predefined_type: ELEMENT}
+    views: [plan]
+    place:
+      - id: r5_rail_west
+        cx: -1 * r5_line
+        cy: 0
+        +z: r5_rail_top
+      - id: r5_rail_east
+        cx: 1 * r5_line
+        cy: 0
+        +z: r5_rail_top
+
+# Sections are real slices, not elevations. Choose the left bar/bolt X to see its connection.
+views:
+  plan:
+    title: "R5 — overall; J3/J4 supports shown; 30 other ring supports noted"
+    scale_hint: 0.24
+    renders: [svg, png]
+  seat-plan:
+    title: "R5 — basket base and seat; rim, long rails and joists hidden"
+    scale_hint: 2
+    renders: [svg, png]
+  section:
+    title: "R5 — basket section; water Z=0, deck underside Z=150"
+    scale_hint: 0.9
+    plane: {axis: x, coordinate: r5_basket_x - r5_bar_spacing / 2}
+  connection:
+    title: "R5 — connection slice; sleeves/bolts are envelopes, not drilled solids"
+    scale_hint: 2
+    plane: {axis: x, coordinate: r5_basket_x - r5_bolt_x}
+  suspension:
+    title: "R5 — J4 joist-to-rail slice; cord path schematic, two turns required"
+    scale_hint: 0.65
+    plane: {axis: x, coordinate: r5_joist_4_x}
+
+# OPTIONAL: uncomment the entire operations block to copy the COMPLETE seat 520 mm along X.
+# The original remains. Check support/corner clearance before choosing real basket stations.
+# operations:
+# - type: translate
+#   targets:
+#   - r5_plate_upper
+#   - r5_plate_lower
+#   - r5_sleeves
+#   - r5_bolts
+#   - r5_washer_upper
+#   - r5_washer_lower
+#   - r5_head
+#   - r5_nut
+#   - r5_cap
+#   - r5_collar_left_cross
+#   - r5_collar_left_sides
+#   - r5_collar_right_cross
+#   - r5_collar_right_sides
+#   - r5_basket_base
+#   - r5_basket_walls_x
+#   - r5_basket_rims_x
+#   - r5_basket_walls_y
+#   - r5_basket_rims_y
+#   - r5_basket_ties
+#   vector:
+#     x: 520
+#     y: 0
+#     z: 0
+#   include_seed: true

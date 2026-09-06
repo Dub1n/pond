@@ -19,6 +19,9 @@ flowchart TD
   - `planner/` – turns solved solids into plan/section bundles and dimensions.
   - `renderers/` – SVG styling and emission.
   - `materials.py` – palette for SVG/glTF colours.
+    Rail studies add `grp`, `polyester`, `a4-stainless` and `basket-polymer`;
+    keep their SVG class rules in `renderers/styles/base.css` aligned with
+    the palette (section/detail rendering uses those CSS classes).
 - `diagrams/specs/` – author-facing YAML specs; long-lived revisions belong in `archive/diagrams/specs/`.
 - `scripts/` – CLI entry points (`build_diagrams.py`, `lint_specs.py`, `baseline_render_check.py`, `check_water_area.py`).
 - `diagramming/tests/` – unittest suite and fixtures.

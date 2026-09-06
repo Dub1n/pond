@@ -5,6 +5,30 @@
   stroke-linejoin: round;
 }
 
+.material-grp {
+  fill: #adb5bb;
+  stroke: #37434d;
+  stroke-width: 1;
+}
+
+.material-polyester {
+  fill: #48515b;
+  stroke: #202830;
+  stroke-width: 0.5;
+}
+
+.material-a4-stainless {
+  fill: #e0e7ed;
+  stroke: #526473;
+  stroke-width: 0.5;
+}
+
+.material-basket-polymer {
+  fill: #a1b5a5;
+  stroke: #344b3c;
+  stroke-width: 0.8;
+}
+
 .component-water {
   fill: #cbe7ff;
   stroke: #1f2933;

@@ -3,10 +3,15 @@
 This is the working procurement and assembly specification for the planted elements in Design C. It consolidates the final plant order in the [design discussion](https://chatgpt.com/share/6a983593-962c-83ed-b6dc-8478b204f2a2), including the later restoration of watercress and the change from soft rush to hard rush.
 
 The thirteen rail baskets bear on the submerged carrier described in
-[rail.md](rail.md). Follow the remaining-work sequence and installation gates
+[R3-rail.md](R3-rail.md). Follow the remaining-work sequence and installation gates
 in [design-C.md](design-C.md) to purchase, build and lower the empty carrier
 and baskets before following the planting assembly below.
 The lily, hornwort cage and willow-moss supports are independent of that rail.
+
+The seat instructions below describe the R3 baseline. For the alternative
+[R5 plate seat](R5-plates.md), the upper GRP square replaces the two crossbars;
+retain the same plant-depth schedule and four removable lower ties. The
+[R4 Double Rail study](R4-double-rail.md) is not an accepted suspended carrier.
 
 ## Design intent
 
@@ -22,7 +27,7 @@ Dimensions are nominal external dimensions. Confirm the purchased basket's actua
 
 | Key     | Container/support                                                      | Quantity | Use                                                   |
 | ------- | ---------------------------------------------------------------------- | -------: | ----------------------------------------------------- |
-| **B23** | Rigid, fine-mesh PP/HDPE aquatic basket, approximately 23 × 23 × 15 cm |   **10** | Shallow marginals use rail-seat risers; crowfoot needs the dedicated downstand in `design-C.md` and `rail.md` |
+| **B23** | Rigid, fine-mesh PP/HDPE aquatic basket, approximately 23 × 23 × 15 cm |   **10** | Shallow marginals use rail-seat risers; crowfoot needs the dedicated downstand in `design-C.md` and `R3-rail.md` |
 | **B28** | Rigid, fine-mesh PP/HDPE aquatic basket, 27–28 × 27–28 × 18–19 cm      |    **3** | Two hard rushes and one *Butomus*; direct rail-seat bearing |
 | **L35** | Rigid, broad floor basket, approximately 35 × 35 × 26 cm               |    **1** | Arc-en-Ciel lily; floor-standing on a removable riser |
 | **H70** | Closed heavy-HDPE-mesh cage, approximately 30 × 30 × 70 cm             |    **1** | Hornwort; floor-standing                              |
@@ -59,12 +64,12 @@ baskets, even if only one can be planted safely on delivery.
 The rigid basket is both planter and serviceable root-volume boundary. A
 separate fabric planting pocket is not required: duplicating a rigid basket
 with a structural pocket adds cost, traps debris and complicates lifting. The
-basket base bears across two transverse GRP crossbars; the plastic rim and top
-mesh carry no rail load.
+basket base bears across two transverse GRP crossbars in R3, or on the upper
+square plate in R5; the plastic rim and top mesh carry no rail load.
 
 Four removable cord ties retain each basket at its lower corners. The support
 remains serviceable because those ties can be undone or cut and replaced. See
-[rail.md](rail.md) for the bearing datum, crossbars, B23 risers and
+[R3-rail.md](R3-rail.md) for the bearing datum, crossbars, B23 risers and
 joist-support loops, and [design-C.md](design-C.md) for the empty-frame
 installation gates.
 
@@ -119,7 +124,7 @@ The links are examples retained from the design discussion, not locked brands or
    mass**. The latter governs rail/deck loading if the pond is drained. The
    rail's 100 N (approximately 10 kg) per-basket screen is only provisional.
 9. Put B28 directly on its two crossbars. Put shallow B23 baskets on the two
-   measured risers specified in [rail.md](rail.md); install the crowfoot B23 on
+   measured risers specified in [R3-rail.md](R3-rail.md); install the crowfoot B23 on
    its accepted downstand seat. Lace each basket to its seat at all four marked
    base positions, level it, and proof-test one complete example of each seat
    type over dry ground before batch assembly.

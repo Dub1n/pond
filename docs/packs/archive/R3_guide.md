@@ -7,7 +7,7 @@ submerged planting rail and its **empty** baskets. It assumes general workshop
 competence and an introductory understanding of loads, supports and tolerances;
 it does not assume experience with GRP, pond fittings or ropework.
 
-Use [rail.md](rail.md) for the design history and calculations. After the empty
+Use [R3-rail.md](../c/R3-rail.md) for the design history and calculations. After the empty
 rail and baskets have been installed and accepted, use [plants.md](plants.md)
 to add media, internal pots, fish guards and plants.
 
@@ -224,7 +224,7 @@ must carry the joint without relying on sealant.
    holes, plate lift, hole elongation, bolt loosening or permanent change from
    90 degrees.
 
-The GRP fabrication guidance cited in [rail.md](rail.md) favours through-bolts
+The GRP fabrication guidance cited in [R3-rail.md](../c/R3-rail.md) favours through-bolts
 and washers over load-bearing tapped threads, and requires newly exposed fibres
 to be resin sealed. If the test fails, stop and have the connection checked;
 do not simply add more torque or sealant.
