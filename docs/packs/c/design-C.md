@@ -1,166 +1,207 @@
-# pond deck design – rev 5
+# Pond deck design C — current state
 
-> 1 m walk + 350 mm overhang; compact, low-profile build
+## Project state
 
----
+As at 6 September 2026, the deck structure is built through the framing stage.
+The pads, beams, joists, blocking, bracing and corner framing are in place. **The
+decking boards have not been installed.** The open framing is deliberate and
+must be kept accessible while the submerged planting rail is surveyed,
+prototyped and attached.
 
-## overview
+The next work is the rail and planting system described in [rail.md](rail.md),
+reviewed in [R3-review.md](R3-review.md), and populated to
+[plants.md](plants.md). The old deck calculation pack, method statement,
+inspection plan and construction checklists are historical records in
+`docs/packs/archive/`; they are not active instructions for the remaining work.
 
-* pond: 3 m × 3 m × ≈ 0.9 m deep
-* as built: 1 m walk-around, 350 mm overhang into pond
-* deck finish: ≈100 mm above max water level
-* priorities: minimal build-up, tidy liner interface, clean edge detailing
-* planted-edge system: see [plants.md](plants.md) for the final planting/basket
-  schedule, [rail.md](rail.md) for the submerged GRP carrier and its design
-  record, and [R3_guide.md](R3_guide.md) for purchasing and installation
+The remaining sequence is:
 
----
+1. Survey the completed framing, pond, liner and water levels while all joists
+   are exposed.
+2. Resolve and prototype the rail, including its joist terminations and future
+   maintenance access.
+3. Establish the final rail-and-plant load envelope below and confirm the
+   completed deck can accept it.
+4. Fabricate, lower and proof the empty rail and basket seats.
+5. Install decking boards only after the support terminations and a full-size
+   basket removal route have been accepted.
+6. Add the prepared baskets and plants after the rail and deck are complete.
 
-## framing summary
+## As-built deck interface
 
-**primary layout:**
+The following is the retained interface for the work still to come. It records
+the framing that the rail will load; it is not a checklist for rebuilding or
+rechecking completed work.
 
-* rectangular deck frame around pond.
-* joists span between **outer beam** and **inner beam**, both continuous.
-* all eight straight joists per side project 350 mm beyond the inner beam.
-* the former centre joist on each side is replaced by a pair whose inside faces are 170 mm apart.
-* corners infilled with a diagonal joist plus short perpendicular ties so the mitered corner boards stay fully supported.
+| Item | As-built or intended condition |
+| --- | --- |
+| Overall deck / pond | 5,000 × 5,000 mm deck around a centred 3,000 × 3,000 mm pond |
+| Finished opening | 2,300 × 2,300 mm after the 350 mm inward deck overhang |
+| Straight joists | Eight per side, 47 × 75 mm C24 UC4 softwood |
+| Joist geometry | 953 mm between beam faces, plus 350 mm projection; 1,303 mm total length |
+| Joist centres | 1,273.5, 1,660.2, 2,080.1, 2,391.5, 2,608.5, 2,919.9, 3,339.8 and 3,726.5 mm from each beam end |
+| Maximum joist pitch | Approximately 420 mm; the centre pair has 170 mm clear between inside faces |
+| Beams | 47 × 150 mm C24 UC4; inner and outer beam tops flush with joist tops |
+| Inner connection | Rebated top-flange saddle hanger, top strap, opposed toe-screws and tight blocking |
+| Outer connection | Face-mount hanger, tight blocking and outer flat-strap bracing |
+| Supports | 600 × 600 × 50 mm precast slabs on compacted gravel and geotextile, isolated from timber with DPC; intermediate perimeter supports align with joists 2 and 7 |
+| Decking still to fit | 28 × 145 mm boards, 5–6 mm gaps, 20–30 mm outside overhang and 1–2% fall away from the pond |
 
-**member sizes (C24 UC4-treated softwood):**
+The rail may use all 32 straight joists, but its 450 mm planting line is
+independent of the joist positions. Record the actual attachment point on each
+joist and the horizontal and vertical offset to the rail; sloping supports add
+horizontal reaction as well as vertical load.
 
-| member                | size      | spacing/notes                           |
-| --------------------- | --------- | --------------------------------------- |
-| joists (J, C)         | 47×75 mm  | 8 per side; maximum spacing ≈420 mm c/c |
-| beams (outer & inner) | 47×150 mm | continuous, flush with joist tops       |
-| blocking              | 47×150 mm | solid between joists at both beam lines |
-| deck boards           | 28×145 mm | 5–6 mm gaps, 20–30 mm overhang          |
+## Access that must be preserved before decking
 
----
+Fit and test the upper rail-support terminations while the joists are exposed.
+Do not close the deck until each permanent support can also be inspected and
+replaced after the boards are fitted. Either provide a documented removable
+board/access detail or use an A4 through-fastened termination that can be
+renewed from an accessible face. A cord wrap trapped behind permanent decking
+is not an acceptable service detail.
 
-## inner beam (pond edge)
+Before laying boards, use the real board edge or a full-size mock-up to prove
+that every basket can move inward far enough to clear the 350 mm overhang and
+be lifted without disturbing the ring, liner or neighbouring baskets. Also
+confirm that no board screw or edge detail can damage a support cord.
 
-**connection type:**
+## Retained load envelope for rail development
 
-* **top-flange saddle hangers**, rebated into beam top for flush surface.
-* **top strap** (LSTA-type) over joist for uplift restraint.
-* **pair of toe-screws** (6–8 mm × 120–160 mm) driven high from each side of joist into beam, opposing angles.
-* **solid blocking** between joists tight to beam face for anti-roll stiffness.
+Do not carry the old deck worksheets into the rail design and do not quote a
+single member-only “joist capacity”. The useful long-term record is an approved
+load envelope derived once from the complete load path. For each limit below,
+use the lowest spare capacity of the joist, inner and outer connections, beam,
+bracing where relevant, and supporting slab/ground after allowing for the deck
+dead load and imposed deck load.
 
-**load path:**
+| Limit to record after the current-geometry check | Approved characteristic load |
+| --- | ---: |
+| Maximum permanent downward load at any one rail support | **TBC kN** |
+| Maximum permanent horizontal load at any one rail support, in either plan direction | **TBC kN** |
+| Maximum combined permanent downward load on any two adjacent supports | **TBC kN** |
+| Maximum total permanent downward rail-and-plant load on one pond side | **TBC kN** |
+| Maximum temporary upward/handling load at one support | **TBC kN** |
 
-* downward load → joist shear → saddle → beam.
-* upward peel → strap + toe-screws in tension.
-* roll restraint → blocking + deck diaphragm.
+These values are deliberately still TBC. The archived calculations used seven
+joists and a 250 mm projection, while the installed frame has eight joists and
+a 350 mm projection. They also did not contain verified capacities for the
+selected hangers, straps, toe-screws or ground support, so they cannot establish
+a safe residual capacity.
 
-**fasteners:** stainless A2/A4 or class 4; use manufacturer’s pattern.
+Retain this compact calculation basis when the envelope is set. These are
+inputs, not proof that the installed load path passes:
 
----
+| Design input | Retained value |
+| --- | ---: |
+| C24 characteristic bending strength, `fm,k` | 24 N/mm² |
+| C24 characteristic shear strength, `fv,k` | 2.5 N/mm² |
+| C24 mean modulus parallel to grain, `E0,mean` | 11,000 N/mm² |
+| 47 × 75 mm joist second moment of area, strong axis | 1.652 × 10⁶ mm⁴ |
+| 47 × 75 mm joist section modulus, strong axis | 44,063 mm³ |
+| Timber service class | 3 |
+| Permanent-action `kmod` / `kdef` / timber `γM` | 0.50 / 2.00 / 1.30 |
+| Permanent / leading variable action factors, `γG` / `γQ` | 1.35 / 1.50 |
+| Characteristic deck imposed load, `Qk` | 3.0 kN/m² |
+| Adopted walking-surface deflection limit | L/250 |
 
-## outer beam (perimeter edge)
+Rebuild the deck dead load from the actual 47 × 75 framing, selected boards
+and installed details. Do not reuse the archived 0.457 kN/m² total unchanged:
+its framing allowance was based on 47 × 150 joists.
 
-**configuration:**
+Set the envelope once using these inputs:
 
-* **beam continuous**, tops flush with joists.
-* **joists cut short** to beam face, seated in **face-mount hangers** (galvanised or stainless, exterior rated).
-* **blocking** tight between joists along beam line.
-* optional **toe-screws** (one from each side, high through joist into beam) to eliminate play.
-* no significant uplift here, so strap not required.
+- actual 47 × 75 mm joists, 953 mm backspan, 350 mm projection, irregular
+  tributary widths and measured rail attachment positions;
+- actual beam support positions, slab arrangement, ground condition and all
+  rail reactions on an edge at the same time;
+- actual hanger, strap, screw and fastener products and their installation;
+- the final decking dead load and the retained 3.0 kN/m² characteristic deck
+  imposed load;
+- Service Class 3 timber design, treating the installed rail, wet media and
+  plants as a permanent action with the appropriate permanent-load strength
+  modification, rather than reusing the medium-term factor from the former
+  deck imposed-load check;
+- vertical and horizontal reactions from the measured support angles; and
+- the fully soaked, out-of-water mass of every completed basket plus its share
+  of rail, seats and cords. This drain-down case governs the gravity input;
+  submerged apparent weight does not.
 
-**bracing:**
+Check ULS member and connection resistance, SLS movement/creep, inner-beam
+reaction, outer uplift, combined beam loading and support bearing/uplift. Once
+accepted, replace the five TBC entries above with the governing values and a
+short identification of the governing component. Later rail changes then only
+need to demonstrate that their reactions remain inside this envelope.
 
-* outer beam braced laterally with **galvanised flat strap X-brace** (30–40 mm wide, 1–1.5 mm thick).
-* fix diagonally between beam and inner joist line or as a full X across the bay.
-* fasten every other hole with stainless/class 4 screws; pull taut before final fix.
-* ensures beam can’t rack or walk sideways since joists don’t bear on top.
+For the current R3 screen, four nominal 10 kg drained baskets plus about 5–6 kg
+of rail and seats on one side produce roughly 0.45 kN total downward load and
+about 0.06 kN average per support. The specified **0.3 kN proof test for one
+completed cord support is a rail connection test, not evidence that the deck
+has 0.3 kN spare capacity at every joist.** Use measured masses and the approved
+envelope for the final decision.
 
-**support spacing:**
+## Rail survey, prototype and installation gates
 
-* beam supported on **pads/ground screws**: one at every corner plus **two intermediates per edge aligned to joist lines #2 and #6** (≈1.67 m and ≈3.33 m from the corner) so corners sit on bearing and pad centres coincide with joist centrelines.
-* pads are **600×600×50 mm precast concrete council slabs** on 10 mm compacted gravel over geotextile; DPC between pad and timber.
-* add pads at the **pond-edge side centre** and **pond-edge corner** for each side, with pad edges kissing the pond line (not centred on it). If pads cannot be used at the pond edge, confirm the alternative support there delivers equivalent bearing and uplift resistance.
+R3 remains selected for survey and prototype, rather than for batch
+fabrication. Keep the detailed design record in [rail.md](rail.md) and use the
+independent findings in [R3-review.md](R3-review.md) to close these gates:
 
----
+1. Buy and measure one B23 and one B28 basket: top, load-bearing base,
+   reinforced bands, height and sound lower tie positions.
+2. Survey the finished liner faces, intended 350 mm board edge, every joist
+   face and tip, existing hardware, and minimum/normal/maximum water levels
+   from a permanent datum.
+3. Set out the 2,100 mm centreline square 450 mm from each pond wall. Confirm
+   plant-pot light clearance, basket overlap, cord angles and removal travel.
+4. Produce a basket-position sheet for all 13 rail baskets, including plant,
+   side, distance from corner, seat dimensions, lowering bay and later removal
+   route. Do not place more than four on one side without revising the load
+   case.
+5. Define the required internal pot/downstand geometry for the *Butomus* crown
+   at 100–150 mm depth and crowfoot rooting point at 200–350 mm depth. The
+   nominal common B23/B28 bearing level does not achieve those two depths by
+   itself.
+6. Obtain the selected GRP profile's resin, longitudinal/transverse properties,
+   permanent-immersion suitability and bolted-connection guidance.
+7. Build one full-side comparative prototype at the actual cord angles and at
+   no more than 420 mm support spacing. Test the R3 single spine first and add
+   a detachable secondary rail if roll or yaw requires it.
+8. Include shallow B23, shallow B28, *Butomus* and crowfoot stations. Test full
+   drain-down load, eccentric loading, a 50 mm inward basket shift, handling
+   uplift, loss of the worst support, creep/chafe and the finished-edge removal
+   operation.
+9. Standardise positive rounded crossbar locators if bindings permit movement.
+   Confirm every hollow member has deliberate resin-sealed vent and drain
+   openings and cannot retain a persistent air pocket.
+10. Choose the single-spine ring or four independent twin-rail side modules
+    from the prototype results, then close the load envelope before batch
+    cutting.
 
-## corner infill (rev 5)
+Fabricate and test over dry ground. Collect GRP dust at source and keep it away
+from the pond. Round and resin-seal every cut or drilled fibre, use A4/316 or
+316L wetted metalwork, provide smooth chafe protection, and keep all knots,
+ties, drains and joints visible and replaceable. Use four temporary control
+lines when lowering the bare ring or complete empty assembly. Do not add LECA,
+loam, gravel or plants until the rail is supported, level and accepted.
 
-* extend the **outer beam (C4)** and **inner beam (C4B)** so their ends fan toward the deck corners, sharing elevation with the joists; lock with blocking/hangers where members cross.
-* add a **diagonal corner joist** from each deck corner to the 350 mm pond opening corner, rotated through all four corners.
-* add two short **perpendicular ties** from the perimeter to that diagonal at 500 mm from each corner (e.g., (0, 0.5) → (0.5, 0.5) and (0.5, 0) → (0.5, 0.5)), also rotated 4×.
-* use the eight as-built straight-joist centres recorded in `design-c-placements.md`: 1 273.5, 1 660.2, 2 080.1, 2 391.5, 2 608.5, 2 919.9, 3 339.8, and 3 726.5 mm from the end of each beam.
-* the 2 391.5/2 608.5 mm pair replaces the old centre joist and has a 170 mm clear gap between inside faces. Keep these lateral positions independent from the 350 mm pond projection.
+## Plant installation and continuing acceptance
 
----
+The rail carries 10 B23 and 3 B28 baskets. The lily basket, hornwort cage and
+two moss slates are independent of it. Procurement, crown depths, media,
+ballast, guards and maintenance are controlled by [plants.md](plants.md).
 
-## edge & liner interface
+Before final loading, soak representative completed B23 and B28 assemblies,
+release trapped air, and record both underwater apparent weight and fully
+soaked out-of-water mass. Confirm the final basket schedule remains within the
+approved per-support, adjacent-support and per-edge limits.
 
-* **anchor trench** 200–300 mm back from pond edge, 200–300 mm deep.
-* fold liner over inner beam face and down into trench; backfill/compact.
-* optional **timber clamp** (45×45 mm batten) above waterline ≥ 75 mm.
-* cover with narrow fascia if desired; all fixings above water level.
-* chamfer/pad timber in contact with liner with underlay or closed-cell foam.
+Accept the completed system only when all basket rims and GRP remain submerged
+at minimum normal water, every crown reaches its scheduled depth, no seat can
+slide or tip, each basket can be recovered past the finished deck edge, hollow
+members flood and drain, and fish or liner can contact no sharp edge, exposed
+fibre or projecting thread.
 
----
-
-## decking surface
-
-* decking boards perpendicular to joists.
-* slope 1–2% away from pond for drainage.
-* underside drip kerf 10–15 mm from outer edge.
-* omit picture-frame trim (deck nearly flush with grade).
-* optional slim fascia to conceal liner clamp.
-
----
-
-## materials & protection
-
-* UC4-treated timber throughout; reseal cut ends.
-* stainless or class 4 fasteners only.
-* 10 mm compacted gravel over geotextile beneath each pad.
-* DPC between pads and timber.
-* breathable membrane under deck for weed control.
-* isolate metal edges from liner with EPDM or underlay.
-
----
-
-## connection summary
-
-| function                       | component                 | primary resistance    |
-| ------------------------------ | ------------------------- | --------------------- |
-| shear / bearing                | saddle hanger seat        | steel flange bearing  |
-| uplift / peel                  | top strap + toe-screws    | tension + shear       |
-| roll / twist                   | blocking + deck diaphragm | compression restraint |
-| lateral restraint (outer beam) | flat strap X-brace        | tension / shear       |
-| corrosion                      | stainless hardware        | durability            |
-
----
-
-## build sequence (rev 5)
-
-1. dig and backfill anchor trench; lay underlay/liner.
-2. set pads/ground screws, install outer and inner beams (rebate inner).
-3. fit saddle hangers to inner beam; hang joists, fix toe-screws + strap.
-4. fit outer face-mount hangers; seat joists flush, add blocking + X-bracing.
-5. extend beams into corners; install diagonal corner joists and the two short ties per corner; strap/block where members intersect.
-6. clamp liner; add fascia if needed.
-7. lay decking, slope away from pond; cut flush.
-8. final check: all tops flush, joints tight, straps taut.
-
----
-
-## outstanding checks
-
-* confirm **saddle hanger rebate depth** matches flange + DPC.
-* verify **strap material** and corrosion class.
-* confirm **pad layout** for load distribution.
-* log **perimeter pad uplift ballast** decision (300×300×100 pad self-weight vs 0.21 kN uplift; thicken/add ballast if margin needed) per `uplift-pad-check.md`.
-* survey the planting-rail water datum and 450 mm exposure line, then finalise
-  the all-joist cord lengths and attachment access in [rail.md](rail.md).
-* weigh soaked B23/B28 prototypes, model the **13 drained-wet basket positions**
-  plus rail self-weight, and apply the resulting cord reactions at the actual
-  joist tips in the connection and uplift/pad checks.
-* optional: **small fascia** to hide liner clamp if visible.
-
----
-
-**notes:**
-This revision fully adopts the *flush-beam system* on both sides, incorporating saddle mounts with straps and toe-screws on the pond edge, and face-mounted hangers with X-bracing on the outer edge. Result: minimal height, solid fixity, and clean detailing for a low, ground-hugging deck.
+Maintain one connected central swimming and cleaning route. Keep roughly
+70–80% of the surface as open water, prevent watercress and other vigorous
+plants forming a continuous mat, and inspect the support terminations, chafe
+protection, rail joints, seats, ties and drainage at least annually.

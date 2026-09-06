@@ -8,12 +8,13 @@ permanently install it until the hold points in this document have passed.**
 R3 is a 2,100 × 2,100 mm centreline square of grey structural-GRP box section,
 suspended by cord from every straight joist. Each of the thirteen baskets rests
 on two short transverse GRP bars and is tied down at four lower points. The
-basket-bearing surface is nominally 200 mm below the minimum normal water level;
-B28 baskets sit directly on it and B23 baskets sit on shallow risers.
+common basket-bearing surface is nominally 200 mm below the minimum normal
+water level; B28 baskets sit directly on it and shallow B23 baskets sit on
+risers. The crowfoot needs a separate downstand detail.
 
-For a purchasing, fabrication and installation sequence written as a site
-guide, use [R3_guide.md](R3_guide.md). This document explains why R3 was chosen
-and records its engineering basis.
+The active work sequence, deck-load interface and pre-decking access gates are
+in [design-C.md](design-C.md). This document explains why R3 was chosen and
+records its engineering basis.
 
 ## Part 1 — Context and design record
 
@@ -240,10 +241,11 @@ flowchart TB
 The bearing plane is the top of the crossbars, not the top of the main spine.
 The continuous spine is therefore about 225 mm below minimum normal water, and
 the shallower GRP is local and hidden beneath baskets. Fine crown adjustment is
-made inside the basket: shallow B23 crowns project about 7–12 mm above the
-outer rim, *Butomus* finishes at or just below the B28 rim, and crowfoot can be
-recessed about 10–25 mm below the B23 rim. No plant in the current schedule
-needs a hanging seat.
+made inside the basket for the shallow marginals. The current common level does
+not by itself put the *Butomus* crown 100–150 mm below water or the crowfoot
+rooting point 200–350 mm below water. Define and prototype a lower internal-pot
+seat for *Butomus* and a dedicated downstand seat or cradle for crowfoot before
+issuing the basket schedule.
 
 ### Basket seats and removal
 
@@ -470,8 +472,8 @@ cord with no published strength.
 
 - All basket rims and GRP remain submerged at minimum normal water; target at
   least 10 mm cover over the highest outer rim.
-- Every scheduled crown reaches its depth in [plants.md](plants.md) without a
-  hanging basket.
+- Every scheduled crown reaches its depth in [plants.md](plants.md), including
+  the separate *Butomus* internal-pot and crowfoot downstand details.
 - Initial loaded vertical movement, including cord stretch and joint slip,
   meets the agreed target; use about 2 mm as the prototype target.
 - No basket, riser or crossbar can slide, tip into the swimming route or detach
