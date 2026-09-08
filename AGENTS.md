@@ -31,3 +31,24 @@
 - Complete immediate follow-up work (tests, quality checks, documentation updates) without extra prompting; confirm before starting sizable or risky follow-ups.
 - Keep DI seams substitutable when adding interfaces/adapters; document mitigations if any SOLID principle is at risk.
 - Keep canonical docs current as work lands; note any new dependencies or config changes. glTF exports derive from plan geometry; ensure `height`/`material` metadata is present when authoring to avoid empty meshes.
+
+## Subagent delegation
+
+- Proactively delegate when a task contains at least two independent,
+  substantial workstreams or one bounded read-heavy investigation that can run
+  concurrently with useful primary-agent work.
+- Prefer subagents for repository exploration, source tracing, independent
+  calculation checks, documentation consistency audits, test execution and log
+  analysis.
+- Do not delegate trivial edits, tightly sequential tasks or work where
+  coordination cost is likely to exceed the benefit. Use no more than three
+  concurrent subagents by default.
+- Keep delegated work read-only unless files are explicitly partitioned. The
+  primary agent normally owns final edits, integration and verification.
+- Require each subagent to return concise, evidence-backed findings with
+  filenames, assumptions, uncertainties and commands run. The primary agent
+  must reconcile conflicting findings and inspect material evidence.
+- For physical pond design, subagents may calculate, critique or research, but
+  the primary agent retains engineering decisions and no agent may grant
+  fabrication approval without the required measurements, product data,
+  complete checks and physical tests.

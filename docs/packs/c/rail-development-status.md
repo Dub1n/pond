@@ -1,7 +1,7 @@
 # Pack C rail development — current state and next work
 
 This is the active handoff for the Pack C submerged planting carrier as at
-7 September 2026. Read it before developing another rail geometry or YAML model.
+8 September 2026. Read it before developing another rail geometry or YAML model.
 
 Nothing in this document is a fabrication approval.
 
@@ -25,6 +25,20 @@ Nothing in this document is a fabrication approval.
   working arrangement.
 - Judge R5.1 separately from shortcomings owned by the ring, suspension and
   deck. A successful seat test would still not validate the complete system.
+- The comparative cord calculation in
+  [rail-support-study.md](../../calcs/rail-support-study.md) now screens the
+  proposed coordinates, crossed stabilisers and a split-seat bridle. It finds
+  global cord equilibrium plausible at comparison loads, but confirms that
+  centreline cord layouts do not directly restrain local spine roll. The later
+  lower-H screen uses 220 mm-separated force lines but finds basket-route and
+  slack-leg problems, so it remains a fallback hybrid rather than R5.2.
+- Retain 38 x 38 x 5 mm as the ring baseline. Gross vertical and torsional
+  strength is plausible at comparison loads, but in-plane breathing governs.
+  Use the proposed pond-facing joist-end force line to reduce the 0.60 kN
+  side's outward action from about 0.243 to 0.168 kN. Develop the 8 mm
+  triangular-web corner toward at least 20 kN m/rad after bedding, with the
+  radiused L as its comparison; neither is selected until connection slip and
+  stiffness are established.
 
 ## Read in this order
 
@@ -39,6 +53,207 @@ Nothing in this document is a fabrication approval.
 - [plants.md](plants.md) defines basket count and planting levels.
 - [The rail diagram guide](../../../diagrams/specs/rail/README.md) covers the
   existing conceptual models. None of those models depicts R5.1.
+- [The comparative support calculation](../../calcs/rail-support-study.md)
+  records the proposed attachment coordinates, assumptions, cord-only layouts,
+  preliminary upper-attachment reactions and limitations. Flexible-ring corner
+  actions and the approved deck envelope remain outstanding.
+- [The ring and corner calculation](../../calcs/ring-corner-study.md) screens
+  rail bending, torsion, outward ring breathing, the existing corner and larger
+  gussets. It retains the proposed lower-H suspension as a hybrid investigation
+  rather than promoting it to R5.2.
+
+## Where the rail development now stands
+
+The selected system-level baseline is:
+
+- a 2,100 x 2,100 mm connected square ring;
+- 38 x 38 x 5 mm structural-GRP SHS, with 3.2 mm no longer an equal default;
+- one gravity support at each of the eight straight joists on every side;
+- two opposite-handed crossed stabiliser pairs per side for along-side and yaw
+  restraint; and
+- R5.1 as the local basket-seat architecture, still dimensionally adaptable.
+
+This baseline is **calculation-worthy, not fabrication-ready**. The rigid-body
+cord system has feasible non-negative equilibrium in the screened load and
+single-cord-loss cases. Gross rail bending, torsional shear and indicative
+corner bearing stresses are also in a plausible range. The unresolved issue is
+movement: inclined cords make each side bow outward, while corner clearance,
+plate flexure and tube-wall bearing determine whether the square behaves closer
+to a rigid frame or four nearly pinned sides.
+
+### Loads and cord results already screened
+
+The retained conservative inputs are a 1.80 kN complete-ring drain-down load,
+0.60/0.45/0.30/0.45 kN uneven side loads, a 5 N m torque from one 100 N basket
+at 50 mm eccentricity, a 20 N m four-basket same-direction torque case, a
+deliberate 30 N m full-side torsion bound, 0.10 kN handling uplift, 10 N cord
+seating tension and `+/-1.5 mm` effective free-length variation. The unidentified
+6 mm polyester cord is represented by a conservative effective `EA=6 kN`.
+
+With the proposed high joist-face coordinates below, the 32 gravity cords plus
+16 crossed stabilisers retain rank 6 of 6. Under the stated rigid-ring cases:
+
+- maximum intact cord tension is about 0.066 kN;
+- the worst maximum after any one cord is unavailable is about 0.074 kN;
+- the 95th-percentile maximum with free-length variation is about 0.088 kN;
+- the preliminary intact upper-attachment envelope is about 0.086 kN downward,
+  0.041 kN horizontal and 0.095 kN resultant; and
+- calculated rigid-body movement is about 3.1 mm in the uneven-plus-torque
+  case and 3.4 mm at the 95th percentile of the free-length study.
+
+These low forces mean cord breaking strength is not presently governing.
+Termination capacity, adjustment, chafe, creep, lower-point migration and ring
+flexibility remain more important. The reaction figures are unfactored
+comparison values; the deck limits in `design-C.md` remain TBC.
+
+### Proposed gravity-support coordinates
+
+Use pond centre `X=Y=0`, water `Z=0`, rail centrelines `X/Y=+/-1050` and the
+effective lower force line `Z=-244`. On the south side, the proposed upper
+point is the centre of each joist's pond-facing end face:
+
+```text
+U_i = (X_Ji, -1150, +112.5)
+L_i = (clamp(X_Ji, -1050, +1050), -1050, -244)
+```
+
+The joist coordinates J1--J8 are `-1226.500, -839.833, -419.917, -108.500,
++108.500, +419.917, +839.833, +1226.500`. Thus J1/J8 attach to the straight
+rail ends at `X=+/-1050`; J2--J7 retain matching along-side coordinates.
+
+For J2--J7 the lower-to-upper vector is `(0, -100, +356.5)`, length 370.26 mm.
+Cord tension is about 1.039 times its vertical contribution and outward force
+is 0.281 times it. A 0.60 kN side therefore receives approximately 0.168 kN
+outward instead of the former normalized screen's 0.243 kN.
+
+This is a force-line proposal, not an eye-plate detail. The attachment must be
+through-fastened to suitable joist faces without relying on screws into end
+grain, retain timber edge distances, clear the joist tip/deck edge and remain
+inspectable and replaceable after decking. It is on the joist end face, not
+above the joist, and remains 100 mm bankward of the rail.
+
+### Proposed crossed-stabiliser coordinates
+
+Keep the diagonal lower points on two separated straight-side stations rather
+than concentrating routine stabiliser forces at a corner. On the south side:
+
+```text
+U2 (-839.833, -1150, +112.5) -> L3 (-419.917, -1050, -244)
+U3 (-419.917, -1150, +112.5) -> L2 (-839.833, -1050, -244)
+
+U6 (+419.917, -1150, +112.5) -> L7 (+839.833, -1050, -244)
+U7 (+839.833, -1150, +112.5) -> L6 (+419.917, -1050, -244)
+```
+
+Each diagonal is about 559.84 mm long. Its tension is about 1.570 times its
+vertical contribution; its along-side and radial force components are about
+1.178 and 0.281 times the vertical component. The opposite hands cancel their
+load in the adjusted symmetric condition and provide deliberate along-side
+and yaw stiffness.
+
+The J2--J3 cords cross near `(-629.875, -1100, -65.75)`; mirror this in the
+J6--J7 bay. Separate or protect the cords at that crossing. It is not a
+structural node. Each lower point needs a positively located eye or constrained
+collar; two cords sharing a nominal coordinate cannot share one migrating wrap.
+
+Attaching the diagonals at the ring corner is not preferred. A short J2-to-
+corner route gives about 43% less calculated along-side stiffness than the
+J2--J3 crossed cord, while a matching J3-to-corner route has tension about
+2.05 times its vertical contribution. Both concentrate new action into the
+joint already responsible for breathing and torsion. Use a corner stabiliser
+only as a separately calculated alternative, not the baseline.
+
+Generate the other sides from local along coordinate `a`, bankward distance
+`r` and height `z`:
+
+```text
+South ( a, -r, z)   East  ( r,  a, z)
+North (-a,  r, z)   West  (-r, -a, z)
+```
+
+### What the ring and corners must do
+
+At the former cord angle, a 0.60 kN side created about 0.243 kN outward. The
+38 x 38 x 5 mm side then calculated at 2.8 mm movement with perfectly fixed
+corners and 14.1 mm with pinned corners. The proposed upper coordinate reduces
+the outward action to 0.168 kN and those bounds to about 1.9 and 9.7 mm.
+
+The gross 5 mm tube remains plausible:
+
+- one 100 N load over 420 mm gives about 1.63 MPa bending and 0.07 mm movement;
+- 300 N over an 840 mm support-loss span gives about 9.77 MPa and 1.78 mm;
+- 5 N m torsion gives about 0.28 degrees with two effective corners;
+- 20 N m gives about 1.12 degrees; and
+- the 30 N m bound gives about 1.67 degrees, with approximately 1.38 MPa
+  torsional shear when two corners share it.
+
+Service movement, rather than gross tube strength, governs this screen. If one
+corner alone transfers the 30 N m torque, the tube rotation bound doubles to
+about 3.35 degrees.
+
+The existing paired 170 x 170 x 6 mm L plates have plausible indicative
+bearing stresses but unknown stiffness and slip. Approximately 0.5 mm relative
+movement through their top/bottom load path corresponds to roughly 0.65 degrees
+of roll dead band. They have not been shown inadequate, but they have not been
+shown sufficiently rigid.
+
+For the 5 mm side, `2EI/L` is about 1.98 kN m/rad. A corner must provide about
+18 kN m/rad to attract 90% of the perfectly fixed end moment. Use **20 kN m/rad
+after bedding** as the minimum near-fixed development target and approximately
+38 kN m/rad for 95%. At 20 kN m/rad, the proposed 0.168 kN side action gives
+about 2.65 mm movement, versus the 1.94 mm perfectly fixed bound.
+
+### Developed 8 mm corner candidates
+
+Compare paired top-and-bottom plates in three plan outlines:
+
+1. **Preferred triangular plan web:** 220 mm reach, 70 mm rail-contact strips,
+   8 mm thick, with continuous diagonal material filling the inner elbow.
+2. **Radiused L:** the same reach, strips and thickness, but without the full
+   diagonal web. This is simpler but its elbow may control flexibility.
+3. **Square upper bound:** 220 x 220 x 8 mm. It supplies the largest diaphragm
+   but adds unnecessary material, drag and sediment area.
+
+The triangular web is a horizontal top/bottom plan plate, not a separate
+vertical fin. A low-modulus strip estimate puts the paired radiused L at about
+9--19 kN m/rad, close to but not securely above the 20 kN m/rad target. The
+triangular web should raise the lower bound by preventing elbow flexure, but it
+cannot be credited as near-fixed until actual laminate and connection stiffness
+are modelled or measured.
+
+Use provisional bolt centrelines at **55 and 195 mm** from the theoretical
+corner on each leg, centred across the 70 mm strip. Their 140 mm separation is
+the main stiffness improvement. An optional third bolt at **125 mm** improves
+direct-shear sharing and redundancy if the profile supplier permits the holes;
+because it is near the group centroid, it adds little rotational leverage.
+
+At the 60 N m in-plane bound, the long outer pair gives about 0.429 kN per
+outer bolt, approximately 8.2 MPa plate bearing and 6.6 MPa across both 5 mm
+tube walls. At 30 N m roll, the 46 mm top/bottom couple gives about 0.652 kN,
+approximately 12.5 MPa one-bolt plate bearing and 10 MPa across both tube walls.
+These are unfactored screens, not resistances.
+
+An M6 bolt in a nominal 6.5 mm hole has about 0.25 mm radial clearance, already
+about 0.10 degrees across the 140 mm outer pair before reliable bearing.
+Controlled close holes with suitable smooth sleeves/bushes, or a supplier-
+approved bonded-and-bolted joint, may matter more than a third bolt. Do not
+credit wet long-term preload friction.
+
+### Local lower-H suspension and R5.2 decision
+
+Extending the R5.1 lower bridges into an H with four outer cord eyes remains a
+mechanically meaningful hybrid, but it is **not promoted to R5.2**. At
+provisional transverse force lines `+/-110 mm`, a 100 N load plus 5 N m gives
+about 72.7 N total pond-side and 27.3 N bank-side vertical reaction. The ideal
+all-taut stiffness is about 691 N m/rad and 0.41 degrees, but the lightly loaded
+legs begin unloading around 0.38 degrees and `+/-1.5 mm` free-length variation
+is enough to change a leg by about 28 N.
+
+A direct pond-side-eye cord to the bankward joist line crosses the assumed
+basket volume near `Z=-98 mm`. Routing around the basket adds longitudinal
+force and needs a complete thirteen-seat layout. A missing-leg three-dimensional
+equilibrium is also unresolved. Keep this as a fallback hybrid until routing,
+fault behaviour and lower-H plate/eye capacity are demonstrated.
 
 ## Separation of responsibilities
 
@@ -244,27 +459,21 @@ of that spine under an eccentric seat. Two geometrically crossing cords also
 need deliberate separation or chafe protection; contact at their apparent
 crossing is not a structural node.
 
-## Active verification requirements
+## Remaining verification requirements
 
-The full-rank ideal screen narrows the problem; it does not accept the current
-system. The next work must establish:
+The rigid-ring model has now covered cord elasticity, free-length variation,
+asymmetric loading and every individual cord unavailable. It narrows the
+problem but does not accept the physical system. The remaining work is:
 
-- **Practical rigid-body stiffness.** Measure or model movement in both signs of
-  horizontal translation, vertical translation, roll, pitch and yaw. Include
-  cord elasticity, free-length tolerance, adjustment, lower-wrap movement and
-  loss of positive tension.
-- **Independent-side behaviour.** Establish how strongly each side depends on
-  the corners and perpendicular sides to close its along-side movement, and how
-  much corner or ring deformation occurs before that path engages.
-- **Local spine rotation.** Identify a real transverse reaction couple for the
-  5 N·m eccentric-seat screen. Do not treat plan-crossed cords on the same
-  spine line as a torsion couple.
-- **Ring and corner adequacy.** Check member bending and torsion, in-plane
-  racking, corner slip, combined corner actions, laminate bearing, bolt-hole
-  stress, plate bending, preload and wet creep.
-- **Unequal sharing and faults.** Solve tensions for asymmetric basket loading,
-  cord length and stiffness variation, a deliberately slack support, and each
-  important support or stabiliser unavailable.
+- **Semi-rigid ring behaviour.** Calculate movement with the developed corner
+  moment-rotation curves, including clearance dead band. Establish how the
+  sides and perpendicular members share breathing, roll and yaw actions.
+- **Corner adequacy.** Check combined in-plane moment, roll, shear and bolt
+  actions for the triangular-web and radiused-L variants. Resolve laminate
+  direction, plate flexure, tube-wall bearing, hole stress, preload and wet
+  creep.
+- **Fault coupling.** Repeat the cord cases with one ineffective corner and
+  with the ring flexible. The existing cord-loss result assumes a rigid ring.
 - **Deck reaction envelope.** Issue vertical, both horizontal and moment
   reactions at every attachment, including adjacent-support and side totals,
   for checking the complete as-built deck-to-ground path.
@@ -306,20 +515,19 @@ path; bolt slip, tube-wall bearing or the lack of a three-dimensional torsion
 connection may govern instead. Size members and corners after defining the
 reactions they must transmit.
 
-### Minimum mechanism study and physical check
+### Completed mechanism screen and later physical check
 
-The next stability study should record all upper and lower coordinates, cord
-free lengths or measured load-extension curves, ring mass and centre of
-gravity. For each candidate it should:
+The calculation study now records proposed upper/lower force lines, a
+conservative cord axial stiffness, non-negative compatible tensions, six-
+degree-of-freedom rank, small-movement stiffness, uneven loading, free-length
+variation and each cord individually unavailable. It also reports preliminary
+upper reactions. This completes the rigid-ring screening stage.
 
-1. solve static equilibrium with every cord tension constrained to be
-   non-negative and report the minimum positive-tension reserve;
-2. calculate the six-degree-of-freedom constraint rank and singular values;
-3. calculate material plus tension-dependent geometric stiffness and identify
-   its soft modes;
-4. repeat with unilateral active cords for both signs of translation, roll,
-   pitch and yaw, asymmetric load and each cord unavailable; and
-5. report cord, rail and deck reactions rather than stiffness alone.
+It does not complete the coupled flexible-ring problem. The next model must
+replace perfect corners with the semi-rigid properties described below and
+then report ring deformation, corner actions and the complete deck reaction
+envelope. Actual ring mass, basket centres of gravity and selected cord
+load-extension curves remain later substitutions for the conservative inputs.
 
 Use a rigid scale square with adjustable elastic cords as an early physical
 check. Measure initial tensions, apply small forces and moments in both signs of
@@ -330,100 +538,80 @@ test of the final rail.
 
 ## Directions worth comparing
 
-These are investigation directions rather than endorsed solutions:
+The active comparison is now deliberately narrow:
 
-- **Connected ring with torsion-stable suspension nodes.** Give selected nodes
-  a defined transverse reaction pair or rigid rotational restraint.
-- **Stronger connected ring and developed corners.** Compare viable rail sizes
-  and wall thicknesses, and compare flat plated corners with more explicitly
-  three-dimensional or triangulated joints under the same support envelope.
-- **Single rail with short transverse suspension outriggers.** Widen the
-  reaction line locally without adding a second continuous carrier rail.
-- **Secondary stabilising rail.** Keep the selected R5.1 spine as the seat rail
-  and add a continuous, side-length or local second chord to create a defined
-  torsional couple.
-- **Distributed gravity cords with selective crossed stabilisers.** Retain
-  short near-corresponding cords for gravity, and use a few opposite-handed
-  diagonals for along-side translation and yaw rather than reversing the full
-  endpoint order.
-- **Rigid or triangulated joist-to-rail hangers.** Provide explicit vertical,
-  horizontal and rotational reactions. Check local joist torsion, concentrated
-  loads, liner clearance and replacement after decking.
-- **Corrected modular side carrier.** Revisit an independent side only if it
-  gains an opposite-bank tie, rigid frame or another balanced horizontal
-  reaction. Do not reuse R4's same-bank fork.
-- **Short individual or paired-seat modules.** Put one or two R5.1 seats on a
-  short rail with two separated support frames, trading global corners for more
-  deck attachments.
-- **Composite or shallow-truss carrier.** Retain the selected R5.1 rail as one
-  chord and connect it to a deeper backbone rather than requiring the seat rail
-  to perform every global function.
-- **Combined suspension and seat-location fitting.** Allow selected rail
-  supports to provide seat stops or restraint if reaction peaks, seat positions
-  and independent removal remain acceptable.
-- **Short upper extensions near the planting line.** Move hanger reactions
-  closer to the 450 mm planting line to reduce inclination and horizontal pull,
-  while checking cantilever and deck-edge geometry.
-- **Whole-pond cross-frame reference.** A rigid `+` between opposite side
-  midpoints could resist side separation and, with moment-capable perimeter
-  joints, transfer mid-side roll to the opposite side. It is not diagonal
-  triangulation, does not remove the need for external deck reactions and would
-  obstruct the centre, so use it primarily as a benchmark for less intrusive
-  restraint arrangements.
+- **Baseline:** 38 x 38 x 5 mm connected ring, high pond-facing joist
+  attachments, distributed gravity cords, J2--J3/J6--J7 crossed stabilisers,
+  to-be-developed semi-rigid corners and R5.1 seats.
+- **Corner A:** paired 220 x 8 mm triangular plan-web gussets with 70 mm contact
+  strips and long outer bolt pairs; preferred geometry candidate, not yet
+  demonstrated to meet the stiffness target.
+- **Corner B:** paired radiused L gussets with the same reach, thickness and
+  bolts; simpler comparison whose inner elbow may govern.
+- **Corner C:** paired 220 mm square plates only as the diaphragm upper bound.
+- **Fallback hybrid:** lower-H seat suspension, considered only if corner/ring
+  movement remains unacceptable and its cord-routing problem can be solved.
 
-A hybrid may be best. Compare candidates under the same load cases, fault
-conditions, access requirements and R5.1 envelope.
+Do not reopen R4 same-bank suspension, full R5 plates, a second continuous rail
+or intrusive pond cross-frame unless this narrowed programme disproves the
+connected-ring route.
 
 ## Recommended order
 
-1. **Screen rigid-body stability first.** Survey the upper and proposed lower
-   attachment coordinates and measure cord behaviour. Treat the ring as rigid;
-   solve non-negative tensions, constraint rank, soft modes and movements for
-   the baseline, selective-cross and other suspension layouts. Repeat for both
-   movement directions, asymmetric loading, likely slack and each unavailable
-   stabilising cord. Reject a true mechanism before member sizing.
-2. **Define adaptable interface envelopes.** For every viable suspension, draw
-   free-body diagrams for centred and eccentric baskets, uneven side loading,
-   handling and one unavailable support. Bound support locations, forces,
-   moments and permitted movement; bound the ring mass, centre of gravity and
-   minimum stiffness. Preserve placement ranges rather than fixing exact nodes
-   prematurely.
-3. **Develop ring and suspension alternatives in parallel.** Check rail sizes,
-   torsion, bending, racking, corners, joints, handling and support-loss spans
-   against the support envelope. Separately demonstrate six-degree-of-freedom
-   stability against the bounded ring properties. Lay out four configurable
-   R5.1 envelopes, supports, corners, tolerances, access and removal paths on a
-   complete side.
-4. **Recombine and converge.** Calculate compatible ring deformation, cord
-   stretch, active and slack supports, load redistribution and deck reactions.
-   Reject combinations that exceed either interface envelope. Compare structural
-   clarity, peak reactions, movement, fault tolerance, fabrication, wet
-   durability, inspection, replacement, liner risk and visual intrusion. Model
-   only the shortlist; renders explain geometry but do not validate mechanics.
-5. **Detail and disprove the preferred combination.** Select actual GRP, cord
-   and connection products and complete the member, connection and deck checks.
-   Adapt the R5.1 sleeves, bolt stations and bridges to the selected rail, then
-   prototype a complete side under asymmetric gravity, 5 N·m seat torque,
-   longitudinal handling, a loose or unavailable support, repeated removal,
-   wet dwell and drain-down. Measure tension, rotation, deflection, slip and
-   redistribution. Test the selected seat and side on the complete carrier
-   before fabrication acceptance.
+The rigid-body mechanism and initial reaction screens are complete. Continue
+from the semi-rigid ring/corner gate:
+
+1. **Resolve the upper termination.** Draw a through-fastened A4/316 eye or
+   cheek fitting whose force line is near the pond-facing joist end-face centre
+   `Z=+112.5`. Check timber edge distances, inclined force components, cord
+   bend/chafe, deck-board clearance and replacement access. If the point moves,
+   rerun both calculation scripts.
+2. **Develop two corner specimens analytically.** Use paired 220 x 8 mm top and
+   bottom plates with 70 mm rail-contact strips: the triangular plan web and
+   radiused L. Use outer bolt stations 55/195 mm and compare the optional centre
+   bolt at 125 mm. Obtain selected plate/profile properties and connection
+   guidance; model laminate direction, plate flexure, tube-wall bearing, bolt
+   clearance and any sleeve/bush or structural adhesive contribution.
+3. **Demonstrate near-fixed behaviour.** Produce moment-rotation curves over
+   0--60 N m in-plane and 0--30 N m roll. Require at least 20 kN m/rad in-plane
+   secant stiffness after bedding, record clearance dead band separately, and
+   reject any option whose movement, permanent set or wet-creep allowance makes
+   the side response unacceptable. Strength without stiffness is insufficient.
+4. **Recombine the ring and cords.** Replace rigid corners with the calculated
+   semi-rigid properties and use the proposed gravity/diagonal coordinates.
+   Repeat uneven load, four same-direction eccentric baskets, one ineffective
+   corner, each important cord unavailable and free-length variation. Report
+   ring breathing, spine roll, corner actions and every deck reaction.
+5. **Complete the layout gate.** Place all thirteen R5.1 envelopes, 32 gravity
+   supports, 16 crossed stabilisers, corner plates and access/removal routes.
+   Prove the crossed-cord intersections and lower locators do not conflict with
+   seats or servicing.
+6. **Retain the lower-H hybrid only as fallback.** Do not issue R5.2 unless a
+   complete cord route clears the basket and a nonlinear missing-leg analysis
+   defines how its fault action returns to the ring.
+7. **Prototype only after those calculations.** The eventual physical programme
+   must measure corner bedding, stiffness, permanent set, cord redistribution,
+   wet dwell and removal, but no build is authorized by this handoff.
 
 ## Output expected from the next development agent
 
-Produce a comparison document containing:
+The next calculation/design package must contain:
 
-- dimensioned sketches and free-body diagrams for at least two credible rail
-  or suspension alternatives;
+- dimensioned triangular-web and radiused-L corner drawings;
+- a dimensioned joist termination and complete gravity/diagonal coordinate
+  schedule;
 - an explicit source for every horizontal and rotational reaction;
-- symmetric, asymmetric and one-support-unavailable reactions;
+- semi-rigid corner moment-rotation curves and combined ring movements;
+- symmetric, asymmetric, one-corner and one-support-unavailable reactions;
 - a complete-side layout using the provisional R5.1 envelopes;
 - resulting deck attachment loads and access requirements;
-- a ranked recommendation with clear rejection reasons;
+- a selected corner or a clear decision that supplementary roll restraint is
+  required;
 - the measurements and product data still missing; and
 - a prototype plan capable of disproving the preferred option.
 
-The next design gate is a rail and suspension arrangement with complete static
-equilibrium, explicit rotational restraint, feasible full-side geometry and
-reactions that the as-built deck can safely accept. Do not move from a
-convincing render directly to fabrication.
+The next design gate is a ring that remains acceptably square and level using
+demonstrated semi-rigid corner properties, with complete static equilibrium,
+feasible full-side geometry and reactions that the as-built deck can safely
+accept. Do not move from a convincing render or gross-strength screen directly
+to fabrication.
