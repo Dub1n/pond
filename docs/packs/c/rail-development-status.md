@@ -45,12 +45,12 @@ Nothing in this document is a fabrication approval.
 - [R5.1.md](R5.1.md) defines the selected seat architecture and its local tests.
 - [design-C.md](design-C.md) defines the as-built deck interface and the
   still-unapproved load envelope.
-- [R3-review.md](R3-review.md) and [R3-rail.md](R3-rail.md) describe the
+- (optional) [R3-review.md](R3-review.md) and [R3-rail.md](R3-rail.md) describe the
   connected single-spine reference.
-- [R4-double-rail.md](R4-double-rail.md) records the invalid same-bank study.
-- [R5_v1-review.md](R5_v1-review.md) and [R5-plates.md](R5-plates.md) record the
+- (optional) [R4-double-rail.md](R4-double-rail.md) records the invalid same-bank study.
+- (optional) [R5_v1-review.md](R5_v1-review.md) and [R5-plates.md](R5-plates.md) record the
   full-plate predecessor, calculations and illustrated geometry conflict.
-- [plants.md](plants.md) defines basket count and planting levels.
+- [plants-v2.md](plants-v2.md) defines basket count and planting levels.
 - [The rail diagram guide](../../../diagrams/specs/rail/README.md) covers the
   existing conceptual models. None of those models depicts R5.1.
 - [The comparative support calculation](../../calcs/rail-support-study.md)
