@@ -4,7 +4,7 @@ This is the working procurement, planting and maintenance specification for the
 planted elements in Design C. It supersedes the internal-net-pot, loose outer
 LECA fill, permanently laced basket lid, R3 crossbar and four lower basket-tie
 instructions in [plants.md](plants.md). Keep `plants.md` as the earlier design
-record until this version is promoted into the rest of the Pack C documents.
+record; this version is the active planting specification.
 
 The thirteen rail planters use a **removable planted cartridge inside a rigid
 structural basket**. Install the carrier, R5.1 seats and empty rigid baskets
@@ -13,11 +13,11 @@ them into the retained baskets. A cartridge can later be recovered without
 removing its rigid basket or disturbing the rail.
 
 [R5.1.md](R5.1.md) remains the selected basket-seat architecture for survey
-and prototype, not an accepted fabrication design. Its final basket retainer,
-longitudinal stop, depth variants and removal route remain unresolved. Do not
-buy batch quantities of seat straps, clips or other basket-to-seat parts until
-those interfaces have been measured and tested. The lily, hornwort cage and
-willow-moss supports remain independent of the rail.
+and prototype, not an accepted batch fabrication design. It now specifies the
+broad-washer basket retainer, through-bushed stop interface and depth-variant hold
+points. Buy one B23 and one B28 attachment set first; buy the remaining seat
+hardware only after the measured fit, wet creep and removal tests pass. The
+lily, hornwort cage and willow-moss supports remain independent of the rail.
 
 ## Design intent
 
@@ -227,8 +227,8 @@ projecting fastening in the fish-accessible zone.
 The guard must not carry the wet cartridge, act as the basket's structural
 uplift retainer or bridge an unsupported bag. Add an accessible positive
 cartridge keeper only if the completed flooded cartridge can lift or tip
-inside the outer basket; prove that keeper separately from the unresolved
-R5.1 basket-to-seat retainer.
+inside the outer basket; prove that keeper separately from the broad-washer
+R5.1 basket-to-seat connection.
 
 ## Procurement allowances and hold points
 
@@ -243,7 +243,7 @@ R5.1 basket-to-seat retainer.
 | LECA | **1 × 45 L bag for prototypes and initial production** | Pre-soak completely. One bag is ample for the proposed comparison and a likely 25% lightweight blend; do not buy the former second bag until the recipe is accepted. |
 | Washed lime-free gravel | Start with **2 × approximately 20 kg** | The nominal 20–30 mm caps occupy about 10–15 L before taper and plant displacement; remaining gravel is test ballast. |
 | Cartridge harness and guard fittings | **One PB18 and one PB25 prototype set first** | Final strap, thread, frame and clip quantities follow measured wet mass and the removal trial. |
-| Basket-to-seat retention | **Defer** | R5.1 mechanical retainer and longitudinal stop remain unresolved. The former 52 R3 lower ties are not the production take-off. |
+| Basket-to-seat retention | **One B23 and one B28 prototype set** | Use four internal 40 mm A4 penny washers and four M6 button-head fasteners per basket as detailed in `R5.1.md`. Release the remaining eleven only after wet creep, whitening, washer-dishing, snag and removal checks. The former 52 R3 lower ties are not the production take-off. |
 | H70 cage ties | **One small pack if useful for assembly** | Use only with permanent lacing; not sole structural closure or basket suspension. |
 
 The gross media figures are planning envelopes, not an order instruction.
@@ -272,7 +272,7 @@ gravel displacement, before ordering the production loam.
 8. Load-test the under-bag harness over dry ground. Repeat insertion and
    recovery beneath a full-size deck-edge mock-up, including the required
    pondward movement before lifting.
-   With the cartridge removed, release the final R5.1 basket retainer and also
+   With the cartridge removed, release the R5.1 basket retainer and also
    demonstrate that the empty rigid basket can move pondward and lift past the
    finished deck edge and all final seat hardware for basket replacement and
    seat inspection.

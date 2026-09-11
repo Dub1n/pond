@@ -2,25 +2,20 @@
 
 ## Project state
 
-As at 6 September 2026, the deck structure is built through the framing stage.
+As at 11 September 2026, the deck structure is built through the framing stage.
 The pads, beams, joists, blocking, bracing and corner framing are in place. **The
 decking boards have not been installed.** The open framing is deliberate and
 must be kept accessible while the submerged planting rail is surveyed,
 prototyped and attached.
 
-The next work is the rail and planting system described in [R3-rail.md](R3-rail.md),
-reviewed in [R3-review.md](R3-review.md), and populated to
-[plants.md](plants.md). The old deck calculation pack, method statement,
-inspection plan and construction checklists are historical records in
-`docs/packs/archive/`; they are not active instructions for the remaining work.
-
-Compare the original [R3 Spine](R3-rail.md), the
-[R4 Double Rail](R4-double-rail.md) suspension study and the
-[R5 Plates](R5-plates.md) basket seat. The three editable YAML models and their
-build/integration instructions are in
-[the rail diagram guide](../../../diagrams/specs/rail/README.md).
-R4's independent same-bank cord suspension remains unresolved; R5 retains
-R3's connected ring while changing the local basket support.
+The next work is the selected connected ring and R5.1 planting system defined
+by [rail-development-status.md](rail-development-status.md),
+[corner.md](corner.md), [cords.md](cords.md), [R5.1.md](R5.1.md) and
+[plants-v2.md](plants-v2.md). R3, R4 and R5 remain predecessor studies, not
+alternative construction instructions. The old deck calculation pack, method
+statement, inspection plan and construction checklists are historical records
+in `docs/packs/archive/`; they are not active instructions for the remaining
+work.
 
 The remaining sequence is:
 
@@ -61,10 +56,10 @@ The water volume remains 900 mm deep, so the modelled pond bottom is Z =
 operational water variation during the survey. This datum is shared with
 `option-c.yaml` and all three rail models.
 
-The rail may use all 32 straight joists, but its 450 mm planting line is
-independent of the joist positions. Record the actual attachment point on each
-joist and the horizontal and vertical offset to the rail; sloping supports add
-horizontal reaction as well as vertical load.
+The selected suspension uses straight joists J2--J7 on every side plus the four
+existing C2 diagonal corner joists. Record every actual attachment point and
+the horizontal and vertical offset to the rail; sloping supports add horizontal
+reaction as well as vertical load.
 
 ## Access that must be preserved before decking
 
@@ -147,21 +142,21 @@ accepted, replace the five TBC entries above with the governing values and a
 short identification of the governing component. Later rail changes then only
 need to demonstrate that their reactions remain inside this envelope.
 
-For the current R3 screen, four nominal 10 kg drained baskets plus about 5–6 kg
-of rail and seats on one side produce roughly 0.45 kN total downward load and
-about 0.06 kN average per support. The specified **0.3 kN proof test for one
-completed cord support is a rail connection test, not evidence that the deck
-has 0.3 kN spare capacity at every joist.** Use measured masses and the approved
-envelope for the final decision.
+For the current comparison screen, four nominal 10 kg drained baskets plus
+about 5–6 kg of rail and seats on one side produce roughly 0.45 kN total
+downward load. The cord model's maximum screened upper reaction is about
+0.092 kN resultant. The specified **0.3 kN proof test for one completed cord
+support is a rail-connection test, not evidence that the deck has 0.3 kN spare
+capacity at every joist.** Use measured masses and the approved envelope for
+the final decision.
 
 ## Rail survey, prototype and installation gates
 
-R3 remains selected for survey and prototype, rather than for batch
-fabrication. Keep the detailed design record in [R3-rail.md](R3-rail.md) and use the
-independent findings in [R3-review.md](R3-review.md) to close these gates:
+The integrated R5.1/ring arrangement is selected for survey and prototype,
+rather than for batch fabrication. Close these gates in the stated order:
 
 1. Buy and measure one B23 and one B28 basket: top, load-bearing base,
-   reinforced bands, height and sound lower tie positions.
+   reinforced bands/ribs, height and four sound broad-washer retention zones.
 2. Survey the finished liner faces, intended 350 mm board edge, every joist
    face and tip, existing hardware, and minimum/normal/maximum water levels
    from a permanent datum.
@@ -171,26 +166,24 @@ independent findings in [R3-review.md](R3-review.md) to close these gates:
    side, distance from corner, seat dimensions, lowering bay and later removal
    route. Do not place more than four on one side without revising the load
    case.
-5. Define the required internal pot/downstand geometry for the *Butomus* crown
-   at 100–150 mm depth and crowfoot rooting point at 200–350 mm depth. The
-   nominal common B23/B28 bearing level does not achieve those two depths by
-   itself.
+5. Define the required basket/downstand geometry for the *Butomus* crown at
+   100–150 mm depth and crowfoot rooting point at 200–350 mm depth. These are
+   complete basket-and-cartridge depth variants, not internal-pot substitutions.
 6. Obtain the selected GRP profile's resin, longitudinal/transverse properties,
    permanent-immersion suitability and bolted-connection guidance.
-7. Build one full-side comparative prototype at the actual cord angles and at
-   no more than 420 mm support spacing. Test the R3 single spine first and add
-   a detachable secondary rail if roll or yaw requires it.
+7. Build one representative full side with six J2--J7 gravity cords, four
+   crossed stabilisers, one inclined non-projecting corner cord, one complete 12 mm corner
+   and the selected R5.1 fittings.
 8. Include shallow B23, shallow B28, *Butomus* and crowfoot stations. Test full
    drain-down load, eccentric loading, a 50 mm inward basket shift, handling
    uplift, loss of the worst support, creep/chafe and the finished-edge removal
    operation.
-9. Standardise positive rounded crossbar locators if bindings permit movement.
-   Confirm every hollow member has deliberate resin-sealed vent and drain
-   openings and cannot retain a persistent air pocket.
-10. Compare the R3 crossbars with the R5 plate seat on the connected ring.
-    Pursue independent R4 modules only if their missing horizontal and roll
-    restraint has a practical solution. Choose the complete system from the
-    prototype results, then close the load envelope before batch cutting.
+9. Test the through-bushed pin/two-plate longitudinal stop with either plate
+   unavailable. Confirm every hollow member has deliberate resin-sealed vent
+   and drain openings and cannot retain a persistent air pocket.
+10. Insert and recover the planted cartridge independently, then remove and
+    refit the empty rigid basket and complete R5.1 seat. Close the load envelope
+    and all wet release gates before batch cutting.
 
 Fabricate and test over dry ground. Collect GRP dust at source and keep it away
 from the pond. Round and resin-seal every cut or drilled fibre, use A4/316 or
@@ -203,7 +196,7 @@ loam, gravel or plants until the rail is supported, level and accepted.
 
 The rail carries 10 B23 and 3 B28 baskets. The lily basket, hornwort cage and
 two moss slates are independent of it. Procurement, crown depths, media,
-ballast, guards and maintenance are controlled by [plants.md](plants.md).
+ballast, guards and maintenance are controlled by [plants-v2.md](plants-v2.md).
 
 Before final loading, soak representative completed B23 and B28 assemblies,
 release trapped air, and record both underwater apparent weight and fully
@@ -219,4 +212,4 @@ fibre or projecting thread.
 Maintain one connected central swimming and cleaning route. Keep roughly
 70–80% of the surface as open water, prevent watercress and other vigorous
 plants forming a continuous mat, and inspect the support terminations, chafe
-protection, rail joints, seats, ties and drainage at least annually.
+protection, rail joints, seats, basket bars and drainage at least annually.

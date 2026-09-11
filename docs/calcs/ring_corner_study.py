@@ -14,8 +14,7 @@ G_TORSION = 3_000.0
 SIDE = 2_100.0
 OUTER = 38.0
 PLATE_SEPARATION = 44.0  # centroids of 6 mm plates around 38 mm tube
-HOLE_DIAMETER = 6.5
-CURRENT_SIDE_HORIZONTAL = 600.0 * 100.0 / 356.5
+CURRENT_SIDE_HORIZONTAL = 600.0 * 100.0 / 319.5
 
 
 @dataclass(frozen=True)
@@ -88,17 +87,18 @@ class Gusset:
     thickness: float
     bolt_pitch: float
     outline: str
+    hole_diameter: float = 6.5
 
     def roll_couple(self, torque):
         separation = OUTER + self.thickness
         plate_force = torque / separation
         # Conservative: one bolt carries the plate force in transverse bearing.
-        bearing = plate_force / (HOLE_DIAMETER * self.thickness)
+        bearing = plate_force / (self.hole_diameter * self.thickness)
         return separation, plate_force, bearing
 
     def in_plane_couple(self, moment):
         force = moment / self.bolt_pitch
-        bearing = force / (HOLE_DIAMETER * self.thickness)
+        bearing = force / (self.hole_diameter * self.thickness)
         return force, bearing
 
 
@@ -122,7 +122,7 @@ def main():
                   f"deflection={movement:.2f} mm")
         for fixed in (False, True):
             moment, stress, movement = tube.transverse_side(CURRENT_SIDE_HORIZONTAL, fixed)
-            print(f"  0.168 kN current outward side, {'fixed' if fixed else 'pinned'} ends: "
+            print(f"  0.188 kN current outward side, {'fixed' if fixed else 'pinned'} ends: "
                   f"M={moment / 1000:.1f} Nm, bend={stress:.1f} MPa, "
                   f"deflection={movement:.1f} mm")
         if tube.wall == 5.0:
@@ -133,11 +133,30 @@ def main():
                 print(f"    corner K={stiffness_nm:>5} Nm/rad: "
                       f"end M={moment / 1000:.1f} Nm, deflection={movement:.1f} mm")
 
+    stop_tube = Tube(5.0)
+    stop_hole = 8.0
+    removed_area = 2 * stop_tube.wall * stop_hole
+    removed_vertical_i = 2 * stop_tube.wall * stop_hole**3 / 12
+    wall_centre = (OUTER - stop_tube.wall) / 2
+    removed_horizontal_i = 2 * (
+        stop_tube.wall * stop_hole * wall_centre**2
+        + stop_hole * stop_tube.wall**3 / 12
+    )
+    print("\nFALLBACK ONE TRANSVERSE 8 MM STOP-BUSH STATION")
+    print(f"  gross area loss={removed_area:.0f} mm2 "
+          f"({100 * removed_area / stop_tube.area:.1f}%)")
+    print(f"  local gross-I loss: vertical bending="
+          f"{100 * removed_vertical_i / stop_tube.inertia:.2f}%; "
+          f"horizontal bending={100 * removed_horizontal_i / stop_tube.inertia:.1f}%")
+    print("  closed-wall torsional shear path is interrupted; bush not credited as closure")
+
     gussets = [
         Gusset("existing L170 arm50 t6, bolts 60/120", 6.0, 60.0, "L"),
         Gusset("square170 t6, same bolts", 6.0, 60.0, "square"),
         Gusset("extended radiused L220 arm70 t8, bolts 55/195", 8.0, 140.0, "L"),
         Gusset("triangular-web220 t8, bolts 55/125/195", 8.0, 140.0, "triangle"),
+        Gusset("selected triangular-web220 arm80 t12, M8 bolts 55/125/195",
+               12.0, 140.0, "triangle", 8.5),
         Gusset("square220 t8, bolts 55/125/195", 8.0, 140.0, "square"),
     ]
     print("\nCORNER FORCE SCREENS")
@@ -162,12 +181,44 @@ def main():
     strip_k = 3 * 3_000.0 * strip_i / 220.0
     print(f"  low-modulus 220x70x8 strip={strip_k / 1e6:.1f} kNm/rad; "
           f"paired paths={2 * strip_k / 1e6:.1f} kNm/rad")
+    selected_i = 12.0 * 80.0**3 / 12
+    selected_k = 3 * 3_000.0 * selected_i / 220.0
+    print(f"  selected low-modulus 220x80x12 strip="
+          f"{selected_k / 1e6:.1f} kNm/rad; paired paths="
+          f"{2 * selected_k / 1e6:.1f} kNm/rad before connection compliance")
+
+    selected = gussets[-2]
+    _, roll_force, _ = selected.roll_couple(30_000.0)
+    plan_force, _ = selected.in_plane_couple(60_000.0)
+    combined = (roll_force**2 + plan_force**2) ** 0.5
+    print(f"  selected conservative vector force={combined:.0f} N; "
+          f"plate bearing={combined / (selected.hole_diameter * selected.thickness):.1f} MPa; "
+          f"two-wall tube bearing={combined / (selected.hole_diameter * 10):.1f} MPa")
+
+    print("\nNON-PROJECTING DIAGONAL-JOIST SIDE EYE")
+    backset = 55.0
+    side_offset = 41.5
+    # C2 runs from the outer inner-beam corner to the opening tip. The lower
+    # rail corner lies 141.4 mm pondward of that tip; the eye base is 55 mm
+    # behind the tip in the opposite, outward direction.
+    plan_diagonal = (2 * 100.0**2) ** 0.5 + backset
+    plan_offset = (plan_diagonal**2 + side_offset**2) ** 0.5
+    vertical_drop = 296.5
+    length = (plan_offset**2 + vertical_drop**2) ** 0.5
+    proof = 300.0
+    proof_vertical = proof * vertical_drop / length
+    proof_horizontal = proof * plan_offset / length
+    print(f"  backset={backset:.1f} mm; side tangent offset={side_offset:.1f} mm; "
+          f"cord length={length:.1f} mm")
+    print(f"  0.30 kN line proof: V={proof_vertical:.0f} N; "
+          f"plan resultant={proof_horizontal:.0f} N")
 
     print("\nCORD-DERIVED SIDE ENVELOPE")
     attachment_options = {
         "normalized 128 mm line": (128.0, 316.0),
         "tip underside": (100.0, 316.0),
-        "tip side-face mid-depth": (100.0, 356.5),
+        "tip side-face to rail-centreline": (100.0, 356.5),
+        "selected top-centred rail eye": (100.0, 319.5),
     }
     for label, (radial, vertical_drop) in attachment_options.items():
         horizontal = 600.0 * radial / vertical_drop

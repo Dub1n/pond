@@ -18,6 +18,11 @@ HALF_RING = 1050.0
 RAIL_Z = -244.0
 UPPER_Z = 112.5
 UPPER_RADIAL = 1150.0
+STRAIGHT_LOWER_RADIAL = 1050.0
+STRAIGHT_LOWER_Z = -207.0
+CORNER_LOWER_Z = -184.0
+CORNER_JOIST_BACKSET = 55.0
+CORNER_EYE_SIDE_OFFSET = 41.5
 JOIST_STATIONS = np.array(
     [-1226.5, -839.833333, -419.916667, -108.5,
      108.5, 419.916667, 839.833333, 1226.5]
@@ -66,8 +71,65 @@ def baseline() -> list[Cord]:
         cords.append(Cord(
             f"S{side + 1}-J{np.where(JOIST_STATIONS == station)[0][0] + 1}",
             side_point(side, station, UPPER_RADIAL, UPPER_Z),
-            side_point(side, lower_along, HALF_RING, RAIL_Z),
+            side_point(
+                side, lower_along, STRAIGHT_LOWER_RADIAL,
+                STRAIGHT_LOWER_Z
+            ),
             "gravity",
+        ))
+    return cords
+
+
+def middle_gravity() -> list[Cord]:
+    """Six straight-joist gravity cords per side, omitting J1 and J8.
+
+    The two former end cords that converged on each ring corner are replaced
+    by one inclined cord from a non-projecting C2 diagonal-joist side eye.
+    """
+    return [
+        cord for cord in baseline()
+        if not (cord.name.endswith("J1") or cord.name.endswith("J8"))
+    ]
+
+
+def corner_gravity(mode: str = "side-face") -> list[Cord]:
+    """One gravity cord at each ring corner from the diagonal C2 joist.
+
+    The selected side-face eye is wholly behind the timber tip.  Its force
+    tangent is 55 mm back along the joist and 41.5 mm outside the joist
+    centreline.  South corners use the south-facing diagonal face and north
+    corners the north-facing face so the four offsets do not impose a common
+    yaw bias.  ``direct-tip`` retains the ideal centreline tip comparison and
+    ``projected`` retains the rejected vertical-corner comparison.
+    """
+    cords = []
+    for corner in range(4):
+        lower = side_point(corner, -HALF_RING, HALF_RING, CORNER_LOWER_Z)
+        if mode == "projected":
+            upper = lower.copy()
+            upper[2] = UPPER_Z
+        elif mode == "direct-tip":
+            upper = side_point(corner, -UPPER_RADIAL, UPPER_RADIAL, UPPER_Z)
+        elif mode == "side-face":
+            tip = side_point(
+                corner, -UPPER_RADIAL, UPPER_RADIAL, UPPER_Z
+            )
+            radial = tip.copy()
+            radial[2] = 0.0
+            radial /= np.linalg.norm(radial)
+            tangent = np.array([-radial[1], radial[0], 0.0])
+            face_sign = (1.0, -1.0, 1.0, -1.0)[corner]
+            upper = (
+                tip + CORNER_JOIST_BACKSET * radial
+                + face_sign * CORNER_EYE_SIDE_OFFSET * tangent
+            )
+        else:
+            raise ValueError(f"unknown corner mode: {mode}")
+        cords.append(Cord(
+            f"C{corner + 1}-D",
+            upper,
+            lower,
+            "corner-gravity",
         ))
     return cords
 
@@ -81,7 +143,10 @@ def crossed_stabilisers() -> list[Cord]:
                 cords.append(Cord(
                     f"S{side + 1}-X{upper_i + 1}to{lower_i + 1}",
                     side_point(side, JOIST_STATIONS[upper_i], UPPER_RADIAL, UPPER_Z),
-                    side_point(side, JOIST_STATIONS[lower_i], HALF_RING, RAIL_Z),
+                    side_point(
+                        side, JOIST_STATIONS[lower_i],
+                        STRAIGHT_LOWER_RADIAL, STRAIGHT_LOWER_Z
+                    ),
                     "crossed",
                 ))
     return cords
@@ -220,7 +285,20 @@ def attachment_envelope(cords, responses):
 
 def main():
     layouts = {
-        "A baseline plus crossed cords": baseline() + crossed_stabilisers(),
+        "A former 32 gravity plus 16 crossed cords": (
+            baseline() + crossed_stabilisers()
+        ),
+        "C selected 24 middle gravity plus 4 C2 side-face plus 16 crossed": (
+            middle_gravity() + corner_gravity() + crossed_stabilisers()
+        ),
+        "C idealized direct C2-tip corner cords": (
+            middle_gravity() + corner_gravity("direct-tip")
+            + crossed_stabilisers()
+        ),
+        "C rejected projected vertical corner cords": (
+            middle_gravity() + corner_gravity("projected")
+            + crossed_stabilisers()
+        ),
         "B crossed cords plus split-seat bridles": (
             baseline() + crossed_stabilisers() + split_seat_bridles()
         ),

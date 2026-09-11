@@ -53,18 +53,18 @@ basket, start with a plate side of the larger of the rim width or **base width
 + 80 mm**, rounded up to 10 mm. Keep the upper nuts and washers clear of the
 tapered basket; enlarge the plate/bolt margin if the real basket needs it.
 
-| Dimension | Illustrated B28 example |
-| --- | ---: |
-| Basket rim / height | 280 × 280 mm / 190 mm |
-| Basket base | 200 × 200 mm, **assumed until measured** |
-| Upper and lower plates | 280 × 280 × 6 mm each |
-| Bolt stations along the rail | 120 mm each side of basket centre; 240 mm apart |
-| Sleeve outside diameter | Nominal 12 mm, smooth; bore clears M6 |
-| Sleeve centres across the rail | 26 mm either side of its centreline |
-| Side clearance | 1 mm between sleeve and each 38 mm rail face |
-| Clear distance between plates | 39 mm: measured 38 mm rail height + 1 mm |
-| Plate edge to bolt centre | 20 mm along the rail, before rounding corners |
-| Washers | Nominal 24 mm outside diameter, broad A4 flat washers |
+| Dimension                      |                               Illustrated B28 example |
+| ------------------------------ | ----------------------------------------------------: |
+| Basket rim / height            |                                 280 × 280 mm / 190 mm |
+| Basket base                    |              200 × 200 mm, **assumed until measured** |
+| Upper and lower plates         |                                 280 × 280 × 6 mm each |
+| Bolt stations along the rail   |       120 mm each side of basket centre; 240 mm apart |
+| Sleeve outside diameter        |                 Nominal 12 mm, smooth; bore clears M6 |
+| Sleeve centres across the rail |                   26 mm either side of its centreline |
+| Side clearance                 |          1 mm between sleeve and each 38 mm rail face |
+| Clear distance between plates  |              39 mm: measured 38 mm rail height + 1 mm |
+| Plate edge to bolt centre      |         20 mm along the rail, before rounding corners |
+| Washers                        | Nominal 24 mm outside diameter, broad A4 flat washers |
 
 These dimensions leave the fastener centres 20 mm beyond the assumed base
 edge. Check the whole washer/nut/thread envelope against the real basket,
@@ -168,14 +168,14 @@ handling clearance.
 
 ## Component allowance and simple trial
 
-| Item | One seat | Thirteen seats, if adopted |
-| --- | ---: | ---: |
-| Basket-sized GRP squares | 2 | 26, sizes from basket schedule |
-| M6 bolts / locking nuts / caps | 4 each | 52 each |
-| Broad washers | 8 | 104 |
-| Rigid spacer sleeves | 4 | 52 |
-| Rail collars | 2 | 26 multi-turn collars |
-| Removable basket ties | 4 | 52 |
+| Item                           | One seat |     Thirteen seats, if adopted |
+| ------------------------------ | -------: | -----------------------------: |
+| Basket-sized GRP squares       |        2 | 26, sizes from basket schedule |
+| M6 bolts / locking nuts / caps |   4 each |                        52 each |
+| Broad washers                  |        8 |                            104 |
+| Rigid spacer sleeves           |        4 |                             52 |
+| Rail collars                   |        2 |          26 multi-turn collars |
+| Removable basket ties          |        4 |                             52 |
 
 The ring, its corner hardware and 32 supports are additional and remain the
 R3 allowance. Plate stock area, risers and deeper seats depend on the measured
