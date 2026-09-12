@@ -63,12 +63,11 @@ reaction as well as vertical load.
 
 ## Access that must be preserved before decking
 
-Fit and test the upper rail-support terminations while the joists are exposed.
-Do not close the deck until each permanent support can also be inspected and
-replaced after the boards are fitted. Either provide a documented removable
-board/access detail or use an A4 through-fastened termination that can be
-renewed from an accessible face. A cord wrap trapped behind permanent decking
-is not an acceptable service detail.
+Fit and test the direct upper cord wraps and upper-face timber stops while the
+joists are exposed. Do not close the deck until each wrap, knot, stop and
+witness mark can be inspected and replaced. Provide documented removable
+boards with smooth underside relief over every cord and stop. A cord wrap
+trapped behind permanent decking is not an acceptable service detail.
 
 Before laying boards, use the real board edge or a full-size mock-up to prove
 that every basket can move inward far enough to clear the 350 mm overhang and
@@ -144,11 +143,11 @@ need to demonstrate that their reactions remain inside this envelope.
 
 For the current comparison screen, four nominal 10 kg drained baskets plus
 about 5–6 kg of rail and seats on one side produce roughly 0.45 kN total
-downward load. The cord model's maximum screened upper reaction is about
-0.092 kN resultant. The specified **0.3 kN proof test for one completed cord
-support is a rail-connection test, not evidence that the deck has 0.3 kN spare
-capacity at every joist.** Use measured masses and the approved envelope for
-the final decision.
+downward load. Upper reactions remain provisional until the direct-wrap
+tangents are measured. The
+specified **0.3 kN proof test for one completed cord support is a connection
+test, not evidence that the deck has 0.3 kN spare capacity at every joist.**
+Use measured masses and the approved envelope for the final decision.
 
 ## Rail survey, prototype and installation gates
 
@@ -171,16 +170,18 @@ rather than for batch fabrication. Close these gates in the stated order:
    complete basket-and-cartridge depth variants, not internal-pot substitutions.
 6. Obtain the selected GRP profile's resin, longitudinal/transverse properties,
    permanent-immersion suitability and bolted-connection guidance.
-7. Build one representative full side with six J2--J7 gravity cords, four
-   crossed stabilisers, one inclined non-projecting corner cord, one complete 12 mm corner
-   and the selected R5.1 fittings.
+7. Build one representative full side with six J2--J7 direct gravity loops,
+   one opposed crossed pair, one two-legged C2 sling, one complete 9.5 mm compact corner
+   and the selected R5.1 seat.
 8. Include shallow B23, shallow B28, *Butomus* and crowfoot stations. Test full
    drain-down load, eccentric loading, a 50 mm inward basket shift, handling
    uplift, loss of the worst support, creep/chafe and the finished-edge removal
    operation.
-9. Test the through-bushed pin/two-plate longitudinal stop with either plate
-   unavailable. Confirm every hollow member has deliberate resin-sealed vent
-   and drain openings and cannot retain a persistent air pocket.
+9. Test the selected twin strap stops for wet cyclic slip and seven-day creep.
+   Only if they fail, test the one through-bushed pin and one elongated stop
+   plate fallback, including the required rail coupon and a fault case with the
+   plate ineffective. Confirm every hollow member has deliberate resin-sealed
+   vent and drain openings and cannot retain a persistent air pocket.
 10. Insert and recover the planted cartridge independently, then remove and
     refit the empty rigid basket and complete R5.1 seat. Close the load envelope
     and all wet release gates before batch cutting.

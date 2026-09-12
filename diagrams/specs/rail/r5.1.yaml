@@ -1,0 +1,207 @@
+# R5.1 open H-cradle -- editable prototype component model, millimetres.
+# Derived from r5-plates.yaml, but intentionally replaces its superseded square
+# plates, cord collars, M6 hardware and basket ties.  Envelope solids omit bores,
+# radii and strap slots.  Build with --collision-mode ignore for this contact view.
+schema: pond-relationship-rail-study
+info:
+  option: R5.1
+  title: "R5.1 -- open H-cradle"
+  description: "Current local R5.1 seat: 8 mm H and bridges, M8/POM capture and no-hole strap stop."
+
+dimensions:
+  interface:
+    water_surface_z: 0
+    pond_span: 3000
+    deck_span: 5000
+    cantilever: 350
+    beam_height: 150
+    joist_depth: 75
+    joist_width: 47
+    opening_width: pond_span - 2 * cantilever
+  r51:
+    rail_line: pond_span / 2 - 450
+    rail_size: 38
+    bearing_depth: 200
+    plate_thickness: 8
+    rail_top: water_surface_z - bearing_depth - plate_thickness
+    seat_side: 250
+    arm_width: 50
+    central_strip_width: 90
+    central_strip_length: seat_side - arm_width
+    bridge_length: 110
+    bridge_width: 50
+    sleeve_od: 16
+    sleeve_length: 39
+    station_spacing: seat_side - arm_width
+    bolt_offset: 28
+    basket_base: 230
+    basket_height: 150
+
+components:
+  - { id: origin, kind: reference, size: [0, 0, 0] }
+  - { id: pond_frame, kind: reference, size: [pond_span, pond_span, 0] }
+  - { id: opening_frame, kind: reference, size: [opening_width, opening_width, 0] }
+
+  - id: r51_rail_south
+    class: IfcBuildingElementProxy
+    size: [2 * rail_line + rail_size, rail_size, rail_size]
+    material: grp
+    ifc: {predefined_type: ELEMENT}
+    views: [plan, section, connection]
+    label: "38 x 38 x 5 mm GRP rail; solid envelope"
+    label_id: R
+    relate:
+      cx: 0
+      cy: -rail_line
+      +z: rail_top
+
+  # One real local datum; edit this after the B23/B28 bearing-band survey.
+  - id: r51_station
+    kind: reference
+    size: [0, 0, 0]
+    relate:
+      cx: 0
+      cy: -rail_line
+      cz: water_surface_z - bearing_depth
+
+  # The three solids together are the open upper H.  Its 25 mm internal radii
+  # and the two 30 x 7 mm strap slots are intentionally not represented.
+  - id: r51_upper_h_arms
+    class: IfcBuildingElementProxy
+    size: [arm_width, seat_side, plate_thickness]
+    material: grp
+    ifc: {predefined_type: ELEMENT}
+    views: [plan, seat-plan, section, connection]
+    label: "8 mm structural-GRP upper H: bearing arms; radii and slots omitted"
+    label_id: H
+    place:
+      - id: r51_upper_h_arm_west
+        cx: {offset: -station_spacing / 2, pos: cx, ref: r51_station}
+        cy: {pos: cy, ref: r51_station}
+        +z: {pos: cz, ref: r51_station}
+      - id: r51_upper_h_arm_east
+        cx: {offset: station_spacing / 2, pos: cx, ref: r51_station}
+        cy: {pos: cy, ref: r51_station}
+        +z: {pos: cz, ref: r51_station}
+
+  - id: r51_upper_h_centre
+    class: IfcBuildingElementProxy
+    size: [central_strip_length, central_strip_width, plate_thickness]
+    material: grp
+    ifc: {predefined_type: ELEMENT}
+    views: [plan, seat-plan, section, connection]
+    relate:
+      cxcy: {ref: r51_station, pos: cxcy}
+      +z: {pos: cz, ref: r51_station}
+
+  - id: r51_lower_bridges
+    class: IfcBuildingElementProxy
+    size: [bridge_width, bridge_length, plate_thickness]
+    material: grp
+    ifc: {predefined_type: ELEMENT}
+    views: [plan, seat-plan, section, connection]
+    label: "8 mm GRP lower bridge; rounded corners and M8 bores omitted"
+    label_id: G
+    place:
+      - id: r51_lower_bridge_west
+        cx: {offset: -station_spacing / 2, pos: cx, ref: r51_station}
+        cy: {pos: cy, ref: r51_station}
+        +z: {offset: -sleeve_length, pos: -z, ref: r51_station}
+      - id: r51_lower_bridge_east
+        cx: {offset: station_spacing / 2, pos: cx, ref: r51_station}
+        cy: {pos: cy, ref: r51_station}
+        +z: {offset: -sleeve_length, pos: -z, ref: r51_station}
+
+  - id: r51_pom_sleeves
+    class: IfcBuildingElementProxy
+    size: [sleeve_od, sleeve_od, sleeve_length]
+    material: basket-polymer
+    ifc: {predefined_type: ELEMENT}
+    views: [plan, seat-plan, section, connection]
+    label: "POM-C sleeves: 16 mm OD, 8.2-8.5 mm bore, 39 mm long; bore omitted"
+    label_id: S
+    place:
+      - id: r51_sleeve_west_bank
+        cx: {offset: -station_spacing / 2, pos: cx, ref: r51_station}
+        cy: {offset: -bolt_offset, pos: cy, ref: r51_station}
+        cz: {offset: -plate_thickness - sleeve_length / 2, pos: cz, ref: r51_station}
+      - id: r51_sleeve_west_pond
+        cx: {offset: -station_spacing / 2, pos: cx, ref: r51_station}
+        cy: {offset: bolt_offset, pos: cy, ref: r51_station}
+        cz: {offset: -plate_thickness - sleeve_length / 2, pos: cz, ref: r51_station}
+      - id: r51_sleeve_east_bank
+        cx: {offset: station_spacing / 2, pos: cx, ref: r51_station}
+        cy: {offset: -bolt_offset, pos: cy, ref: r51_station}
+        cz: {offset: -plate_thickness - sleeve_length / 2, pos: cz, ref: r51_station}
+      - id: r51_sleeve_east_pond
+        cx: {offset: station_spacing / 2, pos: cx, ref: r51_station}
+        cy: {offset: bolt_offset, pos: cy, ref: r51_station}
+        cz: {offset: -plate_thickness - sleeve_length / 2, pos: cz, ref: r51_station}
+
+  - id: r51_m8_capture_bolts
+    class: IfcBuildingElementProxy
+    size: [8, 8, 90]
+    material: a4-stainless
+    ifc: {predefined_type: ELEMENT}
+    views: [plan, seat-plan, section, connection]
+    label: "M8 x 90 A4 capture bolts, broad washers, all-metal nuts and caps; envelopes"
+    label_id: B
+    place:
+      - id: r51_bolt_west_bank
+        cx: {offset: -station_spacing / 2, pos: cx, ref: r51_station}
+        cy: {offset: -bolt_offset, pos: cy, ref: r51_station}
+        cz: {offset: -sleeve_length / 2, pos: cz, ref: r51_station}
+      - id: r51_bolt_west_pond
+        cx: {offset: -station_spacing / 2, pos: cx, ref: r51_station}
+        cy: {offset: bolt_offset, pos: cy, ref: r51_station}
+        cz: {offset: -sleeve_length / 2, pos: cz, ref: r51_station}
+      - id: r51_bolt_east_bank
+        cx: {offset: station_spacing / 2, pos: cx, ref: r51_station}
+        cy: {offset: -bolt_offset, pos: cy, ref: r51_station}
+        cz: {offset: -sleeve_length / 2, pos: cz, ref: r51_station}
+      - id: r51_bolt_east_pond
+        cx: {offset: station_spacing / 2, pos: cx, ref: r51_station}
+        cy: {offset: bolt_offset, pos: cy, ref: r51_station}
+        cz: {offset: -sleeve_length / 2, pos: cz, ref: r51_station}
+
+  - id: r51_strap_stops
+    class: IfcBuildingElementProxy
+    size: [25, 8, 48]
+    material: polyester
+    ifc: {predefined_type: ELEMENT}
+    views: [plan, section]
+    label: "Two 25 mm endless cam straps: no-hole longitudinal seat stops; schematic"
+    label_id: T
+    place:
+      - id: r51_strap_stop_west
+        cx: {offset: -station_spacing / 2, pos: cx, ref: r51_station}
+        cy: {offset: 45, pos: cy, ref: r51_station}
+        cz: {offset: -rail_size / 2, pos: cz, ref: r51_station}
+      - id: r51_strap_stop_east
+        cx: {offset: station_spacing / 2, pos: cx, ref: r51_station}
+        cy: {offset: 45, pos: cy, ref: r51_station}
+        cz: {offset: -rail_size / 2, pos: cz, ref: r51_station}
+
+  - id: r51_b23_basket
+    class: IfcBuildingElementProxy
+    size: [basket_base, basket_base, basket_height]
+    material: basket-polymer
+    ifc: {predefined_type: ELEMENT}
+    views: [plan, section]
+    label: "B23 envelope only; exact base bands and four retention fasteners await survey"
+    label_id: Q
+    relate:
+      cxcy: {ref: r51_station, pos: cxcy}
+      -z: {pos: cz, ref: r51_station}
+
+views:
+  plan: {title: "R5.1 -- local seat plan", scale_hint: 1.4, renders: [svg, png]}
+  seat-plan: {title: "R5.1 -- H, bridges and capture hardware", scale_hint: 2, renders: [svg, png]}
+  section:
+    title: "R5.1 -- transverse capture section"
+    scale_hint: 1.5
+    plane: {axis: x, coordinate: 0}
+  connection:
+    title: "R5.1 -- M8/POM capture envelope"
+    scale_hint: 2
+    plane: {axis: x, coordinate: -station_spacing / 2}

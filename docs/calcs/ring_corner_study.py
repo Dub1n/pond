@@ -14,7 +14,7 @@ G_TORSION = 3_000.0
 SIDE = 2_100.0
 OUTER = 38.0
 PLATE_SEPARATION = 44.0  # centroids of 6 mm plates around 38 mm tube
-CURRENT_SIDE_HORIZONTAL = 600.0 * 100.0 / 319.5
+CURRENT_SIDE_HORIZONTAL = 600.0 * 135.0 / 338.0
 
 
 @dataclass(frozen=True)
@@ -122,7 +122,7 @@ def main():
                   f"deflection={movement:.2f} mm")
         for fixed in (False, True):
             moment, stress, movement = tube.transverse_side(CURRENT_SIDE_HORIZONTAL, fixed)
-            print(f"  0.188 kN current outward side, {'fixed' if fixed else 'pinned'} ends: "
+            print(f"  0.240 kN provisional outward side, {'fixed' if fixed else 'pinned'} ends: "
                   f"M={moment / 1000:.1f} Nm, bend={stress:.1f} MPa, "
                   f"deflection={movement:.1f} mm")
         if tube.wall == 5.0:
@@ -155,7 +155,11 @@ def main():
         Gusset("square170 t6, same bolts", 6.0, 60.0, "square"),
         Gusset("extended radiused L220 arm70 t8, bolts 55/195", 8.0, 140.0, "L"),
         Gusset("triangular-web220 t8, bolts 55/125/195", 8.0, 140.0, "triangle"),
-        Gusset("selected triangular-web220 arm80 t12, M8 bolts 55/125/195",
+        Gusset("triangular-web220 arm80 t8, M8 bolts 55/125/195",
+               8.0, 140.0, "triangle", 8.5),
+        Gusset("selected compact triangular-web220 arm80 t9.5, M8 bolts 55/125/195",
+               9.5, 140.0, "triangle", 8.5),
+        Gusset("triangular-web220 arm80 t12, M8 bolts 55/125/195",
                12.0, 140.0, "triangle", 8.5),
         Gusset("square220 t8, bolts 55/125/195", 8.0, 140.0, "square"),
     ]
@@ -181,44 +185,25 @@ def main():
     strip_k = 3 * 3_000.0 * strip_i / 220.0
     print(f"  low-modulus 220x70x8 strip={strip_k / 1e6:.1f} kNm/rad; "
           f"paired paths={2 * strip_k / 1e6:.1f} kNm/rad")
-    selected_i = 12.0 * 80.0**3 / 12
-    selected_k = 3 * 3_000.0 * selected_i / 220.0
-    print(f"  selected low-modulus 220x80x12 strip="
-          f"{selected_k / 1e6:.1f} kNm/rad; paired paths="
-          f"{2 * selected_k / 1e6:.1f} kNm/rad before connection compliance")
-
-    selected = gussets[-2]
-    _, roll_force, _ = selected.roll_couple(30_000.0)
-    plan_force, _ = selected.in_plane_couple(60_000.0)
-    combined = (roll_force**2 + plan_force**2) ** 0.5
-    print(f"  selected conservative vector force={combined:.0f} N; "
-          f"plate bearing={combined / (selected.hole_diameter * selected.thickness):.1f} MPa; "
-          f"two-wall tube bearing={combined / (selected.hole_diameter * 10):.1f} MPa")
-
-    print("\nNON-PROJECTING DIAGONAL-JOIST SIDE EYE")
-    backset = 55.0
-    side_offset = 41.5
-    # C2 runs from the outer inner-beam corner to the opening tip. The lower
-    # rail corner lies 141.4 mm pondward of that tip; the eye base is 55 mm
-    # behind the tip in the opposite, outward direction.
-    plan_diagonal = (2 * 100.0**2) ** 0.5 + backset
-    plan_offset = (plan_diagonal**2 + side_offset**2) ** 0.5
-    vertical_drop = 296.5
-    length = (plan_offset**2 + vertical_drop**2) ** 0.5
-    proof = 300.0
-    proof_vertical = proof * vertical_drop / length
-    proof_horizontal = proof * plan_offset / length
-    print(f"  backset={backset:.1f} mm; side tangent offset={side_offset:.1f} mm; "
-          f"cord length={length:.1f} mm")
-    print(f"  0.30 kN line proof: V={proof_vertical:.0f} N; "
-          f"plan resultant={proof_horizontal:.0f} N")
+    print("  220x80 triangular-web thickness comparison (before connection compliance):")
+    target_k = 20_000_000.0
+    for thickness in (8.0, 9.5, 10.0, 12.0):
+        strip_i = thickness * 80.0**3 / 12
+        plate_k = 2 * 3 * 3_000.0 * strip_i / 220.0
+        # Springs in series: 1/K_total = 1/K_plate + 1/K_connection.
+        connection_needed = target_k * plate_k / (plate_k - target_k)
+        selected = Gusset("comparison", thickness, 140.0, "triangle", 8.5)
+        _, roll_force, _ = selected.roll_couple(30_000.0)
+        plan_force, _ = selected.in_plane_couple(60_000.0)
+        combined = (roll_force**2 + plan_force**2) ** 0.5
+        print(f"    t={thickness:g} mm: paired K={plate_k / 1e6:.1f} kNm/rad; "
+              f"connection K needed for 20={connection_needed / 1e6:.1f} kNm/rad; "
+              f"vector bearing={combined / (selected.hole_diameter * thickness):.1f} MPa")
 
     print("\nCORD-DERIVED SIDE ENVELOPE")
     attachment_options = {
-        "normalized 128 mm line": (128.0, 316.0),
-        "tip underside": (100.0, 316.0),
-        "tip side-face to rail-centreline": (100.0, 356.5),
-        "selected top-centred rail eye": (100.0, 319.5),
+        "provisional direct wrap": (135.0, 338.0),
+        "wrap 50 mm behind tip sensitivity": (150.0, 338.0),
     }
     for label, (radial, vertical_drop) in attachment_options.items():
         horizontal = 600.0 * radial / vertical_drop

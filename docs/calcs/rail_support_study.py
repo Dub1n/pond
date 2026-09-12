@@ -1,43 +1,44 @@
 #!/usr/bin/env python3
-"""Comparative rigid-ring and cord-support screen for Pack C.
+"""Provisional rigid-ring screen for the Pack C direct-loop suspension.
 
-This is deliberately a transparent, conservative comparison model.  It is not
-a connection, timber, GRP, or fabrication design check.  Dimensions are mm and
-forces are N; moments are N mm.
+The wrap coordinates are deliberately provisional until measured on the real
+joists, cord, chafe sleeves and deck-board template. Dimensions are mm, forces
+are N and moments are N mm. This is not a connection or fabrication check.
 """
 
 from __future__ import annotations
 
 from dataclasses import dataclass
-from itertools import product
 
 import numpy as np
 
 
 HALF_RING = 1050.0
 RAIL_Z = -244.0
-UPPER_Z = 112.5
-UPPER_RADIAL = 1150.0
-STRAIGHT_LOWER_RADIAL = 1050.0
-STRAIGHT_LOWER_Z = -207.0
-CORNER_LOWER_Z = -184.0
-CORNER_JOIST_BACKSET = 55.0
-CORNER_EYE_SIDE_OFFSET = 41.5
+RAIL_WRAP_Z = -263.0
+CORNER_POST_Z = -203.0
+UPPER_WRAP_Z = 75.0  # descending legs leave near the joist underside
+STRAIGHT_WRAP_RADIAL = 1185.0  # provisional 35 mm back from the joist tip
+C2_WRAP_BACKSET = 35.0  # provisional distance along the diagonal from its tip
+CORNER_POST_OFFSET = 55.0
 JOIST_STATIONS = np.array(
     [-1226.5, -839.833333, -419.916667, -108.5,
      108.5, 419.916667, 839.833333, 1226.5]
 )
-EA_CORD = 6000.0  # N: effective wet/knotted/bedded axial rigidity
-PRETENSION = 10.0  # N: nominal seating tension, not structural prestress
+EA_LOOP = 6000.0  # conservative effective rigidity assigned to one cord item
+PRETENSION_ITEM = 10.0
 MOMENT_SCALE = HALF_RING
 
 
 @dataclass(frozen=True)
-class Cord:
+class CordLeg:
     name: str
+    item: str
     upper: np.ndarray
     lower: np.ndarray
     family: str
+    ea: float = EA_LOOP
+    pretension: float = PRETENSION_ITEM
 
     @property
     def length(self) -> float:
@@ -53,7 +54,7 @@ class Cord:
 
     @property
     def stiffness(self) -> float:
-        return EA_CORD / self.length
+        return self.ea / self.length
 
 
 def side_point(side: int, along: float, radial: float, z: float) -> np.ndarray:
@@ -64,118 +65,82 @@ def side_point(side: int, along: float, radial: float, z: float) -> np.ndarray:
     return point
 
 
-def baseline() -> list[Cord]:
-    cords = []
-    for side, station in product(range(4), JOIST_STATIONS):
-        lower_along = float(np.clip(station, -HALF_RING, HALF_RING))
-        cords.append(Cord(
-            f"S{side + 1}-J{np.where(JOIST_STATIONS == station)[0][0] + 1}",
-            side_point(side, station, UPPER_RADIAL, UPPER_Z),
-            side_point(
-                side, lower_along, STRAIGHT_LOWER_RADIAL,
-                STRAIGHT_LOWER_Z
-            ),
-            "gravity",
-        ))
-    return cords
-
-
-def middle_gravity() -> list[Cord]:
-    """Six straight-joist gravity cords per side, omitting J1 and J8.
-
-    The two former end cords that converged on each ring corner are replaced
-    by one inclined cord from a non-projecting C2 diagonal-joist side eye.
-    """
-    return [
-        cord for cord in baseline()
-        if not (cord.name.endswith("J1") or cord.name.endswith("J8"))
-    ]
-
-
-def corner_gravity(mode: str = "side-face") -> list[Cord]:
-    """One gravity cord at each ring corner from the diagonal C2 joist.
-
-    The selected side-face eye is wholly behind the timber tip.  Its force
-    tangent is 55 mm back along the joist and 41.5 mm outside the joist
-    centreline.  South corners use the south-facing diagonal face and north
-    corners the north-facing face so the four offsets do not impose a common
-    yaw bias.  ``direct-tip`` retains the ideal centreline tip comparison and
-    ``projected`` retains the rejected vertical-corner comparison.
-    """
-    cords = []
-    for corner in range(4):
-        lower = side_point(corner, -HALF_RING, HALF_RING, CORNER_LOWER_Z)
-        if mode == "projected":
-            upper = lower.copy()
-            upper[2] = UPPER_Z
-        elif mode == "direct-tip":
-            upper = side_point(corner, -UPPER_RADIAL, UPPER_RADIAL, UPPER_Z)
-        elif mode == "side-face":
-            tip = side_point(
-                corner, -UPPER_RADIAL, UPPER_RADIAL, UPPER_Z
-            )
-            radial = tip.copy()
-            radial[2] = 0.0
-            radial /= np.linalg.norm(radial)
-            tangent = np.array([-radial[1], radial[0], 0.0])
-            face_sign = (1.0, -1.0, 1.0, -1.0)[corner]
-            upper = (
-                tip + CORNER_JOIST_BACKSET * radial
-                + face_sign * CORNER_EYE_SIDE_OFFSET * tangent
-            )
-        else:
-            raise ValueError(f"unknown corner mode: {mode}")
-        cords.append(Cord(
-            f"C{corner + 1}-D",
-            upper,
-            lower,
-            "corner-gravity",
-        ))
-    return cords
-
-
-def crossed_stabilisers() -> list[Cord]:
-    """Opposite-handed pairs over the J2-J3 and J6-J7 bays on every side."""
-    cords = []
+def gravity_loops() -> list[CordLeg]:
+    """Equivalent centreline legs for the 24 two-legged direct loops."""
+    legs = []
     for side in range(4):
-        for a, b in ((1, 2), (5, 6)):
-            for upper_i, lower_i in ((a, b), (b, a)):
-                cords.append(Cord(
-                    f"S{side + 1}-X{upper_i + 1}to{lower_i + 1}",
-                    side_point(side, JOIST_STATIONS[upper_i], UPPER_RADIAL, UPPER_Z),
-                    side_point(
-                        side, JOIST_STATIONS[lower_i],
-                        STRAIGHT_LOWER_RADIAL, STRAIGHT_LOWER_Z
-                    ),
-                    "crossed",
-                ))
-    return cords
+        for joist_index in range(1, 7):
+            station = float(JOIST_STATIONS[joist_index])
+            item = f"S{side + 1}-J{joist_index + 1}"
+            legs.append(CordLeg(
+                item, item,
+                side_point(side, station, STRAIGHT_WRAP_RADIAL, UPPER_WRAP_Z),
+                side_point(side, station, HALF_RING, RAIL_WRAP_Z),
+                "gravity-loop",
+            ))
+    return legs
 
 
-def split_seat_bridles() -> list[Cord]:
-    """Two independent cords to +/-80 mm points on each provisional seat.
-
-    The points are provisional within the R5.1 transverse envelope, not fixed
-    R5.1 geometry. This is a mathematical best case until the arms and
-    attachments are defined and checked. A freely migrating wrap or two cords
-    at one point gives no couple.
-    Four seats per side deliberately bounds the actual 13-seat arrangement.
-    """
-    cords = []
+def crossed_loops() -> list[CordLeg]:
+    """One equivalent opposite-handed pair over J2-J3 on each side."""
+    legs = []
     for side in range(4):
-        for seat_no, along in enumerate((-750.0, -250.0, 250.0, 750.0), 1):
-            upper_station = float(JOIST_STATIONS[np.argmin(abs(JOIST_STATIONS - along))])
-            for transverse in (-80.0, 80.0):
-                cords.append(Cord(
-                    f"S{side + 1}-seat{seat_no}{'b' if transverse < 0 else 'p'}",
-                    side_point(side, upper_station, UPPER_RADIAL, UPPER_Z),
-                    side_point(side, along, HALF_RING + transverse, RAIL_Z),
-                    "bridle",
-                ))
-    return cords
+        for upper_i, lower_i in ((1, 2), (2, 1)):
+            item = f"S{side + 1}-X{upper_i + 1}to{lower_i + 1}"
+            legs.append(CordLeg(
+                item, item,
+                side_point(
+                    side, float(JOIST_STATIONS[upper_i]),
+                    STRAIGHT_WRAP_RADIAL, UPPER_WRAP_Z,
+                ),
+                side_point(
+                    side, float(JOIST_STATIONS[lower_i]),
+                    HALF_RING, RAIL_WRAP_Z,
+                ),
+                "crossed-loop",
+            ))
+    return legs
 
 
-def generalized_load(points: list[tuple[np.ndarray, np.ndarray]], moment=None):
+def corner_sling_legs() -> list[CordLeg]:
+    """Two lower legs belonging to each of four continuous C2 slings."""
+    legs = []
+    extra = C2_WRAP_BACKSET / np.sqrt(2.0)
+    for index, (sx, sy) in enumerate(
+        ((-1.0, -1.0), (1.0, -1.0), (1.0, 1.0), (-1.0, 1.0)), 1
+    ):
+        item = f"C{index}-C2-sling"
+        upper = np.array([
+            sx * (1150.0 + extra),
+            sy * (1150.0 + extra),
+            UPPER_WRAP_Z,
+        ])
+        lowers = (
+            np.array([
+                sx * (HALF_RING - CORNER_POST_OFFSET),
+                sy * HALF_RING,
+                CORNER_POST_Z,
+            ]),
+            np.array([
+                sx * HALF_RING,
+                sy * (HALF_RING - CORNER_POST_OFFSET),
+                CORNER_POST_Z,
+            ]),
+        )
+        for leg_index, lower in enumerate(lowers, 1):
+            legs.append(CordLeg(
+                f"{item}-L{leg_index}", item, upper, lower, "corner-sling",
+                ea=EA_LOOP / 2.0,
+                pretension=PRETENSION_ITEM / 2.0,
+            ))
+    return legs
+
+
+def selected_layout() -> list[CordLeg]:
+    return gravity_loops() + crossed_loops() + corner_sling_legs()
+
+
+def generalized_load(points, moment=None):
     result = np.zeros(6)
     for position, force in points:
         result[:3] += force
@@ -187,95 +152,72 @@ def generalized_load(points: list[tuple[np.ndarray, np.ndarray]], moment=None):
 
 def cases() -> dict[str, np.ndarray]:
     centre = np.array([0.0, 0.0, RAIL_Z])
-    side_centres = [side_point(side, 0.0, HALF_RING, RAIL_Z) for side in range(4)]
+    side_centres = [side_point(side, 0.0, HALF_RING, RAIL_Z)
+                    for side in range(4)]
+    uneven = (600.0, 450.0, 300.0, 450.0)
     return {
         "symmetric 1.80 kN drain-down": generalized_load(
             [(centre, np.array([0.0, 0.0, -1800.0]))]
         ),
         "uneven sides 0.60/0.45/0.30/0.45 kN": generalized_load([
             (side_centres[i], np.array([0.0, 0.0, -load]))
-            for i, load in enumerate((600.0, 450.0, 300.0, 450.0))
+            for i, load in enumerate(uneven)
         ]),
         "uneven plus south-seat 5 N m torque": generalized_load(
             [(side_centres[i], np.array([0.0, 0.0, -load]))
-             for i, load in enumerate((600.0, 450.0, 300.0, 450.0))],
+             for i, load in enumerate(uneven)],
             moment=np.array([5000.0, 0.0, 0.0]),
         ),
         "uneven plus 0.10 kN handling uplift": generalized_load(
             [(side_centres[i], np.array([0.0, 0.0, -load]))
-             for i, load in enumerate((600.0, 450.0, 300.0, 450.0))]
+             for i, load in enumerate(uneven)]
             + [(side_point(0, -260.0, HALF_RING, RAIL_Z),
                 np.array([0.0, 0.0, 100.0]))]
         ),
     }
 
 
-def scaled_matrix(cords: list[Cord]) -> np.ndarray:
-    matrix = np.vstack([cord.row for cord in cords])
+def scaled_matrix(legs: list[CordLeg]) -> np.ndarray:
+    matrix = np.vstack([leg.row for leg in legs])
     matrix[:, 3:] /= MOMENT_SCALE
     return matrix
 
 
-def compatible_response(cords: list[Cord], external: np.ndarray, pretension=None,
-                        unavailable=()):
-    """Linear axial-spring response with a tension-only active-set iteration."""
-    keep = [i for i in range(len(cords)) if i not in unavailable]
-    if pretension is None:
-        pretension = np.full(len(cords), PRETENSION)
+def compatible_response(legs, external, unavailable_items=()):
+    """Linear axial response with tension-only active-set iteration."""
+    keep = [i for i, leg in enumerate(legs) if leg.item not in unavailable_items]
     demand = -external.copy()
     demand[3:] /= MOMENT_SCALE
-    all_columns = np.column_stack([cord.row for cord in cords])
-    all_columns[3:, :] /= MOMENT_SCALE
+    columns = np.column_stack([leg.row for leg in legs])
+    columns[3:, :] /= MOMENT_SCALE
     active = keep.copy()
-    for _ in range(len(cords) + 1):
-        a = all_columns[:, active]
-        k = np.array([cords[i].stiffness for i in active])
-        t0 = pretension[active]
-        tangent = (a * k) @ a.T
+    for _ in range(len(legs) + 1):
+        a = columns[:, active]
+        stiffness = np.array([legs[i].stiffness for i in active])
+        initial = np.array([legs[i].pretension for i in active])
+        tangent = (a * stiffness) @ a.T
         if np.linalg.matrix_rank(tangent) < 6:
             return None
-        q = np.linalg.solve(tangent, demand - a @ t0)
-        tension = t0 + k * (a.T @ q)
+        movement = np.linalg.solve(tangent, demand - a @ initial)
+        tension = initial + stiffness * (a.T @ movement)
         negative = np.where(tension < -1e-8)[0]
         if not len(negative):
-            result = np.zeros(len(cords))
+            result = np.zeros(len(legs))
             result[active] = np.maximum(tension, 0.0)
-            return result, q, active
+            return result, movement, active
         del active[int(negative[np.argmin(tension[negative])])]
     return None
 
 
-def stiffness_modes(cords: list[Cord], tension: np.ndarray | None = None):
-    rows = np.vstack([cord.row for cord in cords])
-    scale = np.diag([1, 1, 1, 1 / MOMENT_SCALE, 1 / MOMENT_SCALE, 1 / MOMENT_SCALE])
-    rows = rows @ np.linalg.inv(scale)
-    axial = np.diag([cord.stiffness for cord in cords])
-    matrix = rows.T @ axial @ rows
-    values = np.linalg.eigvalsh(matrix)
-    return np.sqrt(np.maximum(values, 0.0))
-
-
-def local_roll_screen():
-    # Best-case provisional split-seat pair, linearized about the rail axis.
-    sample = split_seat_bridles()[:2]
-    lever = 80.0
-    k_theta = sum(c.stiffness * (c.n[2] * lever) ** 2 for c in sample)
-    twist_one = 5000.0 / k_theta
-    twist_two = 5000.0 / (2.0 * k_theta)
-    unload_rotation = PRETENSION / (sample[0].stiffness * abs(sample[0].n[2]) * lever)
-    return k_theta, twist_one, twist_two, unload_rotation
-
-
-def attachment_envelope(cords, responses):
+def attachment_envelope(legs, responses):
     records = []
     for tension in responses:
         grouped = {}
-        for cord, value in zip(cords, tension):
-            key = tuple(np.round(cord.upper, 3))
+        for leg, value in zip(legs, tension):
+            key = tuple(np.round(leg.upper, 3))
             grouped.setdefault(key, np.zeros(3))
-            grouped[key] += value * cord.n  # equal magnitude; deck direction is opposite
-        forces = list(grouped.values())
-        records.extend(forces)
+            grouped[key] += value * leg.n
+        records.extend(grouped.values())
     return (
         max(force[2] for force in records),
         max(np.linalg.norm(force[:2]) for force in records),
@@ -284,97 +226,46 @@ def attachment_envelope(cords, responses):
 
 
 def main():
-    layouts = {
-        "A former 32 gravity plus 16 crossed cords": (
-            baseline() + crossed_stabilisers()
-        ),
-        "C selected 24 middle gravity plus 4 C2 side-face plus 16 crossed": (
-            middle_gravity() + corner_gravity() + crossed_stabilisers()
-        ),
-        "C idealized direct C2-tip corner cords": (
-            middle_gravity() + corner_gravity("direct-tip")
-            + crossed_stabilisers()
-        ),
-        "C rejected projected vertical corner cords": (
-            middle_gravity() + corner_gravity("projected")
-            + crossed_stabilisers()
-        ),
-        "B crossed cords plus split-seat bridles": (
-            baseline() + crossed_stabilisers() + split_seat_bridles()
-        ),
-    }
-    print("ASSUMPTIONS")
-    print(f"EA_eff={EA_CORD:.0f} N; seating pretension={PRETENSION:.1f} N")
-    print(f"ring centreline=+/-{HALF_RING:.0f} mm; lower Z={RAIL_Z:.0f} mm")
-    print()
-    for name, cords in layouts.items():
-        matrix = scaled_matrix(cords)
-        singular = np.linalg.svd(matrix, compute_uv=False)
-        print(name)
-        print(f"  cords={len(cords)} rank={np.linalg.matrix_rank(matrix)}/6 "
-              f"condition={singular[0] / singular[-1]:.2f}")
-        print("  singular=" + ", ".join(f"{value:.3f}" for value in singular))
-        envelope_responses = []
-        for case_name, load in cases().items():
-            response = compatible_response(cords, load)
-            if response is None:
-                print(f"  {case_name}: INFEASIBLE tension-only compatible response")
-                continue
-            tensions, q, response_active = response
-            envelope_responses.append(tensions)
-            movement = (f"move={np.linalg.norm(q[:3]):.2f} mm "
-                        f"rot={np.degrees(np.linalg.norm(q[3:]) / MOMENT_SCALE):.3f} deg "
-                        f"active={len(response_active)}")
-            print(f"  {case_name}: min={tensions.min():.1f} N "
-                  f"max={tensions.max():.1f} N slack={(tensions < 0.1).sum()} "
-                  f"{movement}")
-        # Find the worst single unavailable cord under uneven + torque.
-        load = cases()["uneven plus south-seat 5 N m torque"]
-        failures = []
-        for missing in range(len(cords)):
-            response = compatible_response(cords, load, unavailable=(missing,))
-            failures.append((response is not None,
-                             np.max(response[0]) if response is not None else np.inf,
-                             cords[missing].name))
-        feasible = [entry for entry in failures if entry[0]]
-        print(f"  one-cord-unavailable: {len(feasible)}/{len(cords)} equilibria feasible; "
-              f"worst max={max(x[1] for x in feasible):.1f} N "
-              f"when {max(feasible, key=lambda x: x[1])[2]} unavailable")
-        vertical, horizontal, resultant = attachment_envelope(cords, envelope_responses)
-        print(f"  upper-attachment envelope (listed cases): down={vertical:.1f} N, "
-              f"horizontal={horizontal:.1f} N, resultant={resultant:.1f} N")
-        # Conservative installation/bedding sensitivity: +/-1.5 mm effective
-        # free-length error, fixed seed for reproducibility.  Positive error
-        # means a longer/slacker cord.  No beneficial geometric stiffness.
-        rng = np.random.default_rng(20260908)
-        load = cases()["uneven plus south-seat 5 N m torque"]
-        trials = []
-        mechanisms = 0
-        for _ in range(250):
-            errors = rng.uniform(-1.5, 1.5, len(cords))
-            initial = np.maximum(0.0, PRETENSION - np.array(
-                [cord.stiffness for cord in cords]) * errors)
-            response = compatible_response(cords, load, initial)
-            if response is None:
-                mechanisms += 1
-                continue
-            tension, q, response_active = response
-            trials.append((tension.max(), np.linalg.norm(q[:3]),
-                           np.degrees(np.linalg.norm(q[3:]) / MOMENT_SCALE),
-                           len(response_active)))
-        trial_array = np.array(trials)
-        print(f"  +/-1.5 mm free-length sensitivity (250): mechanisms={mechanisms}; "
-              f"max tension p95={np.percentile(trial_array[:, 0], 95):.1f} N; "
-              f"movement p95={np.percentile(trial_array[:, 1], 95):.2f} mm; "
-              f"rotation p95={np.percentile(trial_array[:, 2], 95):.3f} deg; "
-              f"minimum active={int(trial_array[:, 3].min())}")
-        print()
-    k_theta, twist_one, twist_two, unload = local_roll_screen()
-    print("LOCAL SPINE-ROLL SCREEN (best-case fixed split-seat contacts)")
-    print(f"  rotational stiffness per paired node={k_theta / 1000:.2f} N m/rad")
-    print(f"  twist under 5 N m: one node={np.degrees(twist_one):.1f} deg; "
-          f"two nodes sharing={np.degrees(twist_two):.1f} deg")
-    print(f"  first bridle cord unloads after about {np.degrees(unload):.1f} deg")
+    legs = selected_layout()
+    items = sorted({leg.item for leg in legs})
+    matrix = scaled_matrix(legs)
+    singular = np.linalg.svd(matrix, compute_uv=False)
+
+    print("PROVISIONAL DIRECT-LOOP SCREEN")
+    print("Replace wrap coordinates with measured cord tangents before use.")
+    print(f"cord items={len(items)} model legs={len(legs)} "
+          f"rank={np.linalg.matrix_rank(matrix)}/6 "
+          f"condition={singular[0] / singular[-1]:.2f}")
+    print(f"straight upper radial={STRAIGHT_WRAP_RADIAL:.1f} mm; "
+          f"C2 backset={C2_WRAP_BACKSET:.1f} mm")
+
+    responses = []
+    for name, load in cases().items():
+        response = compatible_response(legs, load)
+        if response is None:
+            print(f"{name}: INFEASIBLE")
+            continue
+        tension, movement, active = response
+        responses.append(tension)
+        print(f"{name}: max leg={tension.max():.1f} N "
+              f"move={np.linalg.norm(movement[:3]):.2f} mm "
+              f"active legs={len(active)}")
+
+    load = cases()["uneven plus south-seat 5 N m torque"]
+    failures = []
+    for item in items:
+        response = compatible_response(legs, load, unavailable_items=(item,))
+        failures.append((response is not None, item, response))
+    feasible = [entry for entry in failures if entry[0]]
+    print(f"one-item-unavailable: {len(feasible)}/{len(items)} feasible")
+    if feasible:
+        worst = max(feasible, key=lambda entry: np.max(entry[2][0]))
+        print(f"worst remaining leg={np.max(worst[2][0]):.1f} N "
+              f"when {worst[1]} is unavailable")
+
+    down, horizontal, resultant = attachment_envelope(legs, responses)
+    print(f"provisional upper envelope: down={down:.1f} N "
+          f"horizontal={horizontal:.1f} N resultant={resultant:.1f} N")
 
 
 if __name__ == "__main__":
