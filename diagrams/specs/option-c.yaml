@@ -34,9 +34,10 @@ dimensions:
   finishes:
     deck_thickness: 28
   site:
-    # Water surface is coplanar with pad tops and beam undersides (Z = 0).
+    # The structural/ground datum is fixed at Z = 0. Water level is independent.
     water_surface_z: pad_top_z
     water_depth: 900
+    pond_bottom_z: pad_top_z - water_depth
     pad_size: 600
     pad_height: 50
 
@@ -57,7 +58,7 @@ components:
     relate:
       +x+y-x-y: { ref: pond_frame }
       +z:   water_surface_z
-      -z:   water_surface_z - water_depth
+      -z:   pond_bottom_z
     ifc: { predefined_type: ELEMENT }
 
   - id: pond_opening
@@ -213,8 +214,20 @@ components:
     views: [section]
     relate:
       cxcy: [0, 0]
-      -z+z: { ref: pond_water }
+      -z: pond_bottom_z
+      +z: pad_top_z
     ifc: { predefined_type: FLOOR}
+
+  # The excavated pond volume is fixed to the ground datum. It is deliberately
+  # separate from the water body so a water-level change cannot move soil.
+  - id: pond_excavation
+    class: IfcOpeningElement
+    size: [pond_span, pond_span, water_depth]
+    relate:
+      +x+y-x-y: { ref: pond_frame }
+      -z: pond_bottom_z
+      +z: pad_top_z
+    ifc: { predefined_type: OPENING }
 
   - id: pad_west
     class: IfcFooting
@@ -297,7 +310,7 @@ operations:
   - type: boolean
     target: soil_fill
     subtract:
-      - pond_water
+      - pond_excavation
       - pad_west
 
 views:

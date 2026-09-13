@@ -8,6 +8,13 @@ construction instructions.
 Nothing in this document is approval to load the deck or batch-fabricate the
 carrier.
 
+> **Corner status — under development.** The integrated corner/basket bracket,
+> its C2 attachment points and its basket retainers are being redesigned. Do
+> not assume that the corner dimensions, C2 lower points or basket interface
+> summarised in this status handoff are current. Use [corner.md](corner.md) for
+> the live study and its prototype gates; this document deliberately retains
+> the older summary pending that work.
+
 ## Current decision
 
 Proceed to measured samples and dry-ground prototypes using:
