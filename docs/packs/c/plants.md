@@ -25,13 +25,13 @@ The biological design is deliberately mixed rather than dependent on one plant: 
 
 Dimensions are nominal external dimensions. Confirm the purchased basket's actual dimensions before cutting lids or rail-seat parts.
 
-| Key     | Container/support                                                      | Quantity | Use                                                   |
-| ------- | ---------------------------------------------------------------------- | -------: | ----------------------------------------------------- |
-| **B23** | Rigid, fine-mesh PP/HDPE aquatic basket, approximately 23 × 23 × 15 cm |   **10** | Shallow marginals use rail-seat risers; crowfoot needs the dedicated downstand in `design-C.md` and `R3-rail.md` |
+| Key     | Container/support                                                      | Quantity | Use                                                         |
+| ------- | ---------------------------------------------------------------------- | -------: | ----------------------------------------------------------- |
+| **B23** | Rigid, fine-mesh PP/HDPE aquatic basket, approximately 23 × 23 × 15 cm |   **10** | Marginals use risers; crowfoot uses dedicated downstand     |
 | **B28** | Rigid, fine-mesh PP/HDPE aquatic basket, 27–28 × 27–28 × 18–19 cm      |    **3** | Two hard rushes and one *Butomus*; direct rail-seat bearing |
-| **L35** | Rigid, broad floor basket, approximately 35 × 35 × 26 cm               |    **1** | Arc-en-Ciel lily; floor-standing on a removable riser |
-| **H70** | Closed heavy-HDPE-mesh cage, approximately 30 × 30 × 70 cm             |    **1** | Hornwort; floor-standing                              |
-| **M20** | Smoothed untreated aquarium-safe slate, approximately 20 × 14 cm       |    **2** | Willow moss; removable supports                       |
+| **L35** | Rigid, broad floor basket, approximately 35 × 35 × 26 cm               |    **1** | Arc-en-Ciel lily; floor-standing on a removable riser       |
+| **H70** | Closed heavy-HDPE-mesh cage, approximately 30 × 30 × 70 cm             |    **1** | Hornwort; floor-standing                                    |
+| **M20** | Smoothed untreated aquarium-safe slate, approximately 20 × 14 cm       |    **2** | Willow moss; removable supports                             |
 
 ## Plant quantities and supplier types
 

@@ -88,6 +88,7 @@ operations:
       point: [0, 0, 0]
     include_seed: true
 ```
+
 - Axis sugar: `plane: { axis: x|y|z, coordinate: 0 }` expands to the equivalent `normal` + `point` and remains accepted for backward compatibility.
 
 - Selectors: `id` (all instances), `id.original` (seeds/place entries), `id.clones` (generated copies). Work in operations, booleans, groups, checks.

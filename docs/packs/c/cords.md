@@ -148,17 +148,17 @@ post prototype creates an actual clearance or chafe problem.
 Buy only enough material for one gravity loop, one crossed pair and one corner
 sling before the batch.
 
-| Item | Provisional full-system allowance |
-| --- | ---: |
-| 6 mm accepted polyester cord | measured loop schedule plus 20% and two longest-loop spares |
-| Main-cord chafe sleeves | 76 bearing locations plus sample-derived spare allowance |
-| 3-4 mm polyester locating cord | two collars at each straight/crossed lower station plus spare |
-| Treated upper-face timber stops | 32 straight/crossed stations plus 4 C2 stations |
-| Stainless stop screws | two per stop plus 10% |
-| Smooth corner cord-post spacers and retaining washers | 8 of each plus 2 spare |
-| Crossing sleeves | 8 plus 2 spare |
-| Loose crossed-cord separators | 4 plus 2 spare |
-| Weatherproof numbered tags | 36 plus spares |
+| Item                                                  |                             Provisional full-system allowance |
+| ----------------------------------------------------- | ------------------------------------------------------------: |
+| 6 mm accepted polyester cord                          |   measured loop schedule plus 20% and two longest-loop spares |
+| Main-cord chafe sleeves                               |      76 bearing locations plus sample-derived spare allowance |
+| 3-4 mm polyester locating cord                        | two collars at each straight/crossed lower station plus spare |
+| Treated upper-face timber stops                       |               32 straight/crossed stations plus 4 C2 stations |
+| Stainless stop screws                                 |                                         two per stop plus 10% |
+| Smooth corner cord-post spacers and retaining washers |                                        8 of each plus 2 spare |
+| Crossing sleeves                                      |                                                8 plus 2 spare |
+| Loose crossed-cord separators                         |                                                4 plus 2 spare |
+| Weatherproof numbered tags                            |                                                36 plus spares |
 
 Final cord, stop, screw, sleeve and collar quantities come from the three
 accepted full-size samples and the surveyed deck-board detail.
