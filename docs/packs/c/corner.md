@@ -511,12 +511,12 @@ ear coordinates move inward by about **63 mm for each additional 20 mm of
 `t`**. That quickly removes the physical space for a post, washer, chafe sleeve
 and a broad ligament into the pod.
 
-| Basket `t` | B28 plan envelope | First ear pair            | Approx. square blank envelope | Result                                                     |
-| ---------: | ----------------- | ------------------------- | ----------------------------: | ---------------------------------------------------------- |
-|       0 mm | `-135..135`       | `(-220,20)` / `(20,-220)` |                        440 mm | Reference only; needlessly large.                          |
-|      20 mm | `-115..155`       | `(-157,40)` / `(40,-157)` |                    **377 mm** | Superseded coordination position; about 42 mm plan room.   |
-|  **30 mm** | `-105..165`       | `(-125,50)` / `(50,-125)` |       **279.3 x 367.7 mm** diagonal | **Selected proof template.** About 20 mm plan room remains. |
-|      40 mm | `-95..175`        | `(-94,60)` / `(60,-94)`   |                        314 mm | Reject: the post is effectively on/in the basket envelope. |
+| Basket `t` | B28 plan envelope | First ear pair            | Approx. square blank envelope | Result                                                      |
+| ---------: | ----------------- | ------------------------- | ----------------------------: | ----------------------------------------------------------- |
+|       0 mm | `-135..135`       | `(-220,20)` / `(20,-220)` |                        440 mm | Reference only; needlessly large.                           |
+|      20 mm | `-115..155`       | `(-157,40)` / `(40,-157)` |                    **377 mm** | Superseded coordination position; about 42 mm plan room.    |
+|  **30 mm** | `-105..165`       | `(-125,50)` / `(50,-125)` | **279.3 x 367.7 mm** diagonal | **Selected proof template.** About 20 mm plan room remains. |
+|      40 mm | `-95..175`        | `(-94,60)` / `(60,-94)`   |                        314 mm | Reject: the post is effectively on/in the basket envelope.  |
 
 Do not pursue the attractive-looking 314 mm arithmetic envelope. It assumes a
 line cord and zero-size post, washer, chafe sleeve, knot and ligament. The
@@ -754,20 +754,20 @@ pin bearing, open-hole/net-section behaviour and long-term immersed service.
 Buy for **one corner first**. Buy the remaining three sets only after the wet
 test passes.
 
-| Item                                                       |             One corner | Four corners after release |
-| ---------------------------------------------------------- | ---------------------: | -------------------------: |
-| 9.5 mm certified structural-GRP sheet, selected thick upper/lower webs | 420 x 705 mm prototype blank | included in approximately 1,505 x 1,015 mm common-sheet quote |
-| M8 x 90 A4-80 partially threaded hex bolts                 |                      4 |                         16 |
-| M8 x 100 A4-80 partially threaded hex bolts                |                      2 |                          8 |
-| M8 A4 broad washers, 24 mm OD                              |                     12 |                         48 |
-| M8 A4 all-metal prevailing-torque nuts                     |                      6 |                         24 |
-| Measured-length A4/316 internal sleeves, OD at least 12 mm |                      6 |                         24 |
-| Smooth M8 thread caps                                      |                      6 |                         24 |
-| Smooth A4/316 upper cord-post spacers, 20-25 mm OD         |                      2 |                          8 |
-| Broad smooth A4 cord-retaining washers                     |                      2 |                          8 |
-| 6 mm polyester corner sling and chafe sleeves              |        measured sample |  measured cutting schedule |
-| Treated upper-face C2 cord stop                            |                      1 |                          4 |
-| Stainless stop screws                                      |                      2 |               8 plus spare |
+| Item                                                                   |      One corner |   Four corners after release |
+| ---------------------------------------------------------------------- | --------------: | ---------------------------: |
+| 9.5 mm certified structural-GRP sheet, selected thick upper/lower webs |               / | included in GRP common-sheet |
+| M8 x 90 A4-80 partially threaded hex bolts                             |               4 |                           16 |
+| M8 x 100 A4-80 partially threaded hex bolts                            |               2 |                            8 |
+| M8 A4 broad washers, 24 mm OD                                          |              12 |                           48 |
+| M8 A4 all-metal prevailing-torque nuts                                 |               6 |                           24 |
+| Measured-length A4/316 internal sleeves, OD at least 12 mm             |               6 |                           24 |
+| Smooth M8 thread caps                                                  |               6 |                           24 |
+| Smooth A4/316 upper cord-post spacers, 20-25 mm OD                     |               2 |                            8 |
+| Broad smooth A4 cord-retaining washers                                 |               2 |                            8 |
+| 6 mm polyester corner sling and chafe sleeves                          | measured sample |    measured cutting schedule |
+| Treated upper-face C2 cord stop                                        |               1 |                            4 |
+| Stainless stop screws                                                  |               2 |                 8 plus spare |
 
 Reference stock for the longer cord-post positions is this
 [M8 x 100 A4-80 DIN 931 bolt](https://www.accu.co.uk/metric-hexagon-bolts/616585-SEB-M8-100-A4-80).
@@ -798,6 +798,11 @@ both rail legs and the outer diagonal load path. Reject generic recycled
 [RG1000/UHMWPE](https://www.directplastics.co.uk/pdf/datasheets/RG1000-black-green-data-sheet.pdf):
 its approximately 0.9 GPa modulus and high creep make it a wear plastic, not a
 suitable structural corner web at any practical thickness.
+
+The [published E23 grade comparator](materials.md#published-e23-grade-comparator)
+is included in the material schedule for quote comparison.  It is not a
+substitute for those delivered-sheet and immersed-service data, nor for the
+wet corner proof.
 
 ## Fabrication and assembly
 

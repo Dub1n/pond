@@ -74,15 +74,15 @@ Run:
 
 At the provisional coordinates the script reports:
 
-| Result | Value |
-| --- | ---: |
-| Cord items / model legs | 36 / 40 |
-| Rigid-body rank | 6 of 6 |
-| Matrix condition measure | 3.45 |
-| Maximum listed-case model-leg tension | 94.5 N |
-| Worst remaining leg after one complete item is unavailable | 117.2 N |
-| Complete-item-unavailable cases with feasible equilibrium | 36 of 36 |
-| Maximum listed-case rigid-body translation | 5.02 mm |
+| Result                                                       |                  Value |
+| ------------------------------------------------------------ | ---------------------: |
+| Cord items / model legs                                      |                36 / 40 |
+| Rigid-body rank                                              |                 6 of 6 |
+| Matrix condition measure                                     |                   3.45 |
+| Maximum listed-case model-leg tension                        |                 94.5 N |
+| Worst remaining leg after one complete item is unavailable   |                117.2 N |
+| Complete-item-unavailable cases with feasible equilibrium    |               36 of 36 |
+| Maximum listed-case rigid-body translation                   |                5.02 mm |
 | Provisional upper downward / horizontal / resultant envelope | 108.5 / 64.0 / 126.0 N |
 
 The modest forces leave ample gross rope-strength margin even after a knot,

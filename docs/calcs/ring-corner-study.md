@@ -27,10 +27,10 @@ component.
 
 For the provisional 0.240 kN uniformly distributed side action:
 
-| End idealisation | End or maximum moment | End shear |
-| --- | ---: | ---: |
-| Pinned | 0.058 kN m maximum at midspan | 0.111 kN |
-| Fully fixed | 0.039 kN m at each end | 0.111 kN |
+| End idealisation |         End or maximum moment | End shear |
+| ---------------- | ----------------------------: | --------: |
+| Pinned           | 0.058 kN m maximum at midspan |  0.111 kN |
+| Fully fixed      |        0.039 kN m at each end |  0.111 kN |
 
 Retain three side-torque inputs: 5 N m for one 100 N basket at 50 mm
 eccentricity, 20 N m for four such baskets and 30 N m as the deliberate
@@ -40,21 +40,24 @@ one remaining corner.
 ## Ring-side section
 
 The model uses longitudinal modulus `E=17 GPa` and conservative shear modulus
-`G=3 GPa`.
+`G=3 GPa`. The 17 GPa value is the contextual E17-level tube value, not the
+later GRP Grating Systems E23 axial value; it is retained so this ring screen
+does not rely on the more favourable product route before the actual tube
+certificate is in hand.
 
-| Property | 38 x 38 x 5 | 38 x 38 x 3.2 |
-| --- | ---: | ---: |
-| Area | 660 mm2 | 445 mm2 |
-| Second moment `I` | 122,540 mm4 | 90,668 mm4 |
-| Approximate torsion constant `J` | 179,685 mm4 | 134,861 mm4 |
+| Property                         | 38 x 38 x 5 | 38 x 38 x 3.2 |
+| -------------------------------- | ----------: | ------------: |
+| Area                             |     660 mm2 |       445 mm2 |
+| Second moment `I`                | 122,540 mm4 |    90,668 mm4 |
+| Approximate torsion constant `J` | 179,685 mm4 |   134,861 mm4 |
 
 ### Vertical bending and support loss
 
-| Case | 5 mm stress / movement | 3.2 mm stress / movement |
-| --- | ---: | ---: |
-| 100 N at 420 mm | 1.63 MPa / 0.07 mm | 2.20 MPa / 0.10 mm |
-| 200 N at 840 mm | 6.51 MPa / 1.19 mm | 8.80 MPa / 1.60 mm |
-| 300 N at 840 mm | 9.77 MPa / 1.78 mm | 13.20 MPa / 2.40 mm |
+| Case            | 5 mm stress / movement | 3.2 mm stress / movement |
+| --------------- | ---------------------: | -----------------------: |
+| 100 N at 420 mm |     1.63 MPa / 0.07 mm |       2.20 MPa / 0.10 mm |
+| 200 N at 840 mm |     6.51 MPa / 1.19 mm |       8.80 MPa / 1.60 mm |
+| 300 N at 840 mm |     9.77 MPa / 1.78 mm |      13.20 MPa / 2.40 mm |
 
 The 5 mm gross section is plausible under the stated vertical screens.
 Connections, wall bearing and wet creep remain separate checks.
@@ -62,10 +65,10 @@ Connections, wall bearing and wet creep remain separate checks.
 ### Torsion with effective corners
 
 | Total side torque | 5 mm: two / one corner rotation | 3.2 mm: two / one corner rotation |
-| --- | ---: | ---: |
-| 5 N m | 0.28 / 0.56 deg | 0.37 / 0.74 deg |
-| 20 N m | 1.12 / 2.23 deg | 1.49 / 2.97 deg |
-| 30 N m | 1.67 / 3.35 deg | 2.23 / 4.46 deg |
+| ----------------- | ------------------------------: | --------------------------------: |
+| 5 N m             |                 0.28 / 0.56 deg |                   0.37 / 0.74 deg |
+| 20 N m            |                 1.12 / 2.23 deg |                   1.49 / 2.97 deg |
+| 30 N m            |                 1.67 / 3.35 deg |                   2.23 / 4.46 deg |
 
 At 30 N m, the 5 mm tube's calculated torsional shear is about 1.38 MPa with
 two effective corners and 2.75 MPa with one. Service rotation is more important
@@ -74,21 +77,21 @@ than gross tube stress in this screen.
 ### In-plane breathing
 
 | Side-end idealisation | 5 mm stress / movement | 3.2 mm stress / movement |
-| --- | ---: | ---: |
-| Pinned | 9.8 MPa / 13.9 mm | 13.2 MPa / 18.7 mm |
-| Fully fixed | 6.5 MPa / 2.8 mm | 8.8 MPa / 3.7 mm |
+| --------------------- | ---------------------: | -----------------------: |
+| Pinned                |      9.8 MPa / 13.9 mm |       13.2 MPa / 18.7 mm |
+| Fully fixed           |       6.5 MPa / 2.8 mm |         8.8 MPa / 3.7 mm |
 
 For the 5 mm rail, rotational springs at both ends illustrate why joint
 stiffness governs:
 
 | Corner rotational stiffness | Side movement | End moment attracted |
-| ---: | ---: | ---: |
-| 0.1 kN m/rad | 13.3 mm | 2.0 N m |
-| 0.5 kN m/rad | 11.6 mm | 8.4 N m |
-| 1 kN m/rad | 10.2 mm | 14.1 N m |
-| 5 kN m/rad | 5.9 mm | 30.0 N m |
-| 20 kN m/rad | 3.8 mm | 38.2 N m |
-| Perfectly fixed | 2.8 mm | 41.9 N m |
+| --------------------------: | ------------: | -------------------: |
+|                0.1 kN m/rad |       13.3 mm |              2.0 N m |
+|                0.5 kN m/rad |       11.6 mm |              8.4 N m |
+|                  1 kN m/rad |       10.2 mm |             14.1 N m |
+|                  5 kN m/rad |        5.9 mm |             30.0 N m |
+|                 20 kN m/rad |        3.8 mm |             38.2 N m |
+|             Perfectly fixed |        2.8 mm |             41.9 N m |
 
 The section stiffness scale `2EI/L` is about 1.98 kN m/rad. A corner needs
 about 18 kN m/rad to attract 90% of the fixed-end moment. Use a complete-joint
@@ -130,13 +133,13 @@ requires that extra plate once the 10 mm prototype passes its wet test.
 
 With 8.5 mm maximum holes and 140 mm outer pitch:
 
-| Screen | Selected result |
-| --- | ---: |
-| 60 N m plan action: outer-bolt force | 0.429 kN |
-| 30 N m roll action: plate force | 0.632 kN |
-| Conservative vector combination | 0.763 kN |
-| Plate bearing at vector force | 9.5 MPa |
-| Two-wall tube bearing at vector force | 9.0 MPa |
+| Screen                                | Selected result |
+| ------------------------------------- | --------------: |
+| 60 N m plan action: outer-bolt force  |        0.429 kN |
+| 30 N m roll action: plate force       |        0.632 kN |
+| Conservative vector combination       |        0.763 kN |
+| Plate bearing at vector force         |         9.5 MPa |
+| Two-wall tube bearing at vector force |         9.0 MPa |
 
 These are demand calculations, not design resistances. The accepted plate
 certificate must support in-plane properties in both directions, diagonal
@@ -205,6 +208,12 @@ first, followed by the four-corner batch only after its release gates pass.
 
 ## Property basis
 
+- The published [GRP Grating Systems E23 grade table](https://www.grpgrating.fullfatwebsitedesign.co.uk/grp-thickness-grades.php)
+  is a useful lower-bound comparator, but was **not** used verbatim in these
+  calculations.  The ring-member `E=17 GPa` is the contextual E17 tube value;
+  the compact-web and profile-comparison screens deliberately use `E=3 GPa`.
+  The complete E23 table, its source and the procurement limitations are in
+  [materials.md](../packs/c/materials.md#published-e23-grade-comparator).
 - [Fiberline's EN 13706 summary](https://fiberline.com/european-standard-en-13706)
   gives the contextual E17 minima: 17 GPa longitudinal modulus, 90/50 MPa
   longitudinal/transverse pin bearing and 15 MPa longitudinal shear.
@@ -212,7 +221,10 @@ first, followed by the four-corner batch only after its release gates pass.
   gives the representative 3 GPa shear modulus used in the tube sensitivity.
 
 Manufacturer values are comparison inputs only. The purchased tube and flat bar
-need their own certificates and permanent-immersion basis. Do not substitute
+need their own certificates and permanent-immersion basis. The deliberately low
+3 GPa compact-web stiffness screen is not replaced by the E23 axial modulus:
+the corner still needs directional sheet data, pin bearing, open-hole behaviour
+and the complete wet moment-rotation proof. Do not substitute
 [RG1000/recycled UHMWPE](https://www.directplastics.co.uk/pdf/datasheets/RG1000-black-green-data-sheet.pdf):
 its approximately 0.9 GPa modulus and high creep make it suitable for wear
 parts, not these stiffness-critical structural webs.

@@ -24,6 +24,37 @@ The four corner pods replace four ordinary R5.1 seats; they are not extra
 seats. Do not fit an R5.1 H at a corner. See [corner.md](corner.md) for the
 corner geometry and proof gates.
 
+## Published E23 grade comparator
+
+The following is the published E23 column from [GRP Grating Systems' GRP
+thickness grades table](https://www.grpgrating.fullfatwebsitedesign.co.uk/grp-thickness-grades.php).
+That page says its profiles over 5 mm are E23 to BS EN 13706.  It is a useful
+minimum-property comparator for a quotation, **not** a certificate for an
+unidentified flat sheet and not a wet-service design resistance.  In particular,
+the current 8 GPa R5.1 seat screen was not taken from this table: E23's stated
+transverse tensile modulus is 7 GPa.  The E23-transverse recheck remains within
+the seat movement limit at the 9.5 mm common-sheet thickness; see
+[seat-plate-study.md](../../calcs/seat-plate-study.md).
+
+| Property                      | Units | E23 grade minimum |
+| ----------------------------- | ----- | ----------------: |
+| Full-section modulus          | GPa   |                23 |
+| Tensile strength, axial       | MPa   |               240 |
+| Tensile strength, transverse  | MPa   |                50 |
+| Tensile modulus, axial        | GPa   |                23 |
+| Tensile modulus, transverse   | GPa   |                 7 |
+| Flexural strength, axial      | MPa   |               240 |
+| Flexural strength, transverse | MPa   |               100 |
+| Inter-laminar shear           | MPa   |                25 |
+| Pin-bearing strength          | MPa   |                70 |
+
+Use this table only to specify the minimum evidence to request.  The plate
+supplier must confirm the delivered sheet's actual thickness, fibre directions,
+wet/immersed directional moduli, pin-bearing and open-hole/net-section values,
+and suitability for the saline/fertilised pond water.  Do not treat the dry
+E23 numbers as permission to omit the planned wet coupon and complete-corner
+proof.
+
 ## Component cut sizes
 
 All plan dimensions are millimetres. The stock layouts retain at least 5 mm to
@@ -49,11 +80,11 @@ released production outline.
 This is the lowest guaranteed rectangular take-off, excluding the GRP lower
 corner webs:
 
-| Blank | Contents | Minimum cut blank | Area |
-| --- | --- | ---: | ---: |
-| A | Nine upper Hs plus 18 bridges nested in their openings | 770 x 770 | 0.5929 m2 |
-| B | Four pods, each aligned to its diagonal minimum rectangle in a 2 x 2 layout | 573.7 x 750.4 | 0.4304 m2 |
-| **Total** | 9 Hs, 18 bridges and 4 pods | two-piece purchase | **1.0233 m2** |
+| Blank     | Contents                                                                    |  Minimum cut blank |          Area |
+| --------- | --------------------------------------------------------------------------- | -----------------: | ------------: |
+| A         | Nine upper Hs plus 18 bridges nested in their openings                      |          770 x 770 |     0.5929 m2 |
+| B         | Four pods, each aligned to its diagonal minimum rectangle in a 2 x 2 layout |      573.7 x 750.4 |     0.4304 m2 |
+| **Total** | 9 Hs, 18 bridges and 4 pods                                                 | two-piece purchase | **1.0233 m2** |
 
 For a quote, request **770 x 770 mm** and **575 x 755 mm** 5 mm 5083 blanks,
 or ask the cutter to nest the supplied profiles directly. The rounded purchase
@@ -66,10 +97,10 @@ right-hand strip and two rotated pod envelopes in the bottom strip needs a
 minimum side of **1054.4 mm**. Request **1055 x 1055 mm** as the mathematical
 minimum, or **1060 x 1060 mm** to carry a small supplier/cutting tolerance.
 
-| One-piece stock | Contents | Area |
-| --- | --- | ---: |
-| 1055 x 1055 mm | 9 Hs, 18 nested bridges and 4 pods | 1.1130 m2 |
-| 1060 x 1060 mm | Same, with 5.6 mm additional overall margin | 1.1236 m2 |
+| One-piece stock | Contents                                    |      Area |
+| --------------- | ------------------------------------------- | --------: |
+| 1055 x 1055 mm  | 9 Hs, 18 nested bridges and 4 pods          | 1.1130 m2 |
+| 1060 x 1060 mm  | Same, with 5.6 mm additional overall margin | 1.1236 m2 |
 
 The square layout is a guaranteed rectangular-envelope layout, not proof that
 a laser-cut polygon nesting cannot save a little more. It is the correct
@@ -110,25 +141,25 @@ them with `./.venv/bin/python docs/packs/c/nesting/generate_profiles.py`.
 | --- | --- | --- | --- |
 | **5 mm EN AW-5083/H111 aluminium** | Current low-cost route for the nine dedicated R5.1 seat plates; it is not screened for the connected corner upper web. | [Hawkshead 5 mm 5083 laser-cut plate](https://hawksheadmetal.co.uk/metal-sheet-steel-sheet/aluminium/aluminium-sheet-and-plate/5mm-aluminium-5083-sheet-plate-profiles-blanks-custom-cut-to-size-free-of-charge-enter-exact-dimension-for-pricing/) lists BS EN 573-3:2019 5083, profile cutting and a displayed price from GBP 22.17. That is not the price of these blanks; obtain a nested-cut quotation. | Fully submerged salty/fertilised water still requires rounded edges, no water traps, compatible finish and a coupon/assembly test. Keep A4 stainless isolated at wet fasteners with shoulder bushes and insulating washers. |
 | 6 mm EN AW-5083/H111 aluminium | Minimum metal candidate for the connected corner upper web; the 5 mm proof-strip comparison is at its minimum-proof limit. | [Aluminium Warehouse 6 mm 5083](https://www.aluminiumwarehouse.co.uk/products/6-mm-5083-aluminium-plate) is cut to size and lists 72 GPa modulus, 270--345 MPa tensile strength and 125 MPa minimum proof stress; its displayed GBP 2.36 is a starting price, not the finished sheet price. | More weight/cost and every bolt grip, sleeve and bearing datum must change; still require the pod/C2 coupon and full corner proof. |
-| Common-thickness structural-GRP sheet | Quote as the one-sheet alternative for nine Hs, eighteen nested bridges, four selected thick upper pods and four selected thick lower webs. | No current listing. Use the renewed SVG job and **1180 x 1575 mm** provisional envelope, including the stated 5 mm nominal clearances. | The sheet must satisfy the lower-web duty as well as the H/pod bearing duty. If pultruded or directionally stronger, pair orientations deliberately and obtain supplier approval for both rail-leg and diagonal load paths. |
+| Common-thickness structural-GRP sheet | Quote as the one-sheet alternative for nine Hs, eighteen nested bridges, four selected thick upper pods and four selected thick lower webs. | Use the renewed SVG job and request about **1,505 x 1,015 mm**. [GRP Grating Systems' E23 table](https://www.grpgrating.fullfatwebsitedesign.co.uk/grp-thickness-grades.php) gives the property basis to ask them to confirm for flat sheet or equivalent plate stock. | The sheet must satisfy the lower-web duty as well as the H/pod bearing duty. If pultruded or directionally stronger, pair orientations deliberately and obtain supplier approval for both rail-leg and diagonal load paths. |
 | 9.5 mm structural-GRP flat bar | **Not suitable for the selected thick lower profile**: the 200 mm stock width is below its 282.8 mm bounding profile. | [F.H. Brundle 200 x 9.5 x 3,000 mm GRP flat bar](https://www.fhbrundle.co.uk/products/330320095GY__GRP_Flat_Bar_200_x_9.5mm___3M_long_Grey): GBP 95.04 inc VAT, retained as historical comparison only. | Do not substitute it unless a separately verified recut/profile is approved. |
 | 6082-T6 aluminium | **Rejected for the permanently submerged saline/fertilised location.** | Earlier cut-to-size listing retained only as historical comparison. | Good general corrosion resistance is not the required seawater/chemical-service basis; do not order it for these parts. |
 | Marine plywood / generic GRP flooring / UHMWPE | **Not selected.** | No procurement basis in this schedule. | Plywood needs a separate encapsulated-composite design; generic flooring may lack directional joint data; UHMWPE creeps and is not structural plate stock. |
 
 Compare actual delivered quotes on a like-for-like basis: one 1055/1060 mm
-square, two small rectangular blanks, the provisional 1180 x 1575 mm structural-GRP
-one-sheet route, and a direct laser-cut nest.
+square, two small rectangular blanks, the approximately 1,505 x 1,015 mm
+structural-GRP one-sheet route, and a direct laser-cut nest.
 
 ## Hardware quantities affected by the nine-seat change
 
-| Item | Nine dedicated R5.1 seats | Four corner pods | Total rail baskets |
-| --- | ---: | ---: | ---: |
-| Basket retention: M6 x 40 A4 screws, internal penny washers, underside washers, nuts and caps | 36 each | 16 each | 52 each |
-| R5.1 M8 capture bolts, locknuts, caps and bored sleeves | 36 each | — | 36 each |
-| R5.1 broad M8 washers | 72 | — | 72 |
-| R5.1 cam-buckle strap stops and chafe sleeves | 18 each | — | 18 each |
-| Corner rail/corner M8 bolts | — | 24 | 24 |
-| C2 lower post stacks | — | 8 | 8 |
+| Item                                                                                          | R5.1 seats | Corner pods |   Total |
+| --------------------------------------------------------------------------------------------- | ---------: | ----------: | ------: |
+| Basket retention: M6 x 40 A4 screws, internal penny washers, underside washers, nuts and caps |    36 each |     16 each | 52 each |
+| R5.1 M8 capture bolts, locknuts, caps and bored sleeves                                       |    36 each |           — | 36 each |
+| R5.1 broad M8 washers                                                                         |         72 |           — |      72 |
+| R5.1 cam-buckle strap stops and chafe sleeves                                                 |    18 each |           — | 18 each |
+| Corner rail/corner M8 bolts                                                                   |          — |          24 |      24 |
+| C2 lower post stacks                                                                          |          — |           8 |       8 |
 
 The corner-pod M6 retention axes are separate from the six M8 rail/corner
 bolts. C2 post elevations and their final stack are explicitly provisional;

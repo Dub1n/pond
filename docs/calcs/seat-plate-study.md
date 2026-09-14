@@ -15,9 +15,15 @@ out-of-water basket mass is still unknown.
 The model gives the largest nominal 280 mm basket a 121 mm outboard projection
 from the edge of the 38 mm rail. It divides the load between two 50 mm-wide
 arms, then checks one half arm as a uniformly loaded cantilever. It uses an
-8 GPa low-direction modulus solely as a conservative screening input. A second
-screen puts the complete 0.30 kN into one 56 mm M8-to-M8 lower bridge, although
-the bridge is normally unloaded under gravity.
+8 GPa low-direction modulus as a generic screening input; it was **not**
+copied from the E23 grade table.  The published E23 transverse tensile modulus
+is 7 GPa, so the 8 GPa results are not a conservative E23-transverse check.
+At 7 GPa, movement is `8/7` times the values below: an 8 mm arm is 1.11 mm and
+the common 9.5 mm sheet is 0.65 mm, both below the 2 mm screen.  Stress is
+unchanged by that modulus substitution.  The source table and its important
+limits are reproduced in [materials.md](../packs/c/materials.md#published-e23-grade-comparator).
+A second screen puts the complete 0.30 kN into one 56 mm M8-to-M8 lower bridge,
+although the bridge is normally unloaded under gravity.
 
 | Thickness | Upper-arm stress / movement | One lower bridge stress / movement | Sizing conclusion |
 | ---: | ---: | ---: | --- |
