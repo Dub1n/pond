@@ -498,7 +498,7 @@ components:
       - {id: swy195, cx: -1050, cy: -855, cz: -208}
     ifc: {predefined_type: ELEMENT}
 
-  # Arrangement E corner-seat coordination geometry, t = +20 mm. This is one
+  # Arrangement E corner-seat coordination geometry, t = +30 mm. This is one
   # continuous upper 9.5 mm GRP plate: the minimum convex octagon covering the
   # retained compact-web core and C2 post lands. It intentionally does not grow
   # out to the corners of the nominal basket-pad/washer squares. No basket is
@@ -510,18 +510,18 @@ components:
     profile: sweep
     profile_params:
       # Relative to global centre (-1031, -1031): local vertices
-      # (-182,5), (5,-182), (75,-182), (220,-40), (220,40),
-      # (40,220), (-40,220), (-182,75). The lower horizontal land gives
+      # (-150,15), (15,-150), (75,-150), (220,-40), (220,40),
+      # (40,220), (-40,220), (-150,85). The lower horizontal land gives
       # the second C2 post its full 25 mm edge distance.
-      points: [[-201, -14], [-14, -201], [56, -201], [201, -59], [201, 21], [21, 201], [-59, 201], [-201, 56]]
+      points: [[-169, -4], [-4, -169], [56, -169], [201, -59], [201, 21], [21, 201], [-59, 201], [-169, 66]]
     material: grp
-    label: "Arrangement E t=20 continuous convex corner-seat plate; basket omitted"
+    label: "Arrangement E t=30 continuous convex corner-seat plate; basket omitted"
     label_id: P
     views: [plan, section]
     relate: {cx: -1031, cy: -1031, cz: -189.75}
     ifc: {predefined_type: ELEMENT}
     ifc: {predefined_type: ELEMENT}
-  # Actual t=20 retention axes: local (t +/- 90, t +/- 90), M6 x 40 A4.
+  # Actual t=30 retention axes: local (t +/- 90, t +/- 90), M6 x 40 A4.
   # They are distinct from the six M8 rail/corner bolts above.
   - id: r51_corner_basket_bolts_sw
     class: IfcBuildingElementProxy
@@ -529,10 +529,10 @@ components:
     material: a4-stainless
     views: [plan, section]
     place:
-      - {id: sw_basket_nn, cx: -1120, cy: -1120, cz: -174.75}
-      - {id: sw_basket_np, cx: -1120, cy: -940, cz: -174.75}
-      - {id: sw_basket_pn, cx: -940, cy: -1120, cz: -174.75}
-      - {id: sw_basket_pp, cx: -940, cy: -940, cz: -174.75}
+      - {id: sw_basket_nn, cx: -1110, cy: -1110, cz: -174.75}
+      - {id: sw_basket_np, cx: -1110, cy: -930, cz: -174.75}
+      - {id: sw_basket_pn, cx: -930, cy: -1110, cz: -174.75}
+      - {id: sw_basket_pp, cx: -930, cy: -930, cz: -174.75}
     ifc: {predefined_type: ELEMENT}
   # Provisional A4 C2 lower-post axes, not fabrication elevations. They remain
   # 25 mm inboard of the pod's outer post lands, rather than on its free edge.
@@ -543,8 +543,8 @@ components:
     material: a4-stainless
     views: [plan, section]
     place:
-      - {id: sw_c2_post_x, cx: -1207, cy: -1010, cz: -203}
-      - {id: sw_c2_post_y, cx: -1010, cy: -1207, cz: -203}
+      - {id: sw_c2_post_x, cx: -1175, cy: -1000, cz: -203}
+      - {id: sw_c2_post_y, cx: -1000, cy: -1175, cz: -203}
     ifc: {predefined_type: ELEMENT}
 
   # Every cord below is explicit: its literal size equals the Euclidean
@@ -872,67 +872,67 @@ components:
     ifc: {predefined_type: ELEMENT}
   - id: r51_c2_south_x
     class: IfcBuildingElementProxy
-    size: [324.756255, 6, 6]
+    size: [328.362033, 6, 6]
     material: polyester
     views: [plan, section]
-    # t=20: start C2 upper tangent -1174.75,-1174.75,75; end ear P1 -1207,-1010,-203
-    relate: {cx: -1190.875, cy: -1092.375, cz: -64, orient: {axis: +x, vector: [-32.25, 164.75, -278]}}
+    # t=30: start C2 upper tangent -1174.75,-1174.75,75; end ear P1 -1175,-1000,-203
+    relate: {cx: -1174.875, cy: -1087.375, cz: -64, orient: {axis: +x, vector: [-0.25, 174.75, -278]}}
     ifc: {predefined_type: ELEMENT}
   - id: r51_c2_south_y
     class: IfcBuildingElementProxy
-    size: [324.756255, 6, 6]
+    size: [328.362033, 6, 6]
     material: polyester
     views: [plan, section]
-    # t=20: start C2 upper tangent -1174.75,-1174.75,75; end ear P2 -1010,-1207,-203
-    relate: {cx: -1092.375, cy: -1190.875, cz: -64, orient: {axis: +x, vector: [164.75, -32.25, -278]}}
+    # t=30: start C2 upper tangent -1174.75,-1174.75,75; end ear P2 -1000,-1175,-203
+    relate: {cx: -1087.375, cy: -1174.875, cz: -64, orient: {axis: +x, vector: [174.75, -0.25, -278]}}
     ifc: {predefined_type: ELEMENT}
   - id: r51_c2_east_x
     class: IfcBuildingElementProxy
-    size: [324.756255, 6, 6]
+    size: [328.362033, 6, 6]
     material: polyester
     views: [plan, section]
-    # t=20: start 1174.75,-1174.75,75; end ear P1 1010,-1207,-203
-    relate: {cx: 1092.375, cy: -1190.875, cz: -64, orient: {axis: +x, vector: [-164.75, -32.25, -278]}}
+    # t=30: start 1174.75,-1174.75,75; end ear P1 1000,-1175,-203
+    relate: {cx: 1087.375, cy: -1174.875, cz: -64, orient: {axis: +x, vector: [-174.75, -0.25, -278]}}
     ifc: {predefined_type: ELEMENT}
   - id: r51_c2_east_y
     class: IfcBuildingElementProxy
-    size: [324.756255, 6, 6]
+    size: [328.362033, 6, 6]
     material: polyester
     views: [plan, section]
-    # t=20: start 1174.75,-1174.75,75; end ear P2 1207,-1010,-203
-    relate: {cx: 1190.875, cy: -1092.375, cz: -64, orient: {axis: +x, vector: [32.25, 164.75, -278]}}
+    # t=30: start 1174.75,-1174.75,75; end ear P2 1175,-1000,-203
+    relate: {cx: 1174.875, cy: -1087.375, cz: -64, orient: {axis: +x, vector: [0.25, 174.75, -278]}}
     ifc: {predefined_type: ELEMENT}
   - id: r51_c2_north_x
     class: IfcBuildingElementProxy
-    size: [324.756255, 6, 6]
+    size: [328.362033, 6, 6]
     material: polyester
     views: [plan, section]
-    # t=20: start 1174.75,1174.75,75; end ear P1 1207,1010,-203
-    relate: {cx: 1190.875, cy: 1092.375, cz: -64, orient: {axis: +x, vector: [32.25, -164.75, -278]}}
+    # t=30: start 1174.75,1174.75,75; end ear P1 1175,1000,-203
+    relate: {cx: 1174.875, cy: 1087.375, cz: -64, orient: {axis: +x, vector: [0.25, -174.75, -278]}}
     ifc: {predefined_type: ELEMENT}
   - id: r51_c2_north_y
     class: IfcBuildingElementProxy
-    size: [324.756255, 6, 6]
+    size: [328.362033, 6, 6]
     material: polyester
     views: [plan, section]
-    # t=20: start 1174.75,1174.75,75; end ear P2 1010,1207,-203
-    relate: {cx: 1092.375, cy: 1190.875, cz: -64, orient: {axis: +x, vector: [-164.75, 32.25, -278]}}
+    # t=30: start 1174.75,1174.75,75; end ear P2 1000,1175,-203
+    relate: {cx: 1087.375, cy: 1174.875, cz: -64, orient: {axis: +x, vector: [-174.75, 0.25, -278]}}
     ifc: {predefined_type: ELEMENT}
   - id: r51_c2_west_x
     class: IfcBuildingElementProxy
-    size: [324.756255, 6, 6]
+    size: [328.362033, 6, 6]
     material: polyester
     views: [plan, section]
-    # t=20: start -1174.75,1174.75,75; end ear P1 -1010,1207,-203
-    relate: {cx: -1092.375, cy: 1190.875, cz: -64, orient: {axis: +x, vector: [164.75, 32.25, -278]}}
+    # t=30: start -1174.75,1174.75,75; end ear P1 -1000,1175,-203
+    relate: {cx: -1087.375, cy: 1174.875, cz: -64, orient: {axis: +x, vector: [174.75, 0.25, -278]}}
     ifc: {predefined_type: ELEMENT}
   - id: r51_c2_west_y
     class: IfcBuildingElementProxy
-    size: [324.756255, 6, 6]
+    size: [328.362033, 6, 6]
     material: polyester
     views: [plan, section]
-    # t=20: start -1174.75,1174.75,75; end ear P2 -1207,1010,-203
-    relate: {cx: -1190.875, cy: 1092.375, cz: -64, orient: {axis: +x, vector: [-32.25, -164.75, -278]}}
+    # t=30: start -1174.75,1174.75,75; end ear P2 -1175,1000,-203
+    relate: {cx: -1174.875, cy: 1087.375, cz: -64, orient: {axis: +x, vector: [-0.25, -174.75, -278]}}
     ifc: {predefined_type: ELEMENT}
 operations:
   - type: mirror

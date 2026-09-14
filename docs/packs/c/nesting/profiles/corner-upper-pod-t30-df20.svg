@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="380mm" height="380mm" viewBox="-160 -160 390 390">
+  <!-- Cutter-reference profile: outer pod plus DF20 internal drainage holes.
+       The separate nesting profile intentionally retains only the outer contour. -->
+  <path d="M -150 15 L 15 -150 L 75 -150 L 220 -40 L 220 40 L 40 220 L -40 220 L -150 85 Z
+           M 60 60 m -20 0 a 20 20 0 1 0 40 0 a 20 20 0 1 0 -40 0
+           M 105 70 m -20 0 a 20 20 0 1 0 40 0 a 20 20 0 1 0 -40 0
+           M 70 105 m -20 0 a 20 20 0 1 0 40 0 a 20 20 0 1 0 -40 0
+           M -60 -5 m -20 0 a 20 20 0 1 0 40 0 a 20 20 0 1 0 -40 0
+           M -5 -60 m -20 0 a 20 20 0 1 0 40 0 a 20 20 0 1 0 -40 0
+           M 75 150 m -20 0 a 20 20 0 1 0 40 0 a 20 20 0 1 0 -40 0
+           M 150 75 m -20 0 a 20 20 0 1 0 40 0 a 20 20 0 1 0 -40 0
+           M -100 110 m -20 0 a 20 20 0 1 0 40 0 a 20 20 0 1 0 -40 0
+           M -60 160 m -20 0 a 20 20 0 1 0 40 0 a 20 20 0 1 0 -40 0
+           M 160 -60 m -20 0 a 20 20 0 1 0 40 0 a 20 20 0 1 0 -40 0"
+        fill-rule="evenodd" fill="none" stroke="#000" stroke-width="0.2"/>
+</svg>

@@ -108,8 +108,9 @@ single central force line.
 
 ### Seats and baskets
 
-R5.1 retains one 8 mm upper H and two 50 x 110 x 8 mm lower bridges around
-the rail. Four M8 sleeved bolts form two spaced capture stations. Bearing-arm
+R5.1 retains one upper H and two 50 x 110 lower bridges around the rail. The
+active plate material/thickness route is in [materials.md](materials.md). Four
+M8 sleeved bolts form two spaced capture stations. Bearing-arm
 spacing and projection transfer from the sound base bands on the purchased
 basket.
 
@@ -154,13 +155,14 @@ small timber stops and screws, locating cord, eight simple corner-post spacers
 and washers, tags and consumables. On an order-of-magnitude basis this is a
 low-hundreds suspension rather than a multi-thousand-pound one.
 
-### Quick complete-carrier budget at 12 September 2026
+### Superseded complete-carrier budget screen
 
 This inclusive-VAT screen assumes self-cut/drilled GRP and user-bored acetal
 seat sleeves; it includes normal retail delivery and waste but no paid
 fabrication labour. Upper wrap-stop timber and screws, abrasives, drills and
 templates are user-provided and therefore costed at zero.
-It includes the rail, all four stiff corners, all 13 seats, the 36-item
+It includes the rail, all four stiff corners, nine dedicated R5.1 seats and
+four integrated corner pods, the 36-item
 suspension, seat movement stops and the 52-point basket-to-seat retention set.
 It excludes the rigid baskets, cartridges, planting bags, media, plants, guards
 and harnesses.
@@ -168,25 +170,28 @@ and harnesses.
 | Cost group | Included basis | Working allowance |
 | --- | --- | ---: |
 | Main rail tube | two 6 m lengths of 38 x 38 x 5 mm GRP at [GBP 54.96 each](https://www.fhbrundle.co.uk/products/3305385GY__GRP_Hollow_Section_38_x_38_x_5mm_x_6m_Grey) | GBP 110 |
-| Structural GRP | one 200 x 9.5 x 3,000 mm flat bar for eight compact corner webs, plus one 8 mm sheet for 13 upper H members and 26 lower bridges; quote still required | GBP 450-750 |
+| Plate stock | four lower compact corner webs, plus quoted 5 mm 5083 plate for 9 H members, 18 lower bridges and 4 corner pods | TBC; see [materials.md](materials.md) |
 | Main suspension cord | measured direct loops/slings and spares; provisional allowance up to one reel | GBP 120-160 |
 | Suspension small parts | 76 chafe locations, locating cord, crossing sleeves, separators and tags | GBP 50-90 |
 | Four-corner hardware | 24 sleeved M8 corner bolts, broad washers, locknuts, caps and eight cord posts | GBP 120-180 |
-| Thirteen-seat capture hardware | 52 M8 bolts, 104 broad washers, locknuts, caps and 52 bored POM-C sleeves; two [1.5 m lengths of 16 mm acetal rod](https://www.directplastics.co.uk/acetal-black-rod-16mm-dia-x-1500mm) cost GBP 12.10 inc VAT | GBP 100-140 |
+| Nine-seat capture hardware | 36 M8 bolts, 72 broad washers, locknuts, caps and 36 bored POM-C sleeves; two [1.5 m lengths of 16 mm acetal rod](https://www.directplastics.co.uk/acetal-black-rod-16mm-dia-x-1500mm) cost GBP 12.10 inc VAT | GBP 70-100 |
 | Basket-to-seat retention | 52 M6 x 40 A4 button screws, 52 internal 40 mm A4 penny washers, underside washers, locknuts and caps; screws are [GBP 0.25 each](https://www.vital-parts.co.uk/hex-socket-button-screws-iso-7380-1/7129-hbs73801-m6-40-a4) and penny washers [GBP 0.25 each](https://www.gsproducts.co.uk/6mm-stainless-steel-penny-washer/) | GBP 50-70 |
-| Seat movement stops | 26 endless polyester cam straps plus webbing chafe; quantity price is [GBP 2.69 each ex VAT](https://www.ukratchetstraps.com/products/25mm-wide-cambuckle-strap-ls25-4-5m) | GBP 100-125 |
+| Seat movement stops | 18 endless polyester cam straps plus webbing chafe; quantity price is [GBP 2.69 each ex VAT](https://www.ukratchetstraps.com/products/25mm-wide-cambuckle-strap-ls25-4-5m) | GBP 70-90 |
 | Cut-edge resin | one [500 g EL2 epoxy kit](https://www.easycomposites.co.uk/el2-epoxy-laminating-resin) at GBP 12.75 ex VAT / GBP 15.30 inc VAT; use only if compatible with the purchased GRP supplier's sealing guidance | GBP 15.30 |
 | Delivery, order rounding and waste | several ordinary UK retail orders | GBP 150-250 |
-| **Estimated self-fabricated cash total** | rounded range | **GBP 1,250-1,900** |
+| **Current self-fabricated cash total** | requires 5083 plate and revised hardware quotes | **TBC** |
 
-Carry **GBP 1,600** as the current working target. The 9.5 mm corner flat-bar
-certificate and 8 mm seat-sheet quote are the largest uncertainty: the
-provisional seat nesting must be confirmed against the measured B23/B28 bearing
-bands, and both products need a permanent-immersion basis.
+Do not carry the former GBP 1,600 working target forward: the submerged 5083
+plate quotation, revised plate stacks and corner-pod hardware have not yet
+been priced. The current stock and quote basis is [materials.md](materials.md).
 
-### Structural-GRP stock take-off
+### Superseded structural-GRP stock take-off
 
-This is a cutting-area allowance, not a supplier sheet-size recommendation.
+This is retained as history only. The active plate take-off is in
+[materials.md](materials.md); it replaces the former thirteen-H GRP sheet with
+5 mm 5083 for nine Hs, eighteen bridges and four corner pods.
+
+This historical allowance is not a supplier sheet-size recommendation.
 It uses at least 5 mm clear material between separately cut parts and assumes
 the 8 mm upper H is a 250 x 250 mm square with two 50 mm-wide arms and a
 90 mm central strip. Confirm the final H outline against the measured B23/B28
@@ -194,8 +199,8 @@ bearing bands before ordering material.
 
 | GRP stock and parts | Net finished laminate | Compact rectangular cutting envelope | Practical layout |
 | --- | ---: | ---: | --- |
-| 9.5 mm: eight compact triangular corner webs | 0.3856 m2 | 0.5013 m2 | One 200 x 2,506.4 mm nested strip: alternate 45/225-degree webs, with 5 mm end trim and between outlines. Buy one 200 x 3,000 mm bar. |
-| 8 mm: thirteen 250 mm square upper Hs and 26 lower bridges | 0.6435 m2 | 0.9652 m2 | Three columns by five rows of H blanks: 760 x 1,270 mm, with the 26 bridges rotated into the 150 x 80 mm H cut-outs. |
+| 9.5 mm: four lower compact triangular corner webs | 0.1928 m2 | TBC | The former eight-web flat-bar take-off included the now-integrated upper webs. Use the current SVG nest in [materials.md](materials.md) for the common-sheet option. |
+| 8 mm: thirteen 250 mm square upper Hs and 26 lower bridges | 0.6435 m2 | 0.9652 m2 | Superseded by the nine-H / four-pod 5083 take-off in [materials.md](materials.md). |
 
 One compact corner web has polygon area 48,200 mm2. One assumed H has 38,500 mm2 of
 finished laminate; the 26 bridges add 143,000 mm2. A rotated 110 x 50 mm bridge
@@ -208,7 +213,7 @@ If the GRP shapes, acetal seat sleeves and stainless corner sleeves/posts are
 outsourced rather than made by the user, carry roughly **GBP 2,500-3,400**
 until written machining quotes replace that allowance. The basket-retention
 row is the sole cost taken from `plants-v2.md` and is counted once, within the
-13-seat system.
+9-seat plus 4-corner-pod system.
 
 Do not reduce the 5 mm tube wall, paired stiff corner webs, two seat capture
 stations, two seat-stop straps or four basket-retention points merely to save
@@ -220,8 +225,8 @@ temporary levelling supports instead of permanent adjustment hardware.
 ### First purchase - samples only
 
 - one B23, one B28, one PB18 and one PB25;
-- one 200 x 9.5 x 3,000 mm structural-GRP flat bar, one sample of the specified
-  8 mm seat sheet, and the 38 x 38 x 5 mm tube, with available wet-service
+- one 200 x 9.5 x 3,000 mm structural-GRP flat bar, a 5 mm 5083 plate sample,
+  and the 38 x 38 x 5 mm tube, with available wet-service
   information;
 - enough M8/A4 hardware and sleeves for one corner and one R5.1 seat;
 - one useful sample length of the selected 6 mm polyester cord;
@@ -240,7 +245,7 @@ length.
 
 Only after all release gates, use the quantity tables in `corner.md`,
 `cords.md` and `R5.1.md`. They cover four stiff corners, 36 cord items,
-13 seats and 13 permanent basket attachments. Transfer measured sample
+9 dedicated seats, 4 corner pods and 13 permanent basket attachments. Transfer measured sample
 dimensions instead of reconstructing the order from nominal sizes.
 
 ## Build and test sequence
