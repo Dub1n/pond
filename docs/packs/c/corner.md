@@ -2,6 +2,15 @@
 
 ## Decision and limit of approval
 
+**Purchase update, 15 September 2026:**
+[purchase-cost-study.md](purchase-cost-study.md) supplies the current
+freshwater cost candidate: 24 M8 x 80 A2-70 corner bolts with 304 tubular
+crush spacers, plus **eight separate** M8 x 50 acetal-covered C2 ear posts,
+and 5 mm polyester slings. It overrides the original A4-80/solid-spacer and
+shared-post purchase details below, with explicit grip/bearing and wet-test
+gates. The original hardware paragraphs and schedule remain reference only,
+not an instruction to order both systems. Geometry is still under development.
+
 Use the corner described here with the 38 x 38 x 5 mm structural-GRP ring and
 the suspension in [cords.md](cords.md). **Do not fit an ordinary R5.1 seat at a
 rail intersection.** The former three R5.1 corner-seat solids have been
@@ -11,10 +20,12 @@ basket-retention bolt and C2-post axes; the basket itself is deliberately
 omitted. That is a coordination representation, not a buildable basket arrangement. A
 separately gated diagonal basket carrier is described in
 [corner-basket locations](#corner-basket-locations).
-The joint has two
-9.5 mm compact triangular plan-web plates and six close-fit M8 through-bolts. One
-continuous corner sling wraps around the existing C2 diagonal joist and ends
-at two smooth posts on the corner's existing 55 mm bolt axes.
+The joint has a selected thick lower web and an integrated thick upper pod,
+nominally 9.5–10 mm structural GRP, with six close-fit M8 through-bolts.
+One continuous corner sling wraps around the existing C2 diagonal joist and
+ends at two separate smooth ear posts at local `(-125,+50)` and
+`(+50,-125)`, reflected at the other corners. The original 55 mm shared-post
+axes are superseded for Arrangement E.
 
 This is the issued **prototype construction detail**, not permission to load
 the completed deck. The selected thick upper and lower profiles are cut from
@@ -750,6 +761,11 @@ certificate must cover both in-plane directions, diagonal/shear reinforcement,
 pin bearing, open-hole/net-section behaviour and long-term immersed service.
 
 ## Material and purchase schedule
+
+**Historical hardware schedule:** the current common-sheet/A2 prototype
+purchases and corrected eight-separate-post count are in
+[purchase-cost-study.md](purchase-cost-study.md). Do not order the following
+long A4 bolts or solid stainless spacers for that candidate.
 
 Buy for **one corner first**. Buy the remaining three sets only after the wet
 test passes.

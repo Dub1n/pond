@@ -12,11 +12,20 @@ It is a purchasing and proof-planning schedule, **not fabrication approval**.
 The plate material, bolt grips, C2 post stack, basket bearing, wet corrosion
 behaviour and full rail/deck reactions remain release gates.
 
+**Water correction, 15 September 2026:** the owner confirms ordinary freshwater
+with no added salt. Earlier references to saline/fertilised water were an
+incorrect procurement assumption. Use freshwater exposure when comparing
+materials; A4/316 and seawater service are not blanket requirements. The current
+cost study uses the common structural-GRP sheet at an assumed GBP 250 including
+VAT, pending the supplier's quotation, plus GBP 110 for rail tube. See
+[purchase-cost-study.md](purchase-cost-study.md) for the complete purchase list
+and the proposed cheaper connection details.
+
 ## Current arrangement
 
 | Position | Quantity | Component | Material route now being priced |
 | --- | ---: | --- | --- |
-| Straight rail stations | 9 | R5.1 open H cradle: one upper H and two lower bridges | 5 mm EN AW-5083/H111 plate, or common-thickness structural GRP if the one-sheet route is quoted |
+| Straight rail stations | 9 | R5.1 open H cradle: one upper H and two lower bridges | Common 9.5–10 mm structural-GRP sheet in the current GBP 250 cost study; 5 mm EN AW-5083/H111 remains an alternative |
 | Each rail corner | 4 | Selected `clam.14.3_thick` upper web, two C2 post axes and four basket-retention axes | 9.5 mm certified structural-GRP, or 6 mm EN AW-5083/H111 after the revised proof; 5 mm 5083 is not screened |
 | Each rail corner | 4 | Selected `corner-web_thick` lower web and six M8 rail/corner bolts | Same certified 9.5 mm structural-GRP sheet as the upper part; the former 200 mm flat-bar route is superseded by this larger profile |
 
@@ -51,7 +60,7 @@ the seat movement limit at the 9.5 mm common-sheet thickness; see
 Use this table only to specify the minimum evidence to request.  The plate
 supplier must confirm the delivered sheet's actual thickness, fibre directions,
 wet/immersed directional moduli, pin-bearing and open-hole/net-section values,
-and suitability for the saline/fertilised pond water.  Do not treat the dry
+and suitability for permanent freshwater immersion. Do not treat the dry
 E23 numbers as permission to omit the planned wet coupon and complete-corner
 proof.
 
@@ -139,11 +148,11 @@ them with `./.venv/bin/python docs/packs/c/nesting/generate_profiles.py`.
 
 | Route | Use / decision | Current source and price evidence | Limits |
 | --- | --- | --- | --- |
-| **5 mm EN AW-5083/H111 aluminium** | Current low-cost route for the nine dedicated R5.1 seat plates; it is not screened for the connected corner upper web. | [Hawkshead 5 mm 5083 laser-cut plate](https://hawksheadmetal.co.uk/metal-sheet-steel-sheet/aluminium/aluminium-sheet-and-plate/5mm-aluminium-5083-sheet-plate-profiles-blanks-custom-cut-to-size-free-of-charge-enter-exact-dimension-for-pricing/) lists BS EN 573-3:2019 5083, profile cutting and a displayed price from GBP 22.17. That is not the price of these blanks; obtain a nested-cut quotation. | Fully submerged salty/fertilised water still requires rounded edges, no water traps, compatible finish and a coupon/assembly test. Keep A4 stainless isolated at wet fasteners with shoulder bushes and insulating washers. |
+| **5 mm EN AW-5083/H111 aluminium** | Alternative route for the nine dedicated R5.1 seat plates; the current GBP 250 cost study assumes the common GRP sheet. It is not screened for the connected corner upper web. | [Hawkshead 5 mm 5083 laser-cut plate](https://hawksheadmetal.co.uk/metal-sheet-steel-sheet/aluminium/aluminium-sheet-and-plate/5mm-aluminium-5083-sheet-plate-profiles-blanks-custom-cut-to-size-free-of-charge-enter-exact-dimension-for-pricing/) lists BS EN 573-3:2019 5083, profile cutting and a displayed price from GBP 22.17. That is not the price of these blanks; obtain a nested-cut quotation. | Freshwater immersion still requires rounded edges, drainage and a coupon/assembly test. Isolate stainless fasteners electrically from aluminium; that extra purchase is unnecessary with the common GRP sheet. |
 | 6 mm EN AW-5083/H111 aluminium | Minimum metal candidate for the connected corner upper web; the 5 mm proof-strip comparison is at its minimum-proof limit. | [Aluminium Warehouse 6 mm 5083](https://www.aluminiumwarehouse.co.uk/products/6-mm-5083-aluminium-plate) is cut to size and lists 72 GPa modulus, 270--345 MPa tensile strength and 125 MPa minimum proof stress; its displayed GBP 2.36 is a starting price, not the finished sheet price. | More weight/cost and every bolt grip, sleeve and bearing datum must change; still require the pod/C2 coupon and full corner proof. |
 | Common-thickness structural-GRP sheet | Quote as the one-sheet alternative for nine Hs, eighteen nested bridges, four selected thick upper pods and four selected thick lower webs. | Use the renewed SVG job and request about **1,505 x 1,015 mm**. [GRP Grating Systems' E23 table](https://www.grpgrating.fullfatwebsitedesign.co.uk/grp-thickness-grades.php) gives the property basis to ask them to confirm for flat sheet or equivalent plate stock. | The sheet must satisfy the lower-web duty as well as the H/pod bearing duty. If pultruded or directionally stronger, pair orientations deliberately and obtain supplier approval for both rail-leg and diagonal load paths. |
 | 9.5 mm structural-GRP flat bar | **Not suitable for the selected thick lower profile**: the 200 mm stock width is below its 282.8 mm bounding profile. | [F.H. Brundle 200 x 9.5 x 3,000 mm GRP flat bar](https://www.fhbrundle.co.uk/products/330320095GY__GRP_Flat_Bar_200_x_9.5mm___3M_long_Grey): GBP 95.04 inc VAT, retained as historical comparison only. | Do not substitute it unless a separately verified recut/profile is approved. |
-| 6082-T6 aluminium | **Rejected for the permanently submerged saline/fertilised location.** | Earlier cut-to-size listing retained only as historical comparison. | Good general corrosion resistance is not the required seawater/chemical-service basis; do not order it for these parts. |
+| 6082-T6 aluminium | The earlier rejection assumed saline water; that premise is superseded. It is open for comparison if an actual quote beats the common GRP purchase. | Earlier cut-to-size listing retained only as historical comparison. | Recheck freshwater corrosion, dissimilar-metal isolation, thickness and complete purchase cost before substitution; it is not part of the present costed basket. |
 | Marine plywood / generic GRP flooring / UHMWPE | **Not selected.** | No procurement basis in this schedule. | Plywood needs a separate encapsulated-composite design; generic flooring may lack directional joint data; UHMWPE creeps and is not structural plate stock. |
 
 Compare actual delivered quotes on a like-for-like basis: one 1055/1060 mm
@@ -154,24 +163,28 @@ structural-GRP one-sheet route, and a direct laser-cut nest.
 
 | Item                                                                                          | R5.1 seats | Corner pods |   Total |
 | --------------------------------------------------------------------------------------------- | ---------: | ----------: | ------: |
-| Basket retention: M6 x 40 A4 screws, internal penny washers, underside washers, nuts and caps |    36 each |     16 each | 52 each |
-| R5.1 M8 capture bolts, locknuts, caps and bored sleeves                                       |    36 each |           — | 36 each |
+| Basket retention: M6 x 40 A2 screws, internal penny washers, underside washers and nylocs |    36 each |     16 each | 52 each |
+| R5.1 M8 capture bolts, nylocs and bored sleeves                                               |    36 each |           — | 36 each |
 | R5.1 broad M8 washers                                                                         |         72 |           — |      72 |
-| R5.1 cam-buckle strap stops and chafe sleeves                                                 |    18 each |           — | 18 each |
+| R5.1 knotted polyester stop lashings and chafe sleeves; cam buckles are fallback only          |    18 each |           — | 18 each |
 | Corner rail/corner M8 bolts                                                                   |          — |          24 |      24 |
 | C2 lower post stacks                                                                          |          — |           8 |       8 |
 
 The corner-pod M6 retention axes are separate from the six M8 rail/corner
 bolts. C2 post elevations and their final stack are explicitly provisional;
 do not buy final post spacers from nominal YAML elevations.
+The purchase study uses cut, rounded, sheltered bolt ends instead of bought
+caps, subject to the snag check; its complete table includes all M8 washers
+and eight separate post fasteners.
 
 ## Required quote and proof sequence
 
-1. Ask for a 5 mm 5083/H111 quote for the two split blanks and for a 1055 x
-   1055 mm square, and ask for a common-thickness structural-GRP quote for the
-   1180 x 1575 mm one-sheet layout including the selected lower webs.
+1. Obtain the pending common 9.5–10 mm structural-GRP quotation for the
+   current 35-part nest, approximately 1505 x 1015 mm. The GBP 250 cost basis
+   is an assumption until that quote arrives. The 5083 split/square blanks
+   above are alternative quotes, not additional purchases.
 2. Obtain the plate certificate, temper, thickness tolerance and explicit
-   immersed saline/fertiliser service statement.
+   freshwater immersion information.
 3. Cut one complete R5.1 H/bridge stack and one full corner pod first.
 4. Prove wet corrosion, washer bearing, bolt preload, strap-slot and pod/C2
    post behaviour before cutting the remaining stock.

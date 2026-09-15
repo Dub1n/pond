@@ -83,10 +83,11 @@ the support calculation. Provisional model coordinates are not cord-cutting
 dimensions.
 
 At each C2 corner, the midpoint of one continuous cord wraps around the timber
-and one end descends to each adjacent rail leg. Smooth metal cord posts use the
-two existing inner corner bolts. The two lower points introduce support to both
-legs and avoid a separate lower bridge or new holes in the GRP plates. Model
-both legs and treat loss of the continuous sling as one fault.
+and one end descends to each of Arrangement E's two separate ear posts.
+These are eight additional post bolts, not eight of the 24 rail/corner bolts.
+The current purchase candidate uses smooth acetal-covered posts; see
+[purchase-cost-study.md](purchase-cost-study.md). Model both sling legs and
+treat loss of the continuous sling as one fault.
 
 ### Corner
 
@@ -97,7 +98,8 @@ Each rail corner retains:
   strips at the bolt zones;
 - three M8 axes on each leg at 55, 125 and 195 mm;
 - close 8.2-8.5 mm stack holes; and
-- one measured internal A4 sleeve at every bolt.
+- one measured internal compression sleeve at every bolt; 304 tube is the
+  current freshwater purchase candidate.
 
 The paired-strip estimate remains 33.2 kN m/rad before connection compliance.
 The assembled wet joint must demonstrate at least 20 kN m/rad from 0 to
@@ -114,12 +116,13 @@ M8 sleeved bolts form two spaced capture stations. Bearing-arm
 spacing and projection transfer from the sound base bands on the purchased
 basket.
 
-Two independent 25 mm polyester endless cam straps per seat remain the normal
-longitudinal movement stops. They carry no basket gravity or global suspension
-load. The through-bushed pin and elongated plate remain a fallback only if the
-strap test fails.
+Two independent polyester stops per seat remain the longitudinal restraint.
+The purchase-led candidate replaces cam buckles with knotted, chafe-protected
+cord lashings through the existing slots, subject to the same 0.10 kN wet
+slide test. They carry no basket gravity or global suspension load. Cam straps
+and the through-bushed pin remain fallbacks if the lashing detail fails.
 
-Four internal broad A4 washers and M6 button-head screws retain each empty
+Four internal broad stainless washers and M6 button-head screws retain each empty
 rigid basket at tested sound rib intersections. The planted bag, harness and
 fish guard remain a removable cartridge and carry no seat load.
 
@@ -154,6 +157,21 @@ The direct-loop suspension should require only polyester cord, chafe sleeves,
 small timber stops and screws, locating cord, eight simple corner-post spacers
 and washers, tags and consumables. On an order-of-magnitude basis this is a
 low-hundreds suspension rather than a multi-thousand-pound one.
+
+The current purchase-led study is
+[purchase-cost-study.md](purchase-cost-study.md): **GBP 498.92 including VAT,
+excluding delivery**, using the owner's **GBP 250 plate assumption + GBP 110
+rail allowance**. All remaining purchases total **GBP 138.92**. The plate
+quote is pending; this is a complete priced prototype candidate, not an
+approved build or reserved checkout price.
+
+The owner confirms ordinary freshwater, **no added salt**. Use A2-70/A2
+stainless and 304 tube as the lower-cost candidates, 5 mm polyester main cord,
+stock acetal sleeves/posts and knotted seat-stop lashings. Keep all 52 bought
+40 mm basket washers. The study supplies selected product links, purchase
+quantities, VAT rounding, full cord/stock allocations and the necessary
+fit/wet/stiffness tests. The earlier 6 mm / 6 kN cord, blanket A4-80 hardware,
+shared corner-post bolts and bought cam buckles are not minimum requirements.
 
 ### Superseded complete-carrier budget screen
 
@@ -215,24 +233,24 @@ until written machining quotes replace that allowance. The basket-retention
 row is the sole cost taken from `plants-v2.md` and is counted once, within the
 9-seat plus 4-corner-pod system.
 
-Do not reduce the 5 mm tube wall, paired stiff corner webs, two seat capture
-stations, two seat-stop straps or four basket-retention points merely to save
-parts. The useful economy is keeping the cord support direct and using
-temporary levelling supports instead of permanent adjustment hardware.
+The present costed candidate retains the 5 mm tube wall, stiff corners, two
+seat capture stations, two seat-stop locations and four basket-retention
+points. These are the evaluated route, not a ban on alternatives: any further
+change should demonstrate the required function and a lower complete purchase
+cost, including the rework it introduces.
 
 ## Purchase sequence
 
 ### First purchase - samples only
 
 - one B23, one B28, one PB18 and one PB25;
-- one 200 x 9.5 x 3,000 mm structural-GRP flat bar, a 5 mm 5083 plate sample,
-  and the 38 x 38 x 5 mm tube, with available wet-service
-  information;
-- enough M8/A4 hardware and sleeves for one corner and one R5.1 seat;
-- one useful sample length of the selected 6 mm polyester cord;
-- sample chafe sleeve, 3-4 mm locating cord, timber-stop material and screws;
+- a sample of the quoted common structural-GRP sheet and the
+  38 x 38 x 5 mm tube, with available wet-service information;
+- enough selected A2 hardware and sleeves for one corner and one R5.1 seat;
+- one useful sample length of the 5 mm polyester purchase candidate;
+- sample chafe sleeve, 3 mm locating/stop cord, owner-provided timber and screws;
 - two smooth corner cord-post spacers and retaining washers; and
-- the sample basket-retention washers and seat movement-stop straps.
+- the sample basket-retention washers and seat movement-stop lashings.
 
 ### Prototype purchase
 
@@ -243,8 +261,9 @@ length.
 
 ### Batch purchase
 
-Only after all release gates, use the quantity tables in `corner.md`,
-`cords.md` and `R5.1.md`. They cover four stiff corners, 36 cord items,
+Only after all release gates, use the reconciled purchase table in
+`purchase-cost-study.md` with the functional details in `corner.md`,
+`cords.md` and `R5.1.md`. It covers four stiff corners, 36 cord items,
 9 dedicated seats, 4 corner pods and 13 permanent basket attachments. Transfer measured sample
 dimensions instead of reconstructing the order from nominal sizes.
 
@@ -271,8 +290,10 @@ dimensions instead of reconstructing the order from nominal sizes.
 10. Accept the deck reaction limits and post-deck access before batch work.
 
 Use temporary control lines when lowering. Cut or drill GRP over dry ground
-with dust extraction; round and resin-seal every cut. All immersed metal is
-A4/316 or 316L, all hollow members have deliberate drainage/vent routes, and
+with dust extraction; round and resin-seal every cut. The freshwater purchase
+candidate uses identified A2/304 stainless, with A4/316 retained as an
+alternative if actual water conditions require it. All hollow members have
+deliberate drainage/vent routes, and
 fish or liner may touch no exposed fibre, burr or projecting thread.
 
 ## Release gates and residual risk

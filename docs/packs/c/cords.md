@@ -2,7 +2,10 @@
 
 ## Selected prototype arrangement
 
-Use **36 independent 6 mm low-stretch polyester cord items**:
+Use **36 independent polyester cord items**. The current purchase candidate is
+5 mm 8-plait polyester; [purchase-cost-study.md](purchase-cost-study.md) replaces
+the former 6 mm / 6 kN buying specification and gives the complete priced
+take-off. Knot, wet-wear and measured-stiffness acceptance still apply:
 
 - 24 gravity loops from straight joists J2-J7, six on each side;
 - 8 crossed stabilising loops, one opposite-handed pair per side; and
@@ -16,9 +19,9 @@ accessible removable deck board. The rail is held on temporary level supports
 while the knots are set.
 
 Each corner sling is one continuous cord. Its midpoint bears around the C2
-joist and its two free ends descend to smooth cord posts on the existing
-`(55,0)` and `(0,55)` M8 corner-bolt axes. This puts one lower point on each
-rail leg without weakening the rail or adding holes to the corner plates.
+joist and its two free ends descend to Arrangement E's separate ear posts at
+local `(-125,+50)` and `(+50,-125)`, reflected for the other corners. The
+former shared `(55,0)` and `(0,55)` corner-bolt posts are superseded.
 
 The loops, knots, chafe sleeves and stops are prototype details until they pass
 the dry and wet tests below. The direct-loop method is the only active
@@ -26,11 +29,14 @@ suspension detail.
 
 ## Cord and knot
 
-Use one batch of 6 mm, 100% polyester, covered low-stretch rope with a
-published minimum break load of at least 6 kN. Marlow Excel Pro 6 mm remains a
-suitable reference product. Do not use nylon, polypropylene, natural fibre,
-unidentified accessory cord or HMPE without rechecking wet behaviour, creep,
-knot security and stiffness.
+Trial one batch of 5 mm, 100% polyester 8-plait cord with the selected
+supplier's approximate 310 kg / 3.04 kN breaking-load information. The former
+6 mm / 6 kN Marlow reference is not a minimum requirement. The purchase study
+separates breaking strength from the ring model's 6 kN effective axial-rigidity
+input and specifies a settled-extension measurement. Do not substitute another
+material or unidentified cord without checking wet behaviour, creep, knot
+security and stiffness. Cheaper 4 mm and un-rated 6 mm polyester remain
+explicit trial alternatives, not automatically accepted batch substitutes.
 
 The first support loop establishes the production knot and tail allowance. A
 well-dressed double fisherman's bend with generous tails is a reasonable
@@ -93,7 +99,8 @@ the stop edges facing the cord and keep the cord on its chafe sleeve.
 For the first full-size template, put the wrap centreline **35 mm back from the
 surveyed joist tip** and trial a full-width stop approximately 47 mm transverse
 x 15 mm along-joist x 10 mm high, immediately pondward of the protected wrap.
-Use two pilot-drilled A4 screws across the stop width. These are fit-up starting
+Use two pilot-drilled stainless screws across the stop width; A2 is the
+freshwater candidate. These are fit-up starting
 dimensions only: confirm screw end distance, splitting, stop bearing and the
 remaining thickness of the relieved 28 mm deck board before adopting them.
 
@@ -113,12 +120,12 @@ height as the force-line height. Nothing may project beyond a joist tip.
 
 ## Corner sling
 
-Retain the stiff paired-plate corner in [corner.md](corner.md). On each corner,
-use the existing M8 axes at local `(55,0)` and `(0,55)` as the two lower sling
-points. Fit a short smooth metal compression spacer over each bolt above the
-top corner plate, with a broad retaining washer above it. The bolt clamp stack
-must remain metal-to-metal; the cord and any polymer chafe sleeve must not sit
-in the corner-joint preload path. No thread may touch the cord.
+Retain the stiff paired-plate corner in [corner.md](corner.md). Use the two
+separate Arrangement E ear axes, with 16 mm OD acetal-covered M8 posts and
+30 mm retaining roof washers as the purchase-study candidate. Start at 20 mm
+post height using M8 x 50 bolts, then verify the full knot/chafe/basket/deck
+template. These eight bolts are additional to the 24 corner bolts. The cord
+must remain outside the post clamp path; no thread may touch it.
 
 Wrap the middle of one continuous sling around the corresponding C2 joist and
 bring one end to each lower post. Set and mark both end knots while the corner
@@ -150,15 +157,19 @@ sling before the batch.
 
 | Item                                                  |                             Provisional full-system allowance |
 | ----------------------------------------------------- | ------------------------------------------------------------: |
-| 6 mm accepted polyester cord                          |   measured loop schedule plus 20% and two longest-loop spares |
+| Accepted polyester cord; current 5 mm candidate       |   measured loop schedule plus 20% and two longest-loop spares |
 | Main-cord chafe sleeves                               |      76 bearing locations plus sample-derived spare allowance |
-| 3-4 mm polyester locating cord                        | two collars at each straight/crossed lower station plus spare |
+| 3 mm polyester locating/seat-stop cord                | 64 collars, 18 seat stops, separators/tags and spare |
 | Treated upper-face timber stops                       |               32 straight/crossed stations plus 4 C2 stations |
 | Stainless stop screws                                 |                                         two per stop plus 10% |
-| Smooth corner cord-post spacers and retaining washers |                                        8 of each plus 2 spare |
+| Smooth corner cord-post spacers and retaining washers | 8 of each; post stock includes spare material |
 | Crossing sleeves                                      |                                                8 plus 2 spare |
 | Loose crossed-cord separators                         |                                                4 plus 2 spare |
-| Weatherproof numbered tags                            |                                                36 plus spares |
+| Weatherproof identification                           | 36 marked parts or sealed offcut tags; no bought tags |
+
+Use the reconciled stock/reel purchases in
+[purchase-cost-study.md](purchase-cost-study.md), including chafe for seat
+stops. This functional list is not an additional shopping basket.
 
 Final cord, stop, screw, sleeve and collar quantities come from the three
 accepted full-size samples and the surveyed deck-board detail.
