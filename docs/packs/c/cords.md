@@ -159,7 +159,7 @@ sling before the batch.
 | ----------------------------------------------------- | ------------------------------------------------------------: |
 | Accepted polyester cord; current 5 mm candidate       |   measured loop schedule plus 20% and two longest-loop spares |
 | Main-cord chafe sleeves                               |      76 bearing locations plus sample-derived spare allowance |
-| 3 mm polyester locating/seat-stop cord                | 64 collars, 18 seat stops, separators/tags and spare |
+| 3 mm polyester locating cord                          | 64 collars, separators/tags and spare; no seat-stop lashings |
 | Treated upper-face timber stops                       |               32 straight/crossed stations plus 4 C2 stations |
 | Stainless stop screws                                 |                                         two per stop plus 10% |
 | Smooth corner cord-post spacers and retaining washers | 8 of each; post stock includes spare material |
@@ -168,8 +168,10 @@ sling before the batch.
 | Weatherproof identification                           | 36 marked parts or sealed offcut tags; no bought tags |
 
 Use the reconciled stock/reel purchases in
-[purchase-cost-study.md](purchase-cost-study.md), including chafe for seat
-stops. This functional list is not an additional shopping basket.
+[purchase-cost-study.md](purchase-cost-study.md), including chafe for C2
+posts. Seat stops now use the bolt clamp in
+[install-walkthrough.md](install-walkthrough.md), not additional cord.
+This functional list is not an additional shopping basket.
 
 Final cord, stop, screw, sleeve and collar quantities come from the three
 accepted full-size samples and the surveyed deck-board detail.

@@ -822,6 +822,13 @@ wet corner proof.
 
 ## Fabrication and assembly
 
+Use [install-walkthrough.md](install-walkthrough.md) for the current full-ring
+sequence, revised seat clamp and C2 chafe allocations. In particular, reopen
+the drilled corner stacks for cleaning, sealing and internal sleeve insertion
+before loosely assembling and squaring all four corners. Do not close the last
+mitre with sleeves still to insert. Historical post/material instructions above
+do not override the current purchase and installation guides.
+
 1. Make a full-size drilling/template plate from plywood. Mark the six-sided
    outline, rail centrelines, six bolt centres and fibre directions.
 2. Cut one top and one bottom plate. Keep their certified strong directions at

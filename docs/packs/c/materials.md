@@ -72,8 +72,8 @@ exposed plate edges and holes before service.
 
 | Component | Quantity | Finished / template geometry | Plate route |
 | --- | ---: | --- | --- |
-| Dedicated R5.1 upper H | 9 | 250 x 250 maximum blank; two 50 mm bearing arms, 90 mm central strip, 25 mm internal radii and two 30 x 7 strap slots | 5 mm 5083, pending revised local checks |
-| Dedicated R5.1 lower bridge | 18 | 50 x 110 | Same 5 mm 5083 as its upper H; one bridge in each H cut-out |
+| Dedicated R5.1 upper H | 9 | 250 x 250 maximum blank; two 50 mm bearing arms, 90 mm central strip and 25 mm internal radii; no seat-lashing slots/grooves | Common 9.5–10 mm structural GRP for the current cost/installation route |
+| Dedicated R5.1 lower bridge | 18 | 50 x 110 | Same common GRP as its upper H; one bridge in each H cut-out |
 | `t=30 mm` upper corner pod | 4 | **Selected:** `clam.14.3_thick`, 71,304 mm2, 407.8 x 407.8 mm cutter-profile bounding box. | 9.5 mm certified structural-GRP, or 6 mm 5083 pending pod/post proof |
 | Selected lower corner web | 4 | `corner-web_thick`, 43,506 mm2, 282.8 x 282.8 mm cutter-profile bounding box. | 9.5 mm structural GRP only |
 
@@ -166,7 +166,7 @@ structural-GRP one-sheet route, and a direct laser-cut nest.
 | Basket retention: M6 x 40 A2 screws, internal penny washers, underside washers and nylocs |    36 each |     16 each | 52 each |
 | R5.1 M8 capture bolts, nylocs and bored sleeves                                               |    36 each |           — | 36 each |
 | R5.1 broad M8 washers                                                                         |         72 |           — |      72 |
-| R5.1 knotted polyester stop lashings and chafe sleeves; cam buckles are fallback only          |    18 each |           — | 18 each |
+| R5.1 longitudinal clamp stations, using the existing bolts/H/bridges; no separate lashings      |         18 |           — |      18 |
 | Corner rail/corner M8 bolts                                                                   |          — |          24 |      24 |
 | C2 lower post stacks                                                                          |          — |           8 |       8 |
 

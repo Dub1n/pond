@@ -10,7 +10,11 @@ the untested substitutions already meet every release requirement.
 Keep the present plate profiles, four stiff corners, nine dedicated seats,
 36 suspension items and all 52 large bought basket-retention spreader washers. The useful
 changes are ordinary A2 stainless, inexpensive stock spacers, 5 mm polyester
-main cord, and knotted seat-stop lashings instead of bought buckles.
+main cord, and existing-bolt seat clamping instead of bought buckles or lashings.
+See [install-walkthrough.md](install-walkthrough.md) for the current assembly
+guide and optional pad/adhesive variants. The original stock purchases below
+remain a conservative allowance; optional interface materials and missing
+installation equipment are additional, not included in this total.
 The GBP 1.08 headroom is real but small: this is not a contingency budget.
 
 ## Basis — 15 September 2026
@@ -64,13 +68,13 @@ Arrangement E has **eight separate C2 ear-post bolts**, in addition to the
 24 rail/corner bolts. The old corner purchase table still shares posts with
 the inner rail bolts and therefore undercounts the current arrangement.
 
-| Connection | Installed quantity | Actual job |
-| --- | ---: | --- |
-| Rail/corner M8 bolts | 24 | Six per corner; transfer bearing/shear and keep the two webs assembled |
-| Dedicated-seat M8 bolts and acetal sleeves | 36 | Four per seat; capture uplift/overturning and limit transverse movement |
-| Separate C2 post fasteners | 8 | Two per corner pod; receive the two sling ends |
-| Basket retention positions | 52 | Four per basket; retain the empty rigid basket against handling/uplift |
-| Seat longitudinal stops | 18 | Two independent stop locations per dedicated seat |
+| Connection                                 | Installed quantity | Actual job                                                              |
+| ------------------------------------------ | -----------------: | ----------------------------------------------------------------------- |
+| Rail/corner M8 bolts                       |                 24 | Six per corner; transfer bearing/shear and keep the two webs assembled  |
+| Dedicated-seat M8 bolts and acetal sleeves |                 36 | Four per seat; capture uplift/overturning and limit transverse movement |
+| Separate C2 post fasteners                 |                  8 | Two per corner pod; receive the two sling ends                          |
+| Basket retention positions                 |                 52 | Four per basket; retain the empty rigid basket against handling/uplift  |
+| Seat longitudinal stops                    |                 18 | Two independent stop locations per dedicated seat                       |
 
 The basket's reinforced base bears on the plate. Basket-retention screws do
 not suspend the planted basket in normal gravity. Likewise, the seat's lower
@@ -105,7 +109,7 @@ variants, the required variant and quantity tier are stated explicitly.
 | Common GRP plate | One quoted purchase covering the 35-part nest, 9.5 mm minimum / nominal 10 mm candidate | [GRP Grating Systems non-gritted custom plate](https://www.grpgrating.fullfatwebsitedesign.co.uk/non-slip-flooring.php); owner assumption, **not a listed GBP 250 price** | GBP 250.00 |
 | Rail tube | Two 6 m lengths, 38 x 38 x 5 mm | [F.H. Brundle 3305385GY](https://www.fhbrundle.co.uk/products/3305385GY__GRP_Hollow_Section_38_x_38_x_5mm_x_6m_Grey), GBP 54.96 each; rounded owner allowance | GBP 110.00 |
 | Main suspension cord | One 100 m reel, white 5 mm 8-plait polyester | [RopesDirect 5 mm reel](https://www.ropesdirect.co.uk/products/5mm-8-plait-white-polyester-100m-reel), GBP 32.64; published approximate breaking load 310 kg | GBP 32.64 |
-| Locating cord and seat stops | One 100 m reel, 3 mm polyester/PET | [Springfields Kombat paracord](https://www.springfields.co.uk/100m-3mm-paracord-black.html), GBP 8.49; **not main suspension cord** | GBP 8.49 |
+| Locating cord | One 100 m reel, 3 mm polyester/PET | [Springfields Kombat paracord](https://www.springfields.co.uk/100m-3mm-paracord-black.html), GBP 8.49; **not main suspension cord** | GBP 8.49 |
 | Chafe sleeves | 20 m, 25 mm polyester tubular webbing | [Profabrics tubular webbing](https://www.profabrics.co.uk/products/tubular-webbing-25mm), GBP 0.65 ex / 0.78 inc per metre | GBP 15.60 |
 | Corner and seat bolts | 60 x M8 x 80, A2-70, DIN 931 part-thread | [Vital HH931-M8-80-A2-70](https://www.vital-parts.co.uk/hex-head-bolts-din-931/9317-hh931-m8-80-a2-70), 1–99 tier, displayed GBP 0.29 each | GBP 17.41 |
 | Separate C2 post bolts | 8 x M8 x 50, A2-70, DIN 931 part-thread | [Vital HH931-M8-50-A2-70](https://www.vital-parts.co.uk/hex-head-bolts-din-931/9297-hh931-m8-50-a2-70), 1–99 tier, GBP 0.19 each | GBP 1.52 |
@@ -267,13 +271,12 @@ a sensitivity illustration, not a prediction of the chosen braid's behaviour.
 Use measured current tangents and settled cord behaviour before release.
 
 The separate 3 mm PET reel has no published breaking load. It is selected
-only for locating collars, crossing separators/tags and **seat-stop lashings**,
-which have a 0.10 kN prototype test, not for suspending the rail. At each
-seat retain two independent chafe-protected lashings through the existing
-H slots and around the rail, dressed and locked with inspectable tails.
-Do not assume a friction-only wrap stays put: run the existing wet slide
-test. A 25 mm flat sleeve may need folding through the nominal 7 mm slot;
-the template must demonstrate a smooth, non-jammed route.
+only for locating collars and crossing separators/tags, not for suspending
+the rail. Seat-stop lashings are superseded by the existing four-bolt clamp,
+with optional pad or adhesive assistance. Do not cut seat-lashing slots or
+grooves. Follow the sample fitting and 0.10 kN dry/wet slide tests in
+[install-walkthrough.md](install-walkthrough.md); the mechanical capture stays
+in place with every interface option.
 
 ### Basket retention and finishing
 
@@ -310,11 +313,15 @@ These are budget allocations to verify on samples, **not final production
 cord cuts**. Make the longest examples first and adjust the schedule before
 cutting the remaining stock.
 
+The 39 mm seat-sleeve allocation below is retained for stock budgeting only.
+The clamped seat requires a measured gap and verified bolt grip; do not cut
+all 36 sleeves to the former clearance dimension before testing the sample.
+
 | Stock | Allocation | Remainder / qualification |
 | --- | --- | --- |
 | Main 5 mm cord, 100 m | 24 gravity x 1.70 m = 40.80 m; 8 crossed x 2.05 m = 16.40 m; 4 C2 x 2.00 m = 8.00 m; **65.20 m production allowance** | Add 20% = 13.04 m, two longest spares = 4.10 m, and 10 m trials: 92.34 m total, 7.66 m still unallocated |
-| Locating/stopping 3 mm cord, 100 m | 64 collars x 1 m = 64 m; 18 seat stops x 0.90 m = 16.20 m; 5 m separators/tags | 85.20 m total; 14.80 m spare. Do not also assign these duties to the main reel |
-| Tubular webbing, 20 m | 36 upper contacts x 0.25 m = 9 m; 32 lower rail contacts x 0.12 m = 3.84 m; 8 posts x 0.10 m = 0.80 m; 8 crossed-leg sleeves x 0.10 m = 0.80 m; 18 seat-stop sleeves x 0.20 m = 3.60 m | 18.04 m total; 1.96 m trials/trim. Minimum batch allowance, not generous spare |
+| Locating 3 mm cord, 100 m | 64 collars x 1 m = 64 m; 5 m separators/tags; no seat-stop lashings | 69 m total; 31 m spare. Do not also assign these duties to the main reel |
+| Tubular webbing, 20 m | 36 upper contacts x 0.25 m = 9 m; 32 lower rail contacts x 0.12 m = 3.84 m; 8 posts x 0.15 m = 1.20 m; 8 crossed-leg sleeves x 0.10 m = 0.80 m; no seat-stop sleeves | 14.84 m total; 5.16 m trials/trim. Post lengths remain sample-governed |
 | Acetal rod, 2,000 mm | 36 seat sleeves x 39 = 1,404 mm; 8 posts x 20 = 160 mm; allow 44 x 2 = 88 mm for kerf/facing | 1,652 mm used; 348 mm spare. For example cut 34 seat sleeves from the 1,500 mm rod, and 2 seat sleeves plus all 8 posts from the 500 mm rod |
 | Stainless tube, 1,000 mm | 24 crush sleeves x nominal 28 = 672 mm; allow 48 mm cutting/facing | 720 mm used; 280 mm spare; actual cavity governs length |
 | M8 x 25 washers, 128 | 72 seat + 48 corner + 8 post underside | All accounted for; 8 separate 30 mm roof washers |
@@ -337,7 +344,7 @@ are free. Extra testing beyond that allocation requires a revised purchase.
 | [Rope Source 6 mm ivory braided polyester, 100 m](https://rope-source.co.uk/product/braided-polyester-cord-ivory-6mm-x-100m/), clearance GBP 20.90 | Saves GBP 11.74; total GBP 487.18 | Both core/sheath described as polyester, but no published strength/stiffness. A supplier answer or measured break/extension sample could make this better value than the smaller rope. Do not assume craft branding means failure, or that 6 mm proves capacity |
 | Make internal basket pads from paid-for GRP offcuts | Saves up to GBP 10.64; total GBP 488.28 | Possible, not needed to hit GBP 500. Requires 52 smooth roughly 40 mm-footprint pads, sound mesh bearing, additional cutting/sealing and bag-clearance check. Ten-millimetre pads also use screw length. More repetitive work than buying 20 pence washers; not yet a nested, validated substitute |
 | Reuse identifiable unused A2 hardware from a job lot | Deduct the replaced purchase lines, not the entire hardware budget | Acceptable if cheaper after quantities, grip lengths and missing washers/nuts are counted. No verified suitable live job lot undercuts the complete selected set in this study; used unidentified rope is not equivalent to a known new reel |
-| Single main reel for every lashing | Nominally saves GBP 8.49 | Reject this particular take-off: 65.2 m main production plus 85.2 m locating/stopping allowances exceeds 100 m before spares. Would require a genuinely different stop/collar detail, not omitted metres |
+| Single main reel for every cord duty | Nominally saves GBP 8.49 | The revised 65.2 m main production plus 69 m locating allowances still exceeds 100 m before spares. Removing seat lashings does not eliminate the locating-cord purchase |
 | Adhesive-only corners using [Plexus MA300 50 ml](https://www.techsil.co.uk/plexus-ma300-50ml), GBP 16.99 inc | Two cartridges already GBP 33.98, before gun/nozzles | Not ruled out in principle. About 0.12–0.13 m2 of two-face/four-corner contact at 0.5 mm bondline needs roughly 60–65 ml before waste. The 24 corner bolts, 48 washers, 24 nuts and crush tube cost about GBP 17.15. This verified structural adhesive route is therefore dearer before wet-peel/creep and repair qualification |
 | Use the already-bought EL2 as structural glue | Potential incremental saving, not established | A laminating resin/sealer is not automatically a qualified gap-filling wet-service structural joint. Need manufacturer-supported joint preparation, gap/filler, peel and creep data and a removable/repairable assembly strategy. Could first test non-load-bearing bedding; no uncosted adhesive-only saving is claimed |
 

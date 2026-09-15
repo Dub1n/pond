@@ -38,13 +38,16 @@ Only the direct-loop suspension method is active.
 
 ## Read and use in this order
 
+For the current hands-on sequence and seat clamp, start with
+[install-walkthrough.md](install-walkthrough.md), then consult these references.
+
 1. [design-C.md](design-C.md) - as-built deck interface and five still-TBC
    allowable reaction limits.
 2. [corner.md](corner.md) - stiff joint, two-point corner sling and release
    gates.
 3. [cords.md](cords.md) - direct loops, upper-face stops, knots, chafe and
    installation sequence.
-4. [R5.1.md](R5.1.md) - seat, strap movement stop, fallback stop pin and basket
+4. [R5.1.md](R5.1.md) - seat, clamped movement stop, reference alternatives and basket
    attachment.
 5. [plants-v2.md](plants-v2.md) - cartridges, guards, depth variants, planting
    and removal sequence.
@@ -116,11 +119,12 @@ M8 sleeved bolts form two spaced capture stations. Bearing-arm
 spacing and projection transfer from the sound base bands on the purchased
 basket.
 
-Two independent polyester stops per seat remain the longitudinal restraint.
-The purchase-led candidate replaces cam buckles with knotted, chafe-protected
-cord lashings through the existing slots, subject to the same 0.10 kN wet
-slide test. They carry no basket gravity or global suspension load. Cam straps
-and the through-bushed pin remain fallbacks if the lashing detail fails.
+Longitudinal restraint now uses the existing four bolts and H/lower bridges
+as a gentle clamp, with sleeves matched to the measured stack. A broad grippy
+pad or suitable adhesive between H and rail is optional. Retain all mechanical
+capture parts; do not cut seat-lashing slots/grooves. The same 0.10 kN wet
+slide test applies, including empty and loaded states. See the fitting and
+installation procedure in [install-walkthrough.md](install-walkthrough.md).
 
 Four internal broad stainless washers and M6 button-head screws retain each empty
 rigid basket at tested sound rib intersections. The planted bag, harness and
@@ -167,7 +171,8 @@ approved build or reserved checkout price.
 
 The owner confirms ordinary freshwater, **no added salt**. Use A2-70/A2
 stainless and 304 tube as the lower-cost candidates, 5 mm polyester main cord,
-stock acetal sleeves/posts and knotted seat-stop lashings. Keep all 52 bought
+stock acetal sleeves/posts and existing-bolt seat clamping. Optional pads or
+adhesive are not included in the original price. Keep all 52 bought
 40 mm basket washers. The study supplies selected product links, purchase
 quantities, VAT rounding, full cord/stock allocations and the necessary
 fit/wet/stiffness tests. The earlier 6 mm / 6 kN cord, blanket A4-80 hardware,
@@ -250,7 +255,8 @@ cost, including the rework it introduces.
 - one useful sample length of the 5 mm polyester purchase candidate;
 - sample chafe sleeve, 3 mm locating/stop cord, owner-provided timber and screws;
 - two smooth corner cord-post spacers and retaining washers; and
-- the sample basket-retention washers and seat movement-stop lashings.
+- the sample basket-retention washers and fitted seat clamp, with any selected
+  pad or adhesive and its separate cost allowance.
 
 ### Prototype purchase
 
