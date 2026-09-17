@@ -120,8 +120,9 @@ height as the force-line height. Nothing may project beyond a joist tip.
 
 ## Corner sling
 
-Retain the stiff paired-plate corner in [corner.md](corner.md). Use the two
-separate Arrangement E ear axes, with 16 mm OD acetal-covered M8 posts and
+Retain the stiff split-plate corner in [corner-v2.md](corner-v2.md). Use the two
+separate C2 axes, approximately `(-140,55)` and `(55,-140)`, with 16 mm OD
+acetal-covered M8 posts and
 30 mm retaining roof washers as the purchase-study candidate. Start at 20 mm
 post height using M8 x 50 bolts, then verify the full knot/chafe/basket/deck
 template. These eight bolts are additional to the 24 corner bolts. The cord
@@ -140,8 +141,8 @@ glazing or jamming against the retaining washer.
 
 Two lower points are preferred to one central point because they introduce the
 support directly into both corner legs and eliminate a separate lower bridge.
-Their real geometry will increase the horizontal component somewhat because
-the points lie 55 mm along the rail legs. Measure the C2 upper tangent, lower
+Their real geometry will increase the horizontal component somewhat. Measure
+the C2 upper tangent, lower
 post tangents and deck clearance, then model the two sling legs and a fault
 removing the whole continuous sling before fixing the cutting length.
 

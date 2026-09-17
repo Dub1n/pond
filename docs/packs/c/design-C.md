@@ -8,27 +8,17 @@ decking boards have not been installed.** The open framing is deliberate and
 must be kept accessible while the submerged planting rail is surveyed,
 prototyped and attached.
 
-The next work is the selected connected ring and R5.1 planting system defined
+The remaining work is the selected connected ring and R5.2 planting system defined
 by [rail-development-status.md](rail-development-status.md),
-[corner.md](corner.md), [cords.md](cords.md), [R5.1.md](R5.1.md) and
+[corner-v2.md](corner-v2.md), [cords.md](cords.md), [R5.2.md](R5.2.md) and
 [plants-v2.md](plants-v2.md). R3, R4 and R5 remain predecessor studies, not
 alternative construction instructions. The old deck calculation pack, method
 statement, inspection plan and construction checklists are historical records
 in `docs/packs/archive/`; they are not active instructions for the remaining
 work.
 
-The remaining sequence is:
-
-1. Survey the completed framing, pond, liner and water levels while all joists
-   are exposed.
-2. Resolve and prototype the rail, including its joist terminations and future
-   maintenance access.
-3. Establish the final rail-and-plant load envelope below and confirm the
-   completed deck can accept it.
-4. Fabricate, lower and proof the empty rail and basket seats.
-5. Install decking boards only after the support terminations and a full-size
-   basket removal route have been accepted.
-6. Add the prepared baskets and plants after the rail and deck are complete.
+The active construction and test sequence is intentionally not duplicated
+here; it is controlled by [install-walkthrough.md](install-walkthrough.md).
 
 ## As-built deck interface
 
@@ -149,68 +139,34 @@ specified **0.3 kN proof test for one completed cord support is a connection
 test, not evidence that the deck has 0.3 kN spare capacity at every joist.**
 Use measured masses and the approved envelope for the final decision.
 
-## Rail survey, prototype and installation gates
+## Rail and plant coordination gates
 
-The integrated R5.1/ring arrangement is selected for survey and prototype,
-rather than for batch fabrication. Close these gates in the stated order:
+The R5.2/corner-v2 ring is selected for survey and prototype, not batch
+fabrication. The remaining deck decision depends on these recorded inputs:
 
-1. Buy and measure one B23 and one B28 basket: top, load-bearing base,
-   reinforced bands/ribs, height and four sound broad-washer retention zones.
-2. Survey the finished liner faces, intended 350 mm board edge, every joist
-   face and tip, existing hardware, and minimum/normal/maximum water levels
-   from a permanent datum.
-3. Set out the 2,100 mm centreline square 450 mm from each pond wall. Confirm
-   plant-pot light clearance, basket overlap, cord angles and removal travel.
-4. Produce a basket-position sheet for all 13 rail baskets, including plant,
-   side, distance from corner, seat dimensions, lowering bay and later removal
-   route. Do not place more than four on one side without revising the load
-   case.
-5. Define the required basket/downstand geometry for the *Butomus* crown at
-   100–150 mm depth and crowfoot rooting point at 200–350 mm depth. These are
-   complete basket-and-cartridge depth variants, not internal-pot substitutions.
-6. Obtain the selected GRP profile's resin, longitudinal/transverse properties,
-   permanent-immersion suitability and bolted-connection guidance.
-7. Build one representative full side with six J2--J7 direct gravity loops,
-   one opposed crossed pair, one two-legged C2 sling, one complete 9.5 mm compact corner
-   and the selected R5.1 seat.
-8. Include shallow B23, shallow B28, *Butomus* and crowfoot stations. Test full
-   drain-down load, eccentric loading, a 50 mm inward basket shift, handling
-   uplift, loss of the worst support, creep/chafe and the finished-edge removal
-   operation.
-9. Test the selected twin strap stops for wet cyclic slip and seven-day creep.
-   Only if they fail, test the one through-bushed pin and one elongated stop
-   plate fallback, including the required rail coupon and a fault case with the
-   plate ineffective. Confirm every hollow member has deliberate resin-sealed
-   vent and drain openings and cannot retain a persistent air pocket.
-10. Insert and recover the planted cartridge independently, then remove and
-    refit the empty rigid basket and complete R5.1 seat. Close the load envelope
-    and all wet release gates before batch cutting.
+- the completed framing, liner, intended board edge, water levels and available
+  post-deck inspection/removal opening;
+- final 2,100 mm ring position and all thirteen basket positions;
+- real B23 and B27 tops, reinforced bases, taper, retention zones, cartridges,
+  apparent underwater weights and fully soaked drained masses;
+- the 45-degree corner-basket template including C2 posts, washers, sleeved
+  cord turns and removal travel;
+- the selected GRP profile's directional and permanent-immersion information;
+- measured suspension tangents, settled axial stiffness, complete-item loss
+  cases and corner-v2 stiffness; and
+- final vertical/horizontal rail reactions compared with the five TBC deck
+  limits above.
 
-Fabricate and test over dry ground. Collect GRP dust at source and keep it away
-from the pond. Round and resin-seal every cut or drilled fibre, use A4/316 or
-316L wetted metalwork, provide smooth chafe protection, and keep all knots,
-ties, drains and joints visible and replaceable. Use four temporary control
-lines when lowering the bare ring or complete empty assembly. Do not add LECA,
-loam, gravel or plants until the rail is supported, level and accepted.
+The rail carries ten B23 and three B27 baskets. The lily basket, hornwort cage
+and two moss slates remain independent. Crown depths, media, ballast, guards,
+plant allocation and maintenance are controlled by
+[plants-v2.md](plants-v2.md).
 
-## Plant installation and continuing acceptance
+Continuing acceptance requires submerged rims/GRP at minimum normal water,
+scheduled crown depths, no progressive seat or corner movement, retained
+basket/cartridge recovery, complete rail flooding/drainage, smooth fish-safe
+surfaces and reactions within the approved deck envelope. Keep a connected
+central swimming/cleaning route and roughly 70–80% open water.
 
-The rail carries 10 B23 and 3 B28 baskets. The lily basket, hornwort cage and
-two moss slates are independent of it. Procurement, crown depths, media,
-ballast, guards and maintenance are controlled by [plants-v2.md](plants-v2.md).
-
-Before final loading, soak representative completed B23 and B28 assemblies,
-release trapped air, and record both underwater apparent weight and fully
-soaked out-of-water mass. Confirm the final basket schedule remains within the
-approved per-support, adjacent-support and per-edge limits.
-
-Accept the completed system only when all basket rims and GRP remain submerged
-at minimum normal water, every crown reaches its scheduled depth, no seat can
-slide or tip, each basket can be recovered past the finished deck edge, hollow
-members flood and drain, and fish or liner can contact no sharp edge, exposed
-fibre or projecting thread.
-
-Maintain one connected central swimming and cleaning route. Keep roughly
-70–80% of the surface as open water, prevent watercress and other vigorous
-plants forming a continuous mat, and inspect the support terminations, chafe
-protection, rail joints, seats, basket bars and drainage at least annually.
+All construction, test, lowering, adjustment and inspection procedure is in
+[install-walkthrough.md](install-walkthrough.md).

@@ -1,0 +1,154 @@
+[
+  {
+    "x": 3737.3801069999995,
+    "y": 2.1468185999999996,
+    "id": 0,
+    "source": 1,
+    "rotation": 0,
+    "filename": "corner-lower-web-04.svg"
+  },
+  {
+    "x": 1.9418265642759707,
+    "y": 1.4399849087869838,
+    "id": 1,
+    "rotation": 0,
+    "source": 2,
+    "filename": "corner-upper-half-06.svg"
+  },
+  {
+    "x": 1005.9100071000001,
+    "y": 1.4399849,
+    "id": 2,
+    "source": 3,
+    "rotation": 0,
+    "filename": "corner-upper-half-07.svg"
+  },
+  {
+    "x": 2009.8781875999998,
+    "y": 1.4399849,
+    "id": 3,
+    "source": 4,
+    "rotation": 0,
+    "filename": "corner-upper-half-08.svg"
+  },
+  {
+    "x": 3260.0879959999997,
+    "y": 447.8229953,
+    "id": 4,
+    "source": 5,
+    "rotation": 180,
+    "filename": "lower-bridge-03.svg"
+  },
+  {
+    "x": 3463.4891015999997,
+    "y": 357.93976119999996,
+    "id": 5,
+    "source": 6,
+    "rotation": 180,
+    "filename": "lower-bridge-06.svg"
+  },
+  {
+    "x": 3517.9822439,
+    "y": 463.8303226,
+    "id": 6,
+    "source": 7,
+    "rotation": 180,
+    "filename": "lower-bridge-09.svg"
+  },
+  {
+    "x": 3706.6060193999997,
+    "y": 563.0775058,
+    "id": 7,
+    "source": 8,
+    "rotation": 180,
+    "filename": "lower-bridge-12.svg"
+  },
+  {
+    "x": 3721.3833495,
+    "y": 373.9470885,
+    "id": 8,
+    "source": 9,
+    "rotation": 180,
+    "filename": "lower-bridge-15.svg"
+  },
+  {
+    "x": 5922.326643,
+    "y": 552.3170805999999,
+    "id": 9,
+    "source": 10,
+    "rotation": 180,
+    "filename": "lower-bridge-18.svg"
+  },
+  {
+    "x": 1666.911201,
+    "y": 562.6658811,
+    "id": 10,
+    "source": 11,
+    "rotation": 180,
+    "filename": "upper-arm-03.svg"
+  },
+  {
+    "x": 842.3024357999999,
+    "y": 562.705074,
+    "id": 11,
+    "source": 12,
+    "rotation": 180,
+    "filename": "upper-arm-06.svg"
+  },
+  {
+    "x": 1667.5290370000002,
+    "y": 450.6915121,
+    "id": 12,
+    "source": 13,
+    "rotation": 0,
+    "filename": "upper-arm-09.svg"
+  },
+  {
+    "x": 2492.1197785,
+    "y": 450.9191767,
+    "id": 13,
+    "source": 14,
+    "rotation": 0,
+    "filename": "upper-arm-12.svg"
+  },
+  {
+    "x": 6352.5667319,
+    "y": 113.38581949999991,
+    "id": 14,
+    "source": 15,
+    "rotation": 180,
+    "filename": "upper-arm-15.svg"
+  },
+  {
+    "x": 5530.7012507,
+    "y": 145.8876846,
+    "id": 15,
+    "source": 16,
+    "rotation": 0,
+    "filename": "upper-arm-18.svg"
+  },
+  {
+    "x": 3901.9670089,
+    "y": 256.2940392999999,
+    "id": 16,
+    "source": 17,
+    "rotation": 180,
+    "filename": "upper-bridge-03.svg"
+  },
+  {
+    "x": 4579.2547841,
+    "y": 2.8126417999999997,
+    "id": 17,
+    "source": 18,
+    "rotation": 0,
+    "filename": "upper-bridge-06.svg"
+  },
+  {
+    "x": 5705.425839,
+    "y": 514.7485603999999,
+    "id": 18,
+    "source": 19,
+    "rotation": 180,
+    "filename": "upper-bridge-09.svg"
+  }
+]

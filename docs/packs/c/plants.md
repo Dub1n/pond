@@ -28,7 +28,7 @@ Dimensions are nominal external dimensions. Confirm the purchased basket's actua
 | Key     | Container/support                                                      | Quantity | Use                                                         |
 | ------- | ---------------------------------------------------------------------- | -------: | ----------------------------------------------------------- |
 | **B23** | Rigid, fine-mesh PP/HDPE aquatic basket, approximately 23 × 23 × 15 cm |   **10** | Marginals use risers; crowfoot uses dedicated downstand     |
-| **B28** | Rigid, fine-mesh PP/HDPE aquatic basket, 27–28 × 27–28 × 18–19 cm      |    **3** | Two hard rushes and one *Butomus*; direct rail-seat bearing |
+| **B27** | Rigid, fine-mesh PP/HDPE aquatic basket, 27–28 × 27–28 × 18–19 cm      |    **3** | Two hard rushes and one *Butomus*; direct rail-seat bearing |
 | **L35** | Rigid, broad floor basket, approximately 35 × 35 × 26 cm               |    **1** | Arc-en-Ciel lily; floor-standing on a removable riser       |
 | **H70** | Closed heavy-HDPE-mesh cage, approximately 30 × 30 × 70 cm             |    **1** | Hornwort; floor-standing                                    |
 | **M20** | Smoothed untreated aquarium-safe slate, approximately 20 × 14 cm       |    **2** | Willow moss; removable supports                             |
@@ -41,8 +41,8 @@ The linked Sarracenia House options were checked in the source discussion on 1 S
 
 | Plant | Quantity and supplier type to buy | Container and preparation | Final placement and depth |
 | --- | --- | --- | --- |
-| **Hard rush — *Juncus inflexus*** | [Sarracenia House](https://sarracenia.house/products/juncus-inflexus-hard-rush-marginal-pond-plants-mp067): **2 × 1 L bare-root**, one plant per basket | **2 × B28**; one lined 150 mm loam pot per basket | Matching far-left and far-right corner clumps. Crown at water level to **5 cm submerged**; keep the crown and stems in open sky. |
-| **White flowering rush — *Butomus umbellatus* ‘Schneeweisschen’** | [Sarracenia House](https://sarracenia.house/products/butomus-umbellatus-schneeweisschen-marginal-pond-plants-mp012): **1 × 1 L bare-root** | **1 × B28**; one lined 150 mm loam pot | Offset on the far side, about one-third of the way across, in the sunniest position. Crown **10–15 cm submerged**. |
+| **Hard rush — *Juncus inflexus*** | [Sarracenia House](https://sarracenia.house/products/juncus-inflexus-hard-rush-marginal-pond-plants-mp067): **2 × 1 L bare-root**, one plant per basket | **2 × B27**; one lined 150 mm loam pot per basket | Matching far-left and far-right corner clumps. Crown at water level to **5 cm submerged**; keep the crown and stems in open sky. |
+| **White flowering rush — *Butomus umbellatus* ‘Schneeweisschen’** | [Sarracenia House](https://sarracenia.house/products/butomus-umbellatus-schneeweisschen-marginal-pond-plants-mp012): **1 × 1 L bare-root** | **1 × B27**; one lined 150 mm loam pot | Offset on the far side, about one-third of the way across, in the sunniest position. Crown **10–15 cm submerged**. |
 | **Hart's pennyroyal — *Mentha cervina*** | [Sarracenia House](https://sarracenia.house/products/preslia-cervina-mentha-cervina-marginal-pond-plants-mp097): **1 × 3 L bare-root** | Prepare **2 × B23**. Divide on arrival only if there are at least two clearly rooted crown/rhizome groups; otherwise plant one basket and divide in spring. | Two low side-wing positions in gentle circulation. Crown **0–5 cm submerged** and at the open-water edge. |
 | **Watercress — *Nasturtium officinale*** | **2 × 9 cm bare-root plants** or 1 L bare-root. | **2 × B23**, one plant per basket | Beside the filtered stream return, separated in gentle flow. Crown at water level to **5 cm submerged**. Keep growth from joining into a continuous mat; do not eat pond-grown watercress. |
 | **Water forget-me-not — *Myosotis scorpioides*** | [Sarracenia House](https://sarracenia.house/products/myosotis-scorpioides-water-forget-me-not-marginal-pond-plants-mp084): **1 × “3 / 7 cm bare-root” pack** | **2 × B23**; put two plants in one and one in the other | Asymmetric side-wing/open-edge positions. Crown **0–5 cm submerged**; allow stems to trail into the light. |
@@ -53,7 +53,7 @@ The linked Sarracenia House options were checked in the source discussion on 1 S
 | **Willow moss — *Fontinalis antipyretica*** | [Sarracenia House](https://sarracenia.house/products/fontinalis-willow-moss-1-50-bunches-oxygenating-pond-water-plants-weighted-ox007): **5 bunches** | **2 × M20**; tie two bunches to one slate and three to the other; no soil or lead | Side position **20–50 cm below water** in cool/filtered light and gentle circulation, beside rather than beneath dense planting. |
 | **Arc-en-Ciel hardy water lily — *Nymphaea* ‘Arc-en-Ciel’** | [Sarracenia House](https://sarracenia.house/products/arcenciel-water-lily-pond-plants-lw01): **1 × potted** | **1 × L35** with wet aquatic loam; retain the intact rootball and do not divide | Floor/riser in a sunny, calm quarter, away from hornwort, aeration and stream turbulence. Start at **20–30 cm over the crown**, then lower to about **40–60 cm** as it establishes. |
 
-The final system comprises **13 rail-seated baskets** (10 × B23 and 3 × B28),
+The final system comprises **13 rail-seated baskets** (10 × B23 and 3 × B27),
 one lily basket, one hornwort cage and two moss slates. Prepare both *Mentha*
 baskets, even if only one can be planted safely on delivery.
 
@@ -78,7 +78,7 @@ installation gates.
 | Component | Definitive allowance | Requirement/reason |
 | --- | ---: | --- |
 | [B23 rigid baskets](https://www.pondkeeper.co.uk/pondxpert-medium-square-planting-basket-23-x-15cm/) | **10** | Fine-mesh PP/HDPE type; must retain its shape when lifted and accept continuous lid lacing |
-| [B28 rigid baskets](https://www.pondkeeper.co.uk/pondxpert-large-square-planting-basket-27-x-19cm/) | **3** | Fine-mesh PP/HDPE type; the larger rigid base resists tall-plant leverage |
+| [B27 rigid baskets](https://www.pondkeeper.co.uk/pondxpert-large-square-planting-basket-27-x-19cm/) | **3** | Fine-mesh PP/HDPE type; the larger rigid base resists tall-plant leverage |
 | [Internal net pots](https://www.alienhydroponics.co.uk/Shop/rdwc-pro-parts/net-pot-150mm/) | **13** | Heavy-duty black 140–150 mm pots, preferably 100–130 mm deep, with broad rims |
 | [Net-pot liner](https://www.aquatix-2u.co.uk/products/velda-cloth-basket-liners) | **At least 1.2 m² total**, cut into **13 fitted pieces** | Rot-resistant geotextile; line the loam pot only. This area supersedes the earlier three-45-cm-sheet estimate, which does not safely allow for 13 full-depth liners and cutting waste. |
 | [Top/fish-guard mesh](https://www.diy.com/departments/true-products-55-heavy-duty-extruded-windbreak-6mm-square-mesh-plastic-fence-1m-x-5m/5056095706308_BQ.prd) | **1 × 1 m × 5 m roll** | Black UV-stabilised HDPE, rot-proof, 5–6 mm aperture, preferably at least 500 g/m²; also supplies the H70 cage and lily guard |
@@ -116,14 +116,14 @@ The links are examples retained from the design discussion, not locked brands or
    beneath the guard. Keep the crown opening only as large as necessary.
 7. Soak the complete assembly in a test tub and release all trapped air. Add
    gravel in approximately 250 g increments until a small basket has about
-   **0.5–1.5 kg apparent downward weight underwater**. For B28 tall-plant
+   **0.5–1.5 kg apparent downward weight underwater**. For B27 tall-plant
    prototypes, test whether **2–3 kg** is needed to resist wind-induced
    rocking; do not add it by rule if the lighter basket is stable.
 8. Record the plant, basket ID, target crown depth, net-pot height above/below
    the outer rim, underwater apparent weight and **fully soaked out-of-water
    mass**. The latter governs rail/deck loading if the pond is drained. The
    rail's 100 N (approximately 10 kg) per-basket screen is only provisional.
-9. Put B28 directly on its two crossbars. Put shallow B23 baskets on the two
+9. Put B27 directly on its two crossbars. Put shallow B23 baskets on the two
    measured risers specified in [R3-rail.md](R3-rail.md); install the crowfoot B23 on
    its accepted downstand seat. Lace each basket to its seat at all four marked
    base positions, level it, and proof-test one complete example of each seat

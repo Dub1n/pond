@@ -21,7 +21,7 @@ is 7 GPa, so the 8 GPa results are not a conservative E23-transverse check.
 At 7 GPa, movement is `8/7` times the values below: an 8 mm arm is 1.11 mm and
 the common 9.5 mm sheet is 0.65 mm, both below the 2 mm screen.  Stress is
 unchanged by that modulus substitution.  The source table and its important
-limits are reproduced in [materials.md](../packs/c/materials.md#published-e23-grade-comparator).
+limits are reproduced in [purchase-cost-study.md](../packs/c/purchase-cost-study.md#published-e23-grade-comparator).
 A second screen puts the complete 0.30 kN into one 56 mm M8-to-M8 lower bridge,
 although the bridge is normally unloaded under gravity.
 

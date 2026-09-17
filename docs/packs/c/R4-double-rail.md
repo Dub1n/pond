@@ -9,7 +9,7 @@ the illustrated position using only cords to that bank's joists.** Do not
 build four suspended modules on the assumption that the second rail fixes this.
 
 The drawing in [r4-double-rail.yaml](../../../diagrams/specs/rail/r4-double-rail.yaml)
-therefore shows one full south-side module and one B28 basket. It shows the
+therefore shows one full south-side module and one B27 basket. It shows the
 proposed forked cords, so the missing restraint is visible. It is a geometry
 study, not a claim of force equilibrium or an accepted installation.
 Two of the eight proposed upper stations (J3 and J4) are drawn in detail;
@@ -29,7 +29,7 @@ same unresolved restraint.
   together. The illustrated ties are 150 mm in from the ends. These and the
   basket bars form a ladder; the basket is not its structural bracing.
 - Nominal crossbar top is 200 mm below minimum water; rail top is 225 mm
-  below it. This matches R3's shallow B28 seat.
+  below it. This matches R3's shallow B27 seat.
 
 The 25 mm secondary rail in the review remains a possible comparative test
 attachment. It is not the baseline here: putting a 25 mm tube alongside a
@@ -105,7 +105,7 @@ alongside the suspension question. There is no whole-pond R4 cut list.
 
 Shallow B23 baskets need measured risers above the common seat. *Butomus*
 requires its lower internal-pot arrangement and crowfoot its dedicated deeper
-cradle, as set out in [plants.md](plants.md). The one shallow B28 model does
+cradle, as set out in [plants.md](plants.md). The one shallow B27 model does
 not represent those depth variants or a final layout of all 13 baskets.
 
 Use the cut-face resin sealing, deliberate hollow-member vent/drain paths,
@@ -122,7 +122,7 @@ termination through removable decking or an accessible designed fixing.
 | Crossbars | 2 basket bars + 2 end ties, nominal 230 mm, 25 × 25 × 3 mm GRP |
 | Crossings | 8, each with paired attached keepers and an uplift binding |
 | Suspension study | 8 upper joist stations, each with two lower legs; incomplete force system |
-| Basket | 1 B28 with four removable ties |
+| Basket | 1 B27 with four removable ties |
 
 First decide whether there is a simple acceptable source of the missing
 horizontal and roll restraint. If there is none, stop R4 development here.

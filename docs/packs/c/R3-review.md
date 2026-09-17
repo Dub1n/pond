@@ -103,9 +103,9 @@ The right decision is now empirical: prototype the single-spine arrangement with
 | Ring outside size | `2,100 + 38 = 2,138 mm`: correct |
 | Clearance in 2,300 mm opening | `(2,300 − 2,138)/2 = 81 mm` per side: correct before plate overhangs |
 | B23 beyond deck | `100 + 230/2 = 215 mm`; 15 mm beneath deck: correct |
-| B28 beyond deck | `100 + 270/2 = 235 mm` to `100 + 280/2 = 240 mm`; 35–40 mm beneath deck: correct |
+| B27 beyond deck | `100 + 270/2 = 235 mm` to `100 + 280/2 = 240 mm`; 35–40 mm beneath deck: correct |
 | Centred 150 mm pot | Landward edge is `450 − 75 = 375 mm`, or 25 mm beyond the deck edge: correct |
-| Main bearing depths | B28 rim 10 mm, base 200 mm; B23 with 40 mm riser, base about 160 mm and rim about 10 mm: correct |
+| Main bearing depths | B27 rim 10 mm, base 200 mm; B23 with 40 mm riser, base about 160 mm and rim about 10 mm: correct |
 | Plant depths | Shallow marginals can be adjusted near the surface; the stated *Butomus* and crowfoot positions are incorrect |
 | Section moments of inertia | 21,692; 90,668; and 122,540 mm⁴: correct |
 | 420 mm beam deflections | 0.419, 0.100 and 0.074 mm at 100 N and 17 GPa: correct |
@@ -130,7 +130,7 @@ I would next build a **single 2,100 mm full-side comparative prototype**, not th
 It should include:
 
 - The proposed 38 mm primary spine at the actual cord angles and maximum 420 mm support spacing.
-- Four representative loaded stations: shallow B23, shallow B28, *Butomus* B28 and deep crowfoot B23.
+- Four representative loaded stations: shallow B23, shallow B27, *Butomus* B27 and deep crowfoot B23.
 - A detachable parallel 25 mm GRP stabilizing rail, positioned beneath the measured basket bases. Test first as the R3 single spine, then as a two-rail ladder under identical loads.
 - Positive rounded crossbar locators from the outset.
 - A removable basket cradle or two accessible retention straps that do not depend on repeatedly cutting four submerged lower-mesh ties.

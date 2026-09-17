@@ -22,15 +22,15 @@ Four lengths of 38 mm grey structural GRP form a square ring under the deck
 edge. Short cord loops hang the ring from every joist around the opening. Each
 plant basket bridges across the ring on two smaller GRP bars. A small B23
 basket also sits on two short risers so that its rim finishes at about the same
-water depth as the taller B28 basket.
+water depth as the taller B27 basket.
 
 ```mermaid
 flowchart TB
     J[Deck joists] -->|32 separate cord loops| R[2,100 mm centreline GRP ring]
     R -->|two short crossbars per basket| S[13 level basket seats]
-    S -->|directly| B28[3 empty B28 baskets]
+    S -->|directly| B27[3 empty B27 baskets]
     S -->|two risers per basket| B23[10 empty B23 baskets]
-    B28 -->|four removable ties each| I[Installed empty frame]
+    B27 -->|four removable ties each| I[Installed empty frame]
     B23 -->|four removable ties each| I
     I --> P[Add planting system using plants.md]
 ```
@@ -70,9 +70,9 @@ short bars immediately below dark baskets are shallower.
 | Main-ring centreline square | 2,100 × 2,100 mm.                                                                                                |
 | Main-ring outside size      | About 2,138 × 2,138 mm using 38 mm section.                                                                      |
 | Mitred side cut             | Nominally 2,138 mm long-point to long-point to make the 2,100 mm centreline square. Confirm on the trial corner. |
-| Basket bearing depth        | Measured B28 height + 10 mm below minimum normal water; nominally 200 mm.                                        |
+| Basket bearing depth        | Measured B27 height + 10 mm below minimum normal water; nominally 200 mm.                                        |
 | Main-ring top depth         | Basket bearing depth + measured crossbar depth; nominally 225 mm.                                                |
-| B23 riser height            | Measured B28 height minus measured B23 height; nominally 38–40 mm.                                               |
+| B23 riser height            | Measured B27 height minus measured B23 height; nominally 38–40 mm.                                               |
 | B23 riser length            | About 140 mm, then adjusted to the reinforced area of the measured base.                                         |
 | Main support spacing        | One at every straight joist; no unsupported internal span above about 420 mm.                                    |
 
@@ -97,7 +97,7 @@ in [plants.md](plants.md).
 | Large flat washers | **32** | A4/316, one beneath every bolt head and nut. |
 | Locknuts and thread covers | **16 of each** | A4 all-metal locknuts; smooth pond-safe caps or a cured protective fillet over any projecting fish-facing thread. |
 | B23 baskets | **10** | Rigid fine-mesh aquatic basket, nominally 230 × 230 × 150 mm. |
-| B28 baskets | **3** | Rigid fine-mesh aquatic basket, nominally 270–280 mm square × 180–190 mm high. |
+| B27 baskets | **3** | Rigid fine-mesh aquatic basket, nominally 270–280 mm square × 180–190 mm high. |
 
 ### Cord, protection and finishing parts
 
@@ -137,7 +137,7 @@ assembly before it is brought over the liner.
 
 ## Hold point 1 — buy and measure the sample baskets
 
-Buy one B23 and one B28 before the remaining baskets or crossbar stock. For
+Buy one B23 and one B27 before the remaining baskets or crossbar stock. For
 each sample, record:
 
 | Measurement                                                   | Record         |
@@ -167,7 +167,7 @@ Do this while every joist is accessible and before decking is installed.
    datum which will remain after construction.
 5. Mark a square centreline 450 mm from each pond wall. Check that its opposite
    sides are parallel and that both diagonals agree.
-6. Hold a B23 and B28 over the line. Confirm the internal pot will be in open
+6. Hold a B23 and B27 over the line. Confirm the internal pot will be in open
    sky, the basket can move 20–50 mm inward for removal and no rigid item can
    touch the liner.
 7. Assign every empty basket to a clear joist bay for lowering. The measured
@@ -175,14 +175,14 @@ Do this while every joist is accessible and before decking is installed.
 
 |            Clear bay | What may pass                                        |
 | -------------------: | ---------------------------------------------------- |
-|    339.7 or 372.9 mm | B23 or B28                                           |
+|    339.7 or 372.9 mm | B23 or B27                                           |
 |             264.4 mm | B23 only, after checking the real width and its ties |
 | 170.0 mm central bay | No rail basket                                       |
 
 Make the basket-position sheet now. Give every basket an ID; record its plant,
-B23/B28 type, pond side, distance from the nearest corner, crossbar spacing,
+B23/B27 type, pond side, distance from the nearest corner, crossbar spacing,
 joist bay and route for later inward removal. Place the two hard-rush B28s as
-the repeated far-corner plants and the *Butomus* B28 offset on the sunny far
+the repeated far-corner plants and the *Butomus* B27 offset on the sunny far
 side. Put watercress close to—but not directly in—the filtered return flow.
 Locate the remaining B23s using [plants.md](plants.md), keeping all crossbars
 clear of main-ring corner plates and support cords. Distribute the thirteen
@@ -257,7 +257,7 @@ passed without sealant credit”.
 4. Try to rotate and slide the crossbar by hand. If it moves, improve the
    binding. If movement remains, tie one short rounded GRP or HDPE block to the
    main member immediately on each side of the crossbar as a physical stop.
-5. For B28, put the empty basket directly on both crossbars. For B23, put one
+5. For B27, put the empty basket directly on both crossbars. For B23, put one
    measured-height, approximately 140 mm-long riser on each crossbar below a
    reinforced basket band. Bind each riser to its crossbar or capture it in the
    basket tie so it cannot escape.
@@ -381,7 +381,7 @@ fish-facing edge, but it must not plug the planned water path.
 7. Inspect every hole, bolt, plate, knot, cord contact, mesh opening and cut
    edge. Photograph and sign the result before repeating parts.
 
-Later, after one B23 and B28 have been completed to [plants.md](plants.md),
+Later, after one B23 and B27 have been completed to [plants.md](plants.md),
 repeat the load check with their measured **fully soaked out-of-water masses**.
 Use the heavier real load in the final deck calculation. Apparent underwater
 weight is useful for stability but is not the drain-down structural load.
@@ -392,7 +392,7 @@ Before the frame is lowered, assemble one dated construction record containing:
 
 - the surveyed pond, deck-edge, joist and water-level dimensions;
 - the final 450 mm centreline set-out and measured ring diagonals;
-- the basket-position sheet and measured B23/B28 details;
+- the basket-position sheet and measured B23/B27 details;
 - the main-member, crossbar, riser and corner-plate cut lists;
 - the corner drawing, including plate material, fibre directions, holes,
   fasteners and any optional perimeter fillet;
@@ -446,7 +446,7 @@ modular specifically to permit that fallback.
 | --------------------------------------------------------------------------------------------------------------------- | ----------- |
 | Surveyed ring centreline is 450 mm from all four pond walls                                                           |             |
 | Centreline square is 2,100 mm and measured diagonals agree                                                            |             |
-| Basket-bearing surface matches B28 height + 10 mm below minimum normal water                                          |             |
+| Basket-bearing surface matches B27 height + 10 mm below minimum normal water                                          |             |
 | All 32 support loops share load; all 64 lower collars hold position; every keeper remains unloaded in normal position |             |
 | No support span exceeds the checked value of about 420 mm                                                             |             |
 | Four corner joints show no cracks, whitening, loose bolts, lift or permanent racking                                  |             |
@@ -457,7 +457,7 @@ modular specifically to permit that fallback.
 | No exposed fibre, sharp corner, loose offcut or projecting thread can reach fish or liner                             |             |
 | Every basket can move inward and lift independently                                                                   |             |
 | Loaded movement meets the agreed target; initial target about 2 mm                                                    |             |
-| Soaked B23/B28 masses and final joist/deck reactions have been recorded or remain an explicit pre-loading hold point  |             |
+| Soaked B23/B27 masses and final joist/deck reactions have been recorded or remain an explicit pre-loading hold point  |             |
 
 When these checks pass, keep the signed basket-position sheet, cut list, corner
 test and support-loop test with the build record. Continue with the basket

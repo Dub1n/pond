@@ -1,7 +1,7 @@
 # Rail design studies
 
 These are standalone relationship-first YAML specifications in **Option C's
-world coordinates**, with one editable shallow B28 basket and its support in
+world coordinates**, with one editable shallow B27 basket and its support in
 each. They are comparison drawings; basket bases and local fittings are
 prototype dimensions, not issued fabrication details.
 
@@ -69,7 +69,7 @@ not a request to change the specified dark basket material.
 | Beam and joist tops / deck underside       | Z = +150                                       |
 | Straight joist undersides                  | Z = +75                                        |
 | Nominal deck top                           | Z = +178                                       |
-| Shallow B28 base / rim                     | Z = −200 / −10                                 |
+| Shallow B27 base / rim                     | Z = −200 / −10                                 |
 | R3/R4 main rail top                        | Z = −225                                       |
 | R5 main rail top                           | Z = −206 (6 mm upper plate replaces 25 mm bar) |
 

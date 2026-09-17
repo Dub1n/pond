@@ -1,5 +1,10 @@
 # Pack C rail corner — construction specification
 
+> **Superseded design record.** The current split-plate corner is
+> [corner-v2.md](corner-v2.md). Retain this document only for design and
+> calculation lineage; do not use its purchase or fabrication detail for the
+> prototype.
+
 ## Decision and limit of approval
 
 **Purchase update, 15 September 2026:**
@@ -174,15 +179,15 @@ post test reveals a real clearance or chafe problem.
 
 ### Result and status
 
-The current corner-centred R5.1 seats fail. A nominal 270 x 270 mm B28 centred
+The current corner-centred R5.1 seats fail. A nominal 270 x 270 mm B27 centred
 on the rail intersection covers both rails, the six M8 axes, both 55 mm cord
 posts and the C2 sling departures; it also projects 35 mm beyond the 2,300 mm
 opening. It is not a repairable version of R5.1 and must not be made by simply
 shortening its arms or moving its bolts.
 
 There are now two useful *spatial* arrangements at every corner: an
-axis-aligned B28 moved inboard along the C2 diagonal on an upper-only diagonal
-carrier (Arrangement A), or a centred B28 on a new integrated **corner pod**
+axis-aligned B27 moved inboard along the C2 diagonal on an upper-only diagonal
+carrier (Arrangement A), or a centred B27 on a new integrated **corner pod**
 (Arrangement E). SW and NE use the global `x=y` family; SE and NW use the
 global `x=-y` family. They are the same local details after reflection. Both
 retain the C2 sling. Neither is an issued fabrication detail: each introduces
@@ -190,7 +195,7 @@ an unanalysed plate-bending and basket-load path.
 
 The alternative of putting the basket between the lower sling ends and C2 is
 rejected. The rail centreline is 100 mm inside the opening/C2-tip plane
-(`1050` versus `1150` mm); a 270 mm B28 cannot fit in that strip, even before
+(`1050` versus `1150` mm); a 270 mm B27 cannot fit in that strip, even before
 the 38 mm rail, cord sleeve, chafe, deck-board relief and removal clearance are
 allowed. Moving the C2 lower points cannot create the missing width. Removing
 the C2 sling gives a possible coordination space but is a separate suspension
@@ -214,7 +219,7 @@ origins/directions are:
 For a square basket with measured maximum lower-envelope side `B`, put its
 centre at `(t,t)`. Its envelope is `a,b = t-B/2 .. t+B/2`. Use the catalogue
 nominal **`B=270 mm`** for this first spatial screen, with no arbitrary extra
-plan padding. Repeat it with the measured loaded B28 lower envelope before any
+plan padding. Repeat it with the measured loaded B27 lower envelope before any
 cutting: the nominal 270 x 270 x 190 mm does not establish base taper,
 deformation or mesh-rib positions. A 280 mm envelope remains a sensitivity
 check, not the present governing placement assumption.
@@ -232,13 +237,13 @@ the basket retention load path.
 
 ### Available positions
 
-| Arrangement | Nominal B28 centre and footprint | C2 condition | Component change | Finding |
+| Arrangement | Nominal B27 centre and footprint | C2 condition | Component change | Finding |
 | --- | --- | --- | --- | --- |
 | **A — compact inboard diagonal carrier** | Start template at `t=170 mm`; the nominal 270 mm envelope is `a,b=35..305 mm`. The no-contact rail tangent is only `t=154 mm`, so `t=170 mm` retains 16 mm nominal clearance to the 38 mm rail's pond-side face. | Retain the present C2 wrap and lower posts. The closest basket edge is 35 mm from the `a=0`/`b=0` post lines, so actual post, washer, knot, chafe and basket clearances must be surveyed together. | Keep the complete lower 9.5 mm web unchanged. Replace only the top plate with an extended carrier that retains the exact original web and adds a rounded inboard basket wing. | **Only compact candidate.** Spatially credible, mechanically unproven. |
 | **B — fully clear diagonal basket** | `t >= 370 mm` for a 280 mm envelope plus 10 mm clearance; nominal global centres are SW `(-680,-680)`, SE `(680,-680)`, NE `(680,680)`, NW `(-680,680)`. | Existing C2 sling is clear in plan. | A new diagonal cradle/cross-support is required; it is no longer a corner-plate change. | Spatially clean but rejects the low-part-count corner objective and consumes open water. Do not develop before Arrangement A is disproved. |
-| **C — between rail and C2 / behind lower ends** | No B28 envelope fits. The available nominal centreline depth is only 100 mm. | Would need a new suspension route as well as a new basket carrier. | Not a permitted use of the current corner. | **Rejected.** |
+| **C — between rail and C2 / behind lower ends** | No B27 envelope fits. The available nominal centreline depth is only 100 mm. | Would need a new suspension route as well as a new basket carrier. | Not a permitted use of the current corner. | **Rejected.** |
 | **D — remove C2 sling** | Arrangement A or B becomes easier to coordinate. | Remove the whole continuous C2 item, not one leg. | Full suspension, flexible-ring, corner and deck-reaction redesign. | **Not selected for clearance alone.** |
-| **E — offset integrated corner pod** | Basket centre `t=30 mm`; nominal B28 envelope `a,b=-105..165 mm`. Its actual convex plate has a 279.3 x 367.7 mm diagonal enclosing blank, materially smaller than the `t=0` 440 mm reference. | Replace the two 55 mm posts with two new C2-side ear posts at `(-125,+50)` and `(+50,-125)`; the reflected corners use the reflected pair. | Retain the lower compact web. Make a new raised upper bracket that carries basket bearing/retention and the two cord ears as one tested assembly. | **Selected coordination/proof-template position.** This remains the hard template limit: the post fitting margin is only about 20 mm. |
+| **E — offset integrated corner pod** | Basket centre `t=30 mm`; nominal B27 envelope `a,b=-105..165 mm`. Its actual convex plate has a 279.3 x 367.7 mm diagonal enclosing blank, materially smaller than the `t=0` 440 mm reference. | Replace the two 55 mm posts with two new C2-side ear posts at `(-125,+50)` and `(+50,-125)`; the reflected corners use the reflected pair. | Retain the lower compact web. Make a new raised upper bracket that carries basket bearing/retention and the two cord ears as one tested assembly. | **Selected coordination/proof-template position.** This remains the hard template limit: the post fitting margin is only about 20 mm. |
 
 The original corner-centred case (`t=0`, nominal footprint `-135..135 mm`) is
 rejected **on the issued compact plate or an ordinary R5.1 seat**. It crosses
@@ -251,7 +256,7 @@ and passes the separate Arrangement E corner-pod prototype.
 This was checked using the relaxed nominal 270 mm square and no added plan
 padding. It still fails for two independent reasons.
 
-First, a `t=0` B28 occupies `a,b=-135..135 mm`; each rail tube runs through
+First, a `t=0` B27 occupies `a,b=-135..135 mm`; each rail tube runs through
 that plan area. Moving a cord endpoint does not remove that interface. A normal
 R5.1 seat cannot resolve it; it needs a raised plate that deliberately bears
 on the rail tops while the basket bears above the plate. That raised-plate load
@@ -325,7 +330,7 @@ substitute for either path, and neither is a thin decorative ligament.
 
 The nominal near basket-retention axis is `(-60,-60)`.  It needs an R20 mm
 washer/bearing land; no outline may use the former octagon edge as proof that
-this land fits.  Four measured B28 pad/retention locations remain the baseline:
+this land fits.  Four measured B27 pad/retention locations remain the baseline:
 three retainers, a continuous backing strip or a changed mesh interface needs
 its own support-polygon, one-corner uplift and rotation proof.
 
@@ -333,7 +338,7 @@ its own support-polygon, one-corner uplift and rotation proof.
 
 The upper pod is a web, not a sediment shelf.  The correct first discriminator
 is therefore not a generic plate FEA or a density/topology optimiser: with no
-measured B28 pad reaction, post stack, laminate data or loaded C2 tangent,
+measured B27 pad reaction, post stack, laminate data or loaded C2 tangent,
 those would return an attractive but arbitrary shape.  The repeatable first
 screen measures the *actual solid* normal width around the named force-line
 centrelines, then applies the existing conservative isolated-strip comparison
@@ -391,7 +396,7 @@ bridge, 80 mm on the rail chain/cross-link, and 50 mm on each basket route.
 Its smallest `a+b` boundary coordinate is `-155.3 mm`, safely inboard of the
 `-200 mm` C2-tip plane.  The generated SVG in
 `diagrams/corner-seat/octagon-hand-complete.svg` is an analysis silhouette, not
-a fabrication profile: it deliberately contains no final holes, B28 pad shape,
+a fabrication profile: it deliberately contains no final holes, B27 pad shape,
 post stack or cutter allowance.
 
 It passes the present C2 width/strip screen, but it is **not** better than the
@@ -419,7 +424,7 @@ This is a conservative local discriminator, not a plate approval: it does not
 credit surrounding web, lower plate or bolt preload.  Before cutting
 `clam.14.3_thick`, prove one complete upper/lower corner stack
 at 0.30 kN with deliberately unequal C2 legs, 50 mm basket eccentricity and a
-wet dwell.  The same test must measure B28 pad reactions, test one-corner
+wet dwell.  The same test must measure B27 pad reactions, test one-corner
 basket uplift/rotation and inspect every 5 mm-radius/ligament region for
 whitening, delamination, permanent set and sediment/fish-guard behaviour.
 
@@ -485,7 +490,7 @@ rope tangent above the pod surface with no rope-on-laminate rubbing; do not
 reuse `-203 mm` as a fabrication elevation without measuring the new stack.
 The points are inboard of the C2-tip boundary `a+b=-200` and preserve two
 independent lower legs. Their negative coordinate is about 20 mm outside the
-near B28 face in plan, leaving a real post/washer/chafe fitting region rather
+near B27 face in plan, leaving a real post/washer/chafe fitting region rather
 than only a drawn line clearance. A smooth replaceable A4/316 post, spacer and
 broad retaining washer are required at each point; the metal post stack carries
 the local clamp and rope bearing, while the cord/chafe sleeve remains outside
@@ -515,14 +520,14 @@ pod, C2 timber or deck capacities.
 
 #### Offset and upper-wrap optimization
 
-The following is a geometry-and-rigid-ring screen, with nominal 270 mm B28,
+The following is a geometry-and-rigid-ring screen, with nominal 270 mm B27,
 20 mm rim-height cord clearance, lower tangent provisionally `z=-203 mm`,
 upper tangent `z=75 mm` and the current 35 mm C2 upper backset. The required
 ear coordinates move inward by about **63 mm for each additional 20 mm of
 `t`**. That quickly removes the physical space for a post, washer, chafe sleeve
 and a broad ligament into the pod.
 
-| Basket `t` | B28 plan envelope | First ear pair            | Approx. square blank envelope | Result                                                      |
+| Basket `t` | B27 plan envelope | First ear pair            | Approx. square blank envelope | Result                                                      |
 | ---------: | ----------------- | ------------------------- | ----------------------------: | ----------------------------------------------------------- |
 |       0 mm | `-135..135`       | `(-220,20)` / `(20,-220)` |                        440 mm | Reference only; needlessly large.                           |
 |      20 mm | `-115..155`       | `(-157,40)` / `(40,-157)` |                    **377 mm** | Superseded coordination position; about 42 mm plan room.    |
@@ -541,7 +546,7 @@ Moving the upper C2 wrap farther back along the joist moves its projected upper
 tangent outward and lets a line-cord calculation pull the ears inward, but this
 is not a free reduction. At 70 mm backset, `t=0` already brings the required
 negative ear coordinate to about `-167 mm`; combining 70 mm backset with
-`t=20 mm` brings it to about `-104 mm`, inside the B28/post fitting region. At
+`t=20 mm` brings it to about `-104 mm`, inside the B27/post fitting region. At
 100 mm backset the `t=0` coordinate is already about `-121 mm`, likewise too
 close to the nominal basket. Keep the existing **35 mm** screen backset for
 the first pod prototype. Treat about **70 mm** as a soft upper limit only for
@@ -563,7 +568,7 @@ Do not make the full square. The minimum topology to calculate and test is:
 
 The four nominal pad centres are 45 mm inside the nominal basket faces, clear
 of the rail centrelines and clear of the compact web's outer diagonal load
-band. They are layout targets only. Move them to measured sound B28 base-rib
+band. They are layout targets only. Move them to measured sound B27 base-rib
 intersections while retaining the complete 40 mm penny-washer footprint over
 at least four continuous ribs/strands. If that cannot be done, use a tested
 continuous HDPE/structural backing strip; do not shrink the washers.
@@ -587,7 +592,7 @@ so the full-height prototype must also prove water volume, C2/joist/deck-board
 clearance, plant removal and no contact with deck structure. This is a physical
 boundary check, not something the plan model can waive.
 
-Normal basket gravity bears through defined B28 base bands onto the pod pads,
+Normal basket gravity bears through defined B27 base bands onto the pod pads,
 then into the rail tops and retained corner core. The four M6 basket bolts only
 retain the empty rigid basket. In the opposite direction the C2 pair applies
 uplift plus two opposed local horizontal reactions at the ears. The pod must
@@ -600,7 +605,7 @@ upper-pod actions.
 #### Promotion gates specific to Arrangement E
 
 Before cutting a pod blank, provide a full-size transparent plan/elevation
-template with the real B28, the two real cord tangents, chafe sleeves, post
+template with the real B27, the two real cord tangents, chafe sleeves, post
 stacks, C2 timber, joist underside and removable deck board. Before promoting
 it from one-corner prototype, additionally pass:
 
@@ -609,7 +614,7 @@ it from one-corner prototype, additionally pass:
 - the existing wet corner stiffness/dead-band and plan/roll proofs unchanged;
 - a complete C2-sling proof with deliberately unequal leg sharing, one damaged
   chafe/post inspection and loss of the whole continuous sling;
-- B28 basket retention, wet creep, cartridge removal and empty-basket removal
+- B27 basket retention, wet creep, cartridge removal and empty-basket removal
   without disturbing either lower C2 leg; and
 - a measured-coordinate rigid/flexible-ring and deck reaction rerun, including
   the full C2-sling-loss case and all new upper-post forces.
@@ -620,16 +625,16 @@ replacement for Arrangement A or an approved centred corner basket.
 ### Arrangement A — controlled spatial template
 
 This is a geometry template for one dry prototype, not a cut drawing. Make a
-full-size transparent or plywood template of the measured B28 lower envelope,
+full-size transparent or plywood template of the measured B27 lower envelope,
 four 40 mm washer footprints, the two cord-post/washer/chafe stacks and both
 actual C2 cord tangents. Put the basket centre at local `(170,170)` first.
 Move it only farther inboard; never toward the rail intersection. The template
 passes only when all of the following are true:
 
-1. the whole empty and filled B28 envelope, including its removal sweep, is
+1. the whole empty and filled B27 envelope, including its removal sweep, is
    inside the rail square and clear of the two C2 legs, posts, knots, chafe
    sleeves, rail, corner bolts and removable deck-board underside;
-2. all four chosen retention points are on sound B28 base-rib intersections and
+2. all four chosen retention points are on sound B27 base-rib intersections and
    each complete 40 mm washer footprint bears on at least four continuous
    ribs/strands, as required for R5.1;
 3. no retention axis, washer footprint, carrier cut or carrier hole lies in an
@@ -656,7 +661,7 @@ with two defined regions:
 - the original six-sided 9.5 mm compact-web geometry, uncut and with all six
   M8 axes unchanged, so its tested corner stiffness/load path is retained; and
 - an inboard wing reaching past the far two retention points, with a separate
-  bending/load-spreading calculation from the four B28 points back to the
+  bending/load-spreading calculation from the four B27 points back to the
   retained web/rail bearing paths.
 
 The lower plate remains the issued compact web. Do not add a basket-sized
@@ -669,11 +674,11 @@ corner and one-corner basket uplift all need checking. The existing
 33.2 kN m/rad plate-path figure applies to the compact corner web only and
 does not certify the wing.
 
-Use the same prototype basket-retention stack as R5.1 only after the B28
+Use the same prototype basket-retention stack as R5.1 only after the B27
 sample passes: four M6 x 40 A4 button-head screws and four internal 40 mm A4
 penny washers, with lower washer, locknut and cap. The internal washers retain
 the empty rigid basket; they do not carry normal basket gravity through mesh.
-Normal gravity must bear through the measured B28 base bands onto dedicated
+Normal gravity must bear through the measured B27 base bands onto dedicated
 carrier bearing pads/strips. Keep the planted cartridge, harness and fish guard
 structurally independent and removable.
 
@@ -719,7 +724,7 @@ location.
 Do not amend the production position sheet, buy batch carrier material or add
 corner baskets to the YAML until one complete Arrangement A prototype has:
 
-1. a surveyed B28 base/rim/taper/loaded envelope and four accepted mesh-rib
+1. a surveyed B27 base/rim/taper/loaded envelope and four accepted mesh-rib
    retention positions;
 2. a full-size plan-and-height template proving at least the agreed clearance
    to both real C2 legs, all chafe, posts, washer stacks and deck-board relief;
@@ -736,7 +741,7 @@ corner baskets to the YAML until one complete Arrangement A prototype has:
    day immersion, creep/whitening checks at all four mesh washers, and no cord
    chafe, snag, loss of clearance or basket migration.
 
-Until then, place the two hard-rush B28s and the *Butomus* B28 at accepted
+Until then, place the two hard-rush B28s and the *Butomus* B27 at accepted
 straight-side stations. They can still read as corner planting, but the
 corner itself is not an available batch basket station.
 
@@ -804,7 +809,7 @@ not a 200 mm flat-bar take-off.  For the first proof corner, obtain at least a
 mm upper bounding profile above one 282.8 mm lower bounding profile, with the
 5 mm nominal cutting clearances retained.  For the released four-corner set,
 the common-sheet screen is approximately **1,505 x 1,015 mm**, as listed in
-[materials.md](materials.md).  Cut only the first upper/lower pair until its
+[purchase-cost-study.md](purchase-cost-study.md).  Cut only the first upper/lower pair until its
 wet proof passes.
 
 Before cutting, obtain the bar maker's written permanent-fresh-water,
@@ -815,7 +820,7 @@ both rail legs and the outer diagonal load path. Reject generic recycled
 its approximately 0.9 GPa modulus and high creep make it a wear plastic, not a
 suitable structural corner web at any practical thickness.
 
-The [published E23 grade comparator](materials.md#published-e23-grade-comparator)
+The [published E23 grade comparator](purchase-cost-study.md#published-e23-grade-comparator)
 is included in the material schedule for quote comparison.  It is not a
 substitute for those delivered-sheet and immersed-service data, nor for the
 wet corner proof.

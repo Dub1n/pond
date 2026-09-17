@@ -1,7 +1,7 @@
 # Pack C ring member and selected corner study
 
 This calculation supports the corner prototype in
-[corner.md](../packs/c/corner.md). It screens the 38 mm GRP ring sides, corner
+[corner-v1.md](../packs/c/corner-v1.md). It screens the 38 mm GRP ring sides, corner
 actions and the selected paired 9.5 mm compact triangular plan webs. It is not a deck or
 batch-fabrication approval.
 
@@ -145,7 +145,7 @@ These are demand calculations, not design resistances. The accepted plate
 certificate must support in-plane properties in both directions, diagonal
 reinforcement, pin bearing, open-hole behaviour and permanent fresh-water
 immersion. The complete connection also needs its wet coupon and moment-
-rotation tests. `corner.md` gives the plate polygon, sleeves, bolt stack and
+rotation tests. `corner-v1.md` gives the plate polygon, sleeves, bolt stack and
 release criteria.
 
 ## Fallback R5.1 movement-stop hole
@@ -203,7 +203,7 @@ The following remain physical or system gates:
 - the R5.1 seat reaction envelope and measured drain-down masses; and
 - the five still-TBC deck limits in [design-C.md](../packs/c/design-C.md).
 
-This is why the dimensions in `corner.md` are issued for one prototype corner
+This is why the dimensions in `corner-v1.md` are issued for one prototype corner
 first, followed by the four-corner batch only after its release gates pass.
 
 ## Property basis
@@ -213,7 +213,7 @@ first, followed by the four-corner batch only after its release gates pass.
   calculations.  The ring-member `E=17 GPa` is the contextual E17 tube value;
   the compact-web and profile-comparison screens deliberately use `E=3 GPa`.
   The complete E23 table, its source and the procurement limitations are in
-  [materials.md](../packs/c/materials.md#published-e23-grade-comparator).
+  [purchase-cost-study.md](../packs/c/purchase-cost-study.md#published-e23-grade-comparator).
 - [Fiberline's EN 13706 summary](https://fiberline.com/european-standard-en-13706)
   gives the contextual E17 minima: 17 GPa longitudinal modulus, 90/50 MPa
   longitudinal/transverse pin bearing and 15 MPa longitudinal shear.

@@ -9,7 +9,7 @@ R3 is a 2,100 × 2,100 mm centreline square of grey structural-GRP box section,
 suspended by cord from every straight joist. Each of the thirteen baskets rests
 on two short transverse GRP bars and is tied down at four lower points. The
 common basket-bearing surface is nominally 200 mm below the minimum normal
-water level; B28 baskets sit directly on it and shallow B23 baskets sit on
+water level; B27 baskets sit directly on it and shallow B23 baskets sit on
 risers. The crowfoot needs a separate downstand detail.
 
 The active work sequence, deck-load interface and pre-decking access gates are
@@ -20,7 +20,7 @@ The comparison designs are [R4 — Double Rail](R4-double-rail.md) and
 [R5 — Plates](R5-plates.md). R3 remains the original prototype baseline;
 these alternatives do not retrospectively change its design history.
 The editable model is [r3-spine.yaml](../../../diagrams/specs/rail/r3-spine.yaml).
-It shows the ring, two representative joist supports and one shallow B28 seat.
+It shows the ring, two representative joist supports and one shallow B27 seat.
 
 ## Part 1 — Context and design record
 
@@ -128,7 +128,7 @@ worked and available in dark grey.
 R1 used a 2,182 × 2,182 mm centreline ring 409 mm from each pond wall. It was a
 38 × 38 × 3.2 mm GRP ring with four corner nodes, one midpoint drop on each
 side and hanging basket bridles. At that line, about 174 mm of a B23 and
-194–199 mm of a nominal B28 projected beyond the deck edge.
+194–199 mm of a nominal B27 projected beyond the deck edge.
 
 The historical elastic screen for one 2.18 m side carrying four 5 kg baskets
 was:
@@ -156,7 +156,7 @@ ring to sit much deeper while the internal plant pot controls crown height.
 
 Finally, the historical 5 kg per basket was only a provisional drained wet
 mass. It was not the media mass or the apparent underwater load. R3 retains a
-10 kg screening load but requires a soaked B23 and B28 to be weighed before
+10 kg screening load but requires a soaked B23 and B27 to be weighed before
 the deck checks are issued.
 
 ### ADR: single spine versus concentric squares
@@ -218,9 +218,9 @@ joist tip; two adjacent sides provide opposing restraint. No central bridge is
 required.
 
 The 2,100 mm ring puts about **215 mm / 94% of a B23** and **235–240 mm /
-86–87% of a B28** outside the deck edge. A centred 150 mm plant pot is wholly
+86–87% of a B27** outside the deck edge. A centred 150 mm plant pot is wholly
 beyond the deck with about 25 mm clearance. The basket itself overlaps the
-deck by only about 15 mm for B23 and 35–40 mm for B28, preserving useful
+deck by only about 15 mm for B23 and 35–40 mm for B27, preserving useful
 central water area without burying the crown in shade.
 
 ### Vertical arrangement
@@ -235,18 +235,18 @@ and spine top Z = −225 mm.
 Use actual basket measurements in this relationship:
 
 ```text
-B28 bearing depth = measured B28 height + 10 mm water cover
-main-spine top depth = B28 bearing depth + measured crossbar depth
-B23 riser height = measured B28 height - measured B23 height
+B27 bearing depth = measured B27 height + 10 mm water cover
+main-spine top depth = B27 bearing depth + measured crossbar depth
+B23 riser height = measured B27 height - measured B23 height
 ```
 
-With nominal 190 mm B28, 150 mm B23 and 25 mm crossbar dimensions:
+With nominal 190 mm B27, 150 mm B23 and 25 mm crossbar dimensions:
 
 ```mermaid
 flowchart TB
-    W[Minimum normal water level] -->|about 10 mm| R28[B28 rim]
+    W[Minimum normal water level] -->|about 10 mm| R28[B27 rim]
     R28 -->|about 190 mm| BP[Basket bearing plane about 200 mm below water]
-    BP -->|B28 sits directly| C[25 mm crossbars]
+    BP -->|B27 sits directly| C[25 mm crossbars]
     C --> MS[Main-spine top about 225 mm below water]
     BP -->|about 38 to 40 mm riser| B23[B23 base]
     B23 -->|about 150 mm| R23[B23 rim about 10 to 12 mm below water]
@@ -263,7 +263,7 @@ issuing the basket schedule.
 
 ### Basket seats and removal
 
-Buy and measure one B23 and one B28 before cutting crossbars. Supplier widths
+Buy and measure one B23 and one B27 before cutting crossbars. Supplier widths
 usually describe the tapered top, not the load-bearing base.
 
 For each basket:
@@ -276,7 +276,7 @@ For each basket:
    sides. Bind each crossing firmly with replaceable 3–4 mm polyester cord.
    The GRP carries gravity load by direct contact; the cord prevents sliding,
    rotation and uplift.
-5. Put B28 directly on the crossbars. For B23, put one nominal 38–40 mm high,
+5. Put B27 directly on the crossbars. For B23, put one nominal 38–40 mm high,
    approximately 140 mm long GRP riser on each crossbar and capture it with the
    basket tie. Confirm the riser height from the measured basket-height
    difference.
@@ -411,7 +411,7 @@ manufacturer connection guidance. Recalculate if any main support span exceeds
 
 A 2,100 mm centreline ring made from 38 mm SHS is about 2,138 mm over its outer
 faces, leaving roughly 81 mm clearance per side inside the 2,300 mm opening.
-Basket crossbars project beyond this, and opposed nominal B28 baskets make an
+Basket crossbars project beyond this, and opposed nominal B27 baskets make an
 overall envelope around 2,380 mm.
 
 Because the decking is not installed, the ring, seats and **empty baskets** may
@@ -420,7 +420,7 @@ joists:
 
 | As-built clear joist bay | Basket which may pass during lowering     |
 | -----------------------: | ----------------------------------------- |
-|        339.7 or 372.9 mm | B23 or B28                                |
+|        339.7 or 372.9 mm | B23 or B27                                |
 |                 264.4 mm | B23 only, after measuring basket and ties |
 |     170.0 mm central bay | Neither                                   |
 
@@ -448,7 +448,7 @@ actual tapered bases and heights.
 | Crossbar stops | Rounded GRP or pond-safe HDPE blocks and cord as required by the dry movement test. |
 | Cut-face coating | Compatible catalysed resin or two-part coating approved for the selected GRP and immersion. |
 | Optional perimeter sealant | One cartridge of black Gold Label Pond & Aquarium Sealer for external fillets and protective caps only; not included in structural strength. |
-| Rail baskets | **10 B23 and 3 B28**, completed after rail installation to [plants.md](plants.md). |
+| Rail baskets | **10 B23 and 3 B27**, completed after rail installation to [plants.md](plants.md). |
 
 Two 6 m main lengths leave about 3,448 mm before saw kerfs after four nominal
 2,138 mm mitred sides. Twenty nominal 140 mm B23 risers use about 2,800 mm, so
@@ -460,18 +460,18 @@ cord with no published strength.
 
 ### Survey, prototype and issue sequence
 
-1. Buy and measure one B23 and B28: top, base, height, reinforced base bands
+1. Buy and measure one B23 and B27: top, base, height, reinforced base bands
    and sound lower tie positions.
 2. Survey pond walls, finished deck edge, liner face, all joist faces and tips,
    existing fixings and minimum/normal/maximum water levels.
 3. Set out the 450 mm centreline square and confirm exposure, lowering bays and
    the inward travel needed to lift each basket.
-4. Make and load-test one complete B23 seat and one B28 seat over dry ground.
+4. Make and load-test one complete B23 seat and one B27 seat over dry ground.
 5. Make one full joist support and prove the wrap, adjustment, keeper and chafe
    protection at 0.3 kN.
 6. Fabricate one bolted corner and proof it for joint slip, local crushing and
    racking, including handling of the assembled ring.
-7. Build, soak and vent one representative B23 and B28; record apparent
+7. Build, soak and vent one representative B23 and B27; record apparent
    underwater weight and fully soaked out-of-water mass.
 8. Assemble one full rail side at 420 mm maximum support pitch with four
    representative drained loads, the actual cord drop and one corner.
@@ -515,7 +515,7 @@ The following sources inform material selection and fabrication practice:
 - [Gold Label manufacturer FAQ](https://www.huttonaquaticproducts.co.uk/faqs/)
 - [Example 6 mm polyester rope data](https://shop.marlowropes.com/blue-ocean-d-3-braid-6mm-grey-200mr-kb4492)
 - [B23 supplier example](https://www.pondkeeper.co.uk/pondxpert-medium-square-planting-basket-23-x-15cm/)
-- [B28 supplier example](https://www.pondkeeper.co.uk/pondxpert-large-square-planting-basket-27-x-19cm/)
+- [B27 supplier example](https://www.pondkeeper.co.uk/pondxpert-large-square-planting-basket-27-x-19cm/)
 
 Supplier listings establish examples and nominal dimensions only. Obtain the
 selected manufacturer's current structural properties, resin/environment data,

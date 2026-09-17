@@ -10,7 +10,7 @@ loaded trial before repeating it.
 
 [r5-plates.yaml](../../../diagrams/specs/rail/r5-plates.yaml) and
 [r5](../../../diagrams/output/r5-plates/r5/) shows the complete
-ring, representative joist attachments and one B28 plate seat. The dimensions
+ring, representative joist attachments and one B27 plate seat. The dimensions
 below are a coherent starting example. Basket bases, plate grade and connection
 fit still need measuring; the model is not a certified fabrication drawing.
 
@@ -53,7 +53,7 @@ basket, start with a plate side of the larger of the rim width or **base width
 + 80 mm**, rounded up to 10 mm. Keep the upper nuts and washers clear of the
 tapered basket; enlarge the plate/bolt margin if the real basket needs it.
 
-| Dimension                      |                               Illustrated B28 example |
+| Dimension                      |                               Illustrated B27 example |
 | ------------------------------ | ----------------------------------------------------: |
 | Basket rim / height            |                                 280 × 280 mm / 190 mm |
 | Basket base                    |              200 × 200 mm, **assumed until measured** |
@@ -132,8 +132,8 @@ cap threads and leave no sharp sleeve edges or loose fibres accessible to fish.
 Set the **upper plate top** from the required basket bearing level:
 
 ```text
-B28 bearing depth = measured basket height + 10 mm rim cover
-spine top depth = B28 bearing depth + upper plate thickness
+B27 bearing depth = measured basket height + 10 mm rim cover
+spine top depth = B27 bearing depth + upper plate thickness
 ```
 
 For the example this gives bearing depth **200 mm** and spine-top depth
@@ -149,7 +149,7 @@ that different bearing level in the plant schedule; do not hide it in packing.
 Shallow B23 baskets need measured local risers on the upper plate (nominally
 40 mm for a 150 mm basket). A *Butomus* internal pot and crowfoot downstand
 remain separate depth details controlled by [plants.md](plants.md). Only a
-shallow B28 is modelled in this iteration.
+shallow B27 is modelled in this iteration.
 
 ## Joist supports, ring and removal
 
@@ -179,7 +179,7 @@ handling clearance.
 
 The ring, its corner hardware and 32 supports are additional and remain the
 R3 allowance. Plate stock area, risers and deeper seats depend on the measured
-baskets; do not turn thirteen example B28 seats into a buying list.
+baskets; do not turn thirteen example B27 seats into a buying list.
 
 Trial one complete seat with the soaked, out-of-water basket mass. Move the
 load off centre, slide the basket through its removal travel and apply handling

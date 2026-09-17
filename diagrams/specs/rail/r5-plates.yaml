@@ -2,7 +2,7 @@
 # Read docs/packs/c/R5-plates.md and README.md in this directory.
 # Same origin/orientation as option-c.yaml: pond centre X/Y=0, water/pad tops Z=0.
 # CONTEXT components are removable when combining with Option C; reuse its datums/joists.
-# One B28 station only. Basket base is assumed; no final planting layout is implied.
+# One B27 station only. Basket base is assumed; no final planting layout is implied.
 # Hollow GRP, cord wraps and hardware are envelope solids, not manufacturing bores.
 # Use --collision-mode ignore for declared envelope overlaps; audit with warn first.
 # Sloping cord lengths below are explicit because expressions have no sqrt().
@@ -642,7 +642,7 @@ components:
     material: basket-polymer
     ifc: {predefined_type: ELEMENT}
     views: [plan, seat-plan, section, connection, suspension]
-    label: 'B28: assumed 200 mm base, 280 mm rim, 190 mm tall; mesh/taper simplified'
+    label: 'B27: assumed 200 mm base, 280 mm rim, 190 mm tall; mesh/taper simplified'
     label_id: Q
     relate:
       cx: {pos: cx, ref: r5_station}

@@ -65,7 +65,7 @@ The potentially more severe fabrication load is bolt tightening. A normal M6 pre
 
 ## Clear problem in the illustrated geometry
 
-The sample B28 seat does not properly fit between its illustrated J3 and J4 main supports once all required cordwork is included.
+The sample B27 seat does not properly fit between its illustrated J3 and J4 main supports once all required cordwork is included.
 
 From [r5-plates.yaml](/home/gabri/docs/pond/diagrams/specs/rail/r5-plates.yaml:367):
 
@@ -75,7 +75,7 @@ From [r5-plates.yaml](/home/gabri/docs/pond/diagrams/specs/rail/r5-plates.yaml:3
 
 The model omits the two collars required beside every 6 mm main-support wrap. Once those are included, the seat and J4 support conflict. Even centring the 296 mm seat in the 311.4 mm J3–J4 interval leaves only about 7.7 mm at each end, essentially no fabrication, cord-bulge or servicing clearance.
 
-This does not invalidate every possible R5 layout. It means the illustrated B28 station is not buildable as detailed. B28 seats must use wider support bays, support locations must change, or the seat length must shrink. A complete four-baskets-per-side position drawing is therefore a prerequisite, not later drafting work.
+This does not invalidate every possible R5 layout. It means the illustrated B27 station is not buildable as detailed. B27 seats must use wider support bays, support locations must change, or the seat length must shrink. A complete four-baskets-per-side position drawing is therefore a prerequisite, not later drafting work.
 
 ## New failure and maintenance risks
 

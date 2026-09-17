@@ -55,7 +55,7 @@ components:
       cy: -rail_line
       +z: rail_top
 
-  # One real local datum; edit this after the B23/B28 bearing-band survey.
+  # One real local datum; edit this after the B23/B27 bearing-band survey.
   - id: r51_station
     kind: reference
     size: [0, 0, 0]

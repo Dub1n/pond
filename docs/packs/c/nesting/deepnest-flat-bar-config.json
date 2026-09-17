@@ -1,0 +1,12 @@
+{
+  "rotations": 2,
+  "spacing": 0,
+  "curveTolerance": 0.72,
+  "threads": 4,
+  "populationSize": 20,
+  "mutationRate": 10,
+  "placementType": "box",
+  "mergeLines": false,
+  "timeRatio": 0,
+  "simplify": false
+}

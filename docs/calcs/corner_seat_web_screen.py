@@ -5,7 +5,7 @@ This is deliberately not a plate FEA or a fabrication drawing.  It converts
 the named bolt-to-bolt force paths into continuously radiused minimum-width
 capsules, then reports the remaining plan area and writes an SVG concept.  The
 separate strip calculation uses the same deliberately conservative 0.30 kN
-complete-sling proof action already used in ``corner.md``.
+complete-sling proof action already used in ``corner-v1.md``.
 
 It is a guard against a visually convincing cut-out deleting a continuous
 path.  Actual plate bending, washer bearing, wet laminate properties and the

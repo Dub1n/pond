@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<svg width="100%" height="100%" viewBox="0 0 210 147" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" xml:space="preserve" xmlns:serif="http://www.serif.com/" style="fill-rule:evenodd;clip-rule:evenodd;stroke-linecap:square;stroke-linejoin:round;stroke-miterlimit:2;">
+    <g transform="matrix(4.166667,0,0,4.166667,-1612.083333,-1560)">
+        <g id="H-shapes">
+            <path id="lower-bridge" serif:id="lower bridge" d="M395,389.2C395,386.44 397.24,384.2 400,384.2C402.76,384.2 405,386.44 405,389.2L405,394.8C405,397.56 402.76,399.8 400,399.8C397.24,399.8 395,397.56 395,394.8L395,389.2Z" style="fill:rgb(110,113,127);fill-opacity:0.33;stroke:black;stroke-width:0.2px;stroke-dasharray:0.4,0.6,0,0,0,0;"/>
+            <g id="lower-bridge1" serif:id="lower bridge" transform="matrix(1,0,0,1,25,0)">
+                <path d="M395,389.2C395,386.44 397.24,384.2 400,384.2C402.76,384.2 405,386.44 405,389.2L405,394.8C405,397.56 402.76,399.8 400,399.8C397.24,399.8 395,397.56 395,394.8L395,389.2Z" style="fill:rgb(110,113,127);fill-opacity:0.33;stroke:black;stroke-width:0.2px;stroke-dasharray:0.4,0.6,0,0,0,0;"/>
+            </g>
+            <g id="Rail" transform="matrix(1.515152,0,0,0.95,-229.666667,19.6)">
+                <rect x="407" y="390" width="33" height="4" style="fill-opacity:0.33;stroke:black;stroke-width:0.16px;stroke-dasharray:0.316,0.474,0,0,0,0;"/>
+            </g>
+            <path id="upper-bridge" serif:id="upper bridge" d="M400,397C397.24,397 395,394.76 395,392C395,389.24 397.24,387 400,387L425,387C427.76,387 430,389.24 430,392C430,394.76 427.76,397 425,397L400,397Z" style="fill:rgb(155,65,91);fill-opacity:0.33;stroke:black;stroke-width:0.2px;stroke-dasharray:0.4,0.6,0,0,0,0;"/>
+            <g id="upper-arm" serif:id="upper arm" transform="matrix(1,0,0,1,0,-0.5)">
+                <path d="M395,380C395,377.24 397.24,375 400,375C402.76,375 405,377.24 405,380L405,405C405,407.76 402.76,410 400,410C397.24,410 395,407.76 395,405L395,380Z" style="fill-opacity:0.33;stroke:black;stroke-width:0.2px;stroke-dasharray:0.4,0.6,0,0,0,0;"/>
+            </g>
+            <g id="upper-arm1" serif:id="upper arm" transform="matrix(1,0,0,1,25,-0.5)">
+                <path d="M395,380C395,377.24 397.24,375 400,375C402.76,375 405,377.24 405,380L405,405C405,407.76 402.76,410 400,410C397.24,410 395,407.76 395,405L395,380Z" style="fill-opacity:0.33;stroke:black;stroke-width:0.2px;stroke-dasharray:0.4,0.6,0,0,0,0;"/>
+            </g>
+            <g id="Sleeves">
+                <g transform="matrix(3.369068,0,0,3.369068,-981.637715,-935.18201)">
+                    <circle cx="417.515" cy="394.763" r="0.237" style="fill:white;"/>
+                </g>
+                <g transform="matrix(3.369068,0,0,3.369068,-981.637715,-940.78201)">
+                    <circle cx="417.515" cy="394.763" r="0.237" style="fill:white;"/>
+                </g>
+                <g transform="matrix(3.369068,0,0,3.369068,-1006.637715,-935.18201)">
+                    <circle cx="417.515" cy="394.763" r="0.237" style="fill:white;"/>
+                </g>
+                <g transform="matrix(3.369068,0,0,3.369068,-1006.637715,-940.78201)">
+                    <circle cx="417.515" cy="394.763" r="0.237" style="fill:white;"/>
+                </g>
+            </g>
+        </g>
+    </g>
+</svg>
