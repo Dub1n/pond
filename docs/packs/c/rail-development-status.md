@@ -64,7 +64,7 @@ not predictions for the purchased cord or final geometry.
 ### Corners
 
 Each corner has two mirrored 9.5 mm upper plates, one 9.5 mm thick lower web,
-six sleeved rail/corner bolts and two separate acetal-covered C2 posts. Rail
+six sleeved rail/corner bolts and two separate ready-bored nylon C2 posts. Rail
 axes remain at 55, 125 and 195 mm on each leg. Both upper plates share the two
 55 mm axes; the C2 post axes are approximately `(-140,55)` and `(55,-140)`.
 
@@ -96,7 +96,9 @@ basket geometry selects the set. Gravity bears through the arms and upper
 bridge into the rail. The bolts and lower bridges provide uplift/overturning
 capture. Broad clamp contact provides longitudinal restraint, optionally
 assisted by a proven thin pad or qualified adhesive without deleting the
-mechanical capture.
+mechanical capture. Each bolt uses factory-bored 20 OD x 10 ID unfilled POM-C
+tube with a controlled 1 mm rail-facing flat, retaining the 56 mm bolt spacing
+while giving broad transverse contact against the rail.
 
 ### Baskets
 
@@ -128,19 +130,21 @@ base size, retention locations or wet mass.
 ## Simplicity and cost position
 
 The sole live purchase schedule is [purchase-cost-study.md](purchase-cost-study.md).
-Its current total is **GBP 535.44 including VAT, excluding delivery**:
+Its current total is **GBP 552.29 including VAT, excluding delivery**:
 
 | Cost group | Current amount |
 | --- | ---: |
 | Three stocked structural-GRP flat bars | GBP 284.76 |
 | Two GRP rail tubes | GBP 110.00 |
-| Cord, webbing, all fasteners, sleeves and edge resin | GBP 140.68 |
+| Cord, webbing, all fasteners, sleeves and edge resin | GBP 157.53 |
 
 The previous GBP 498.92 total used a GBP 250 assumed custom sheet and M8 x 80
 seat bolts. The stocked-bar route adds GBP 34.76 for plate and GBP 1.76 for the
 revised bolt mix, but removes the custom lead-time dependency. The design still
 avoids proprietary suspension fittings, blanket A4 hardware, commercial seat
-stops and separate corner-basket plates.
+stops and separate corner-basket plates. Factory-bored POM-C seat tube and
+ready-bored C2 posts add GBP 16.85 relative to the former solid-rod allowance
+while eliminating 44 axial bores.
 
 Three bars are required in all 250/225/200 mm R5.2 cases. Smaller seats create
 more useful offcut rather than reducing the demonstrated purchase count. The

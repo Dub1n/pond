@@ -21,7 +21,7 @@ Each of the four corners contains:
 | Mirrored upper corner plate | 2 | 9.5 mm structural pultruded GRP flat bar |
 | Thick lower corner web | 1 | 9.5 mm structural pultruded GRP flat bar |
 | Rail/corner fastener stack | 6 | M8 A2-70 bolt, two 25 mm A2 washers, nyloc and internal 304 crush sleeve |
-| Separate C2 post stack | 2 | M8 x 50 A2-70 bolt, 16 mm acetal post, 30 mm roof washer, 25 mm underside washer and nyloc |
+| Separate C2 post stack | 2 | M8 x 50 A2-70 bolt, 16 OD x 8.4 ID x 20 mm nylon spacer, 30 mm roof washer, 25 mm underside washer and nyloc |
 | Low basket-bearing spacer | 1 nominal | Sealed 9.5 mm GRP offcut, sized from the real basket bearing feature |
 
 The upper plates are the supplied shapes in `diagrams/corner-rework/`. Each is

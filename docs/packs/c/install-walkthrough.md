@@ -100,9 +100,9 @@ deck capacity.
 
 Each seat has two transverse **upper arms**, one longitudinal **upper bridge**
 and two **lower bridges**. At each capture station, two bolts pass through an
-arm, the common upper bridge and one lower bridge, with an acetal sleeve around
-each bolt beside the rail. Together the five GRP parts mechanically capture
-the rail.
+arm, the common upper bridge and one lower bridge, with a shaped POM-C tube
+sleeve around each bolt beside the rail. Together the five GRP parts
+mechanically capture the rail.
 
 Basket gravity bears through the arms and upper bridge onto the rail. The
 bolts and bridges retain the seat against uplift and overturning. Clamping,
@@ -111,21 +111,32 @@ of these interface options replaces the four-bolt capture.
 
 ### Establish one working sample
 
-1. Assemble one complete seat on a representative rail offcut with the actual
+1. Use two 1 m lengths of 20 OD x 10 ID unfilled POM-C tube. Before cutting
+   individual sleeves, support each full tube in a straight anti-rotation jig
+   and form one continuous flat along it. Remove 1.0 mm radially so the finished
+   dimension from the flat to the opposite circumference is 19.0 mm. Measure
+   at intervals; do not freehand each short sleeve. Use a rigid abrasive bed,
+   light cool passes and dust collection so the acetal does not heat and smear.
+2. Lightly round the two longitudinal edges of the flat without reducing its
+   bearing width. Cut the sleeves slightly long, square their ends, and finish
+   all four in a seat as a matched set. The final length is established by the
+   clamp sample below, not by copying the former nominal 39 mm.
+3. Assemble one complete seat on a representative rail offcut with the actual
    washers, sleeves and M8 x 90 bolts. Put each upper arm above the upper bridge
    and keep broad GRP-to-GRP contact without an interlayer washer. Keep the
-   basket off initially for access.
-2. Measure and record the rail height, plate/washer thicknesses and sleeve
+   basket off initially for access. Orient every 19 mm flat against the rail;
+   the untouched round face remains outward.
+4. Measure and record the rail height, plate/washer thicknesses and sleeve
    lengths. The former 39 mm sleeve around a nominal 38 mm rail intentionally
    left clearance; it is **not a final clamp dimension**.
-3. Match the sleeve-controlled gap to the actual chosen interface. Establish
+5. Match the sleeve-controlled gap to the actual chosen interface. Establish
    broad, even upper-bridge-to-rail and lower-bridge-to-rail contact. Retain
    the sleeves as transverse guides and closure limits, but do not let
    overlong sleeves take all the bolt force before the rail is gripped.
-4. Tighten the pairs evenly in small increments. Do not compensate for a loose
+6. Tighten the pairs evenly in small increments. Do not compensate for a loose
    fit by forcing the tube to flatten or by heavily compressing the acetal.
    There is no released universal sleeve shortening or tightening torque.
-5. Check the complete bolt grip and nylon-lock engagement at the accepted
+7. Check the complete bolt grip and nylon-lock engagement at the accepted
    stack. Record the fitted dimensions and repeatable tightening procedure.
    Make the remaining seat sets only after this sample passes the tests below.
 
@@ -210,7 +221,9 @@ additional unless a suitable existing material is available.
 1. Make the gravity-loop, crossed-loop and C2 sling samples described in
    [cords.md](cords.md). Establish knots, tails and actual wrap tangents before
    cutting the batch. Retain generous tails until wet adjustment is complete.
-2. Fit the eight separate acetal-covered C2 posts and retaining washers.
+2. Fit the eight separate ready-bored 16 OD x 8.4 ID x 20 mm nylon C2 spacers
+   and retaining washers. Keep these posts fully round; do not substitute the
+   larger flattened seat-sleeve tube.
    Verify the knot, sleeved turns, rotated basket rim, any accepted plastic-
    basket relief and deck-clearance envelope.
 3. Start with **150 mm of chafe sleeve per C2 post**, not 100 mm. Two turns
@@ -269,7 +282,7 @@ seasonal or long-term material behaviour.
 
 ## Purchase implications
 
-The active purchase schedule is GBP 535.44 including VAT excluding delivery:
+The active purchase schedule is GBP 552.29 including VAT excluding delivery:
 no seat-lashing cord, chafe pieces, slots or buckles are needed.
 The locating-cord reel is still needed for the suspension. With seat-stop
 chafe removed and C2 post sleeves increased to 150 mm, the webbing allocation

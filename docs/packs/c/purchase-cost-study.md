@@ -2,7 +2,7 @@
 
 ## Current result
 
-The current complete carrier purchase is **GBP 535.44 including VAT, excluding
+The current complete carrier purchase is **GBP 552.29 including VAT, excluding
 delivery**. It covers the GRP ring, all split R5.2/corner-v2 plates, suspension,
 connections, thirteen basket attachments and cut-edge resin. Baskets,
 cartridges, media, plants, guards and lifting harnesses are outside this total.
@@ -11,10 +11,13 @@ The former GBP 498.92 result depended on an assumed GBP 250 custom plate. The
 custom sheet's lead time and availability are unacceptable. Three immediately
 listed 200 x 9.5 x 3,000 mm GRP flat bars now cost GBP 284.76, and the split
 seat stacks need a mixture of M8 x 90 and M8 x 80 bolts. Those two changes add
-GBP 36.52. No goods have been ordered and delivery remains excluded.
+GBP 36.52. Replacing manually bored solid rod with factory-bored unfilled
+POM-C tube for the seats and eight ready-bored nylon C2 posts adds GBP 16.85,
+but removes all axial boring from these 44 parts. No goods have been ordered
+and delivery remains excluded.
 
 The cost is supported by complete purchase quantities rather than used
-fractions of stock. Prices are listing evidence checked on 16 September 2026,
+fractions of stock. Prices are listing evidence checked on 17 September 2026,
 not reservations or delivered quotations.
 
 ## Scope and design basis
@@ -106,11 +109,12 @@ complete seat/corner tests remain mandatory.
 | Internal basket washers | 52 x M6 x 40 mm OD A2 | [TC Fixings A2WP0640](https://www.tcfixings.co.uk/product/m6-x-40mm-a2-stainless-penny-repair-washers/7433), 50+ tier | GBP 10.64 |
 | Basket underside washers | 52 x M6 A2 Form G | [The Boathouse](https://www.norfolkwatersports.co.uk/shop/m6-s-s-a2-washer-form-g-114), tax allowance included | GBP 1.25 |
 | Basket locking nuts | 52 x M6 A2 nyloc | [The Boathouse](https://www.norfolkwatersports.co.uk/shop/m6-s-s-a2-nylock-nut-113), tax allowance included | GBP 2.50 |
-| Acetal sleeves and posts | 16 mm unfilled POM-C rod: 1 x 1,500 mm plus 1 x 500 mm | Direct Plastics [1,500 mm](https://www.directplastics.co.uk/acetal-black-rod-16mm-dia-x-1500mm) and [500 mm](https://www.directplastics.co.uk/acetal-black-rod-16mm-dia-x-500mm) | GBP 8.38 |
+| Seat-sleeve tube | 2 x 1 m, unfilled natural POM-C tube, 20 OD x 10 ID; form one 1 mm rail-facing flat | [Vision Plastics natural acetal tube](https://visionplastics.co.uk/acetal-natural-colour/natural-acetal-tubes), GBP 9.68/m ex VAT; confirm availability | GBP 23.23 |
+| Separate C2 post spacers | 8 x ready-bored nylon spacer, 16 OD x 8.4 ID x 20 mm | [Vital RS-84-160-200-NY-N](https://www.vital-parts.co.uk/nylon-spacers/45551-rs-84-160-200-ny-n), GBP 0.25 each inc VAT | GBP 2.00 |
 | Corner crush sleeves | 1 m, 304 tube, 12 OD x 1 mm wall / 10 ID | [S3i](https://www.s3i.co.uk/12mm-stainless-steel-tube-modular.php) | GBP 5.62 |
 | Cut-edge resin | 500 g EL2 resin/hardener kit | [Easy Composites](https://www.easycomposites.co.uk/el2-epoxy-laminating-resin), GBP 15.30 inc | GBP 15.30 |
-| **Non-GRP-plate and non-rail subtotal** | All rows below rail except plate | | **GBP 140.68** |
-| **Complete purchase** | Plate + rail + remaining purchases | | **GBP 535.44** |
+| **Non-GRP-plate and non-rail subtotal** | All rows below rail except plate | | **GBP 157.53** |
+| **Complete purchase** | Plate + rail + remaining purchases | | **GBP 552.29** |
 
 The four offcut basket pads, optional plain rubber grip pads and any qualified
 structural adhesive are not separate priced purchases. Offcut pads come from
@@ -124,11 +128,11 @@ material only if its measured benefit justifies its cost and removal penalty.
 | M8 x 90 seat bolts | 36 | Join two upper plies and one lower bridge around the rail |
 | M8 x 90 shared-inner-corner bolts | 8 | Join two upper plates, rail tube and lower web |
 | M8 x 80 outer corner bolts | 16 | Join one upper plate, rail tube and lower web |
-| Separate M8 x 50 C2 posts | 8 | Smooth acetal-covered cord posts; not corner bolts |
+| Separate M8 x 50 C2 posts | 8 | Smooth ready-bored nylon cord posts; not corner bolts |
 | M8 nylocs | 68 | One per installed M8 bolt |
 | 25 mm M8 washers | 128 | 72 seat + 48 corner + 8 C2 underside |
-| 30 mm roof washers | 8 | Retain C2 cord above the acetal post |
-| Acetal seat sleeves | 36 | Set clamp gap and retain transverse location |
+| 30 mm roof washers | 8 | Retain C2 cord above the nylon post |
+| Flattened POM-C seat sleeves | 36 | Set clamp gap and retain transverse location with 1 mm rail-facing flat |
 | Stainless corner crush sleeves | 24 | Limit rail-wall crushing at six axes per corner |
 | M6 basket sets | 52 | Four distributed retention positions per basket |
 
