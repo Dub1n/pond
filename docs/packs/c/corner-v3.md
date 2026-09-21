@@ -23,10 +23,9 @@ Each of four corners uses:
 | Separate M8 x 50 C2 post, nylon spacer and washer stack        |              2 sets |
 | M6 basket-retention set                                        |              4 sets |
 
-The upper drawing is 380 x 380 mm and contains twelve nominal 8 mm holes: six
-rail holes on the two 55/125/195 mm chains, two separate C2-post holes and four
-basket-retention holes. The latter use the retained M6 hardware in the
-as-drawn clearance holes. The 240 x 240 mm lower web contains the same six
+The upper drawing is 380 x 380 mm and contains six nominal 8 mm rail holes on
+the two 55/125/195 mm chains, two nominal 8 mm C2-post holes and four 6.6 mm
+M6 basket-retention holes. The 240 x 240 mm lower web contains the same six
 rail axes as 8.5 mm holes. Do not add a bolt at the rail-axis intersection.
 
 The available plate is nominal 10 mm EN AW-5083 with unknown H temper. Confirm

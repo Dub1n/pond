@@ -16,8 +16,9 @@ Total: **35 cut parts**.
 Fabrication requirements:
 
 - Treat every SVG path and hole as finished geometry at 1 SVG unit = 1 mm.
-- Preserve every hole exactly as drawn; do not infer diameters from stroke
-  width, resize M6 clearance holes or add centre/intersection holes.
+- Preserve every hole exactly as drawn: seat and corner basket holes are
+  6.6 mm for M6; M8/C2 holes remain as drawn. Do not infer diameters from
+  stroke width, resize clearance holes or add centre/intersection holes.
 - Nest without distorting, mirroring or non-uniform scaling. Rotation in the
   plate plane is permitted.
 - Deburr and lightly break every cut edge and both faces of every hole. Remove
