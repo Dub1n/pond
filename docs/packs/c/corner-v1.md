@@ -1,7 +1,7 @@
 # Pack C rail corner — construction specification
 
-> **Superseded design record.** The current split-plate corner is
-> [corner-v2.md](corner-v2.md). Retain this document only for design and
+> **Superseded design record.** The current one-piece aluminium corner is
+> [corner-v3.md](corner-v3.md). Retain this document only for design and
 > calculation lineage; do not use its purchase or fabrication detail for the
 > prototype.
 

@@ -8,9 +8,9 @@ decking boards have not been installed.** The open framing is deliberate and
 must be kept accessible while the submerged planting rail is surveyed,
 prototyped and attached.
 
-The remaining work is the selected connected ring and R5.2 planting system defined
+The remaining work is the selected connected ring and R5.3 planting system defined
 by [rail-development-status.md](rail-development-status.md),
-[corner-v2.md](corner-v2.md), [cords.md](cords.md), [R5.2.md](R5.2.md) and
+[corner-v3.md](corner-v3.md), [cords.md](cords.md), [R5.3.md](R5.3.md) and
 [plants-v2.md](plants-v2.md). R3, R4 and R5 remain predecessor studies, not
 alternative construction instructions. The old deck calculation pack, method
 statement, inspection plan and construction checklists are historical records
@@ -141,7 +141,7 @@ Use measured masses and the approved envelope for the final decision.
 
 ## Rail and plant coordination gates
 
-The R5.2/corner-v2 ring is selected for survey and prototype, not batch
+The R5.3/corner-v3 ring is selected for survey and prototype, not batch
 fabrication. The remaining deck decision depends on these recorded inputs:
 
 - the completed framing, liner, intended board edge, water levels and available
@@ -151,9 +151,9 @@ fabrication. The remaining deck decision depends on these recorded inputs:
   apparent underwater weights and fully soaked drained masses;
 - the 45-degree corner-basket template including C2 posts, washers, sleeved
   cord turns and removal travel;
-- the selected GRP profile's directional and permanent-immersion information;
+- the selected 3.2 mm-wall GRP profile's directional and permanent-immersion information;
 - measured suspension tangents, settled axial stiffness, complete-item loss
-  cases and corner-v2 stiffness; and
+  cases and corner-v3 stiffness; and
 - final vertical/horizontal rail reactions compared with the five TBC deck
   limits above.
 

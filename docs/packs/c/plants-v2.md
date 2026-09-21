@@ -7,12 +7,12 @@ instructions in [plants.md](plants.md). Keep `plants.md` as the earlier design
 record; this version is the active planting specification.
 
 The thirteen rail planters use a **removable planted cartridge inside a rigid
-structural basket**. Install the carrier, R5.2 seats and empty rigid baskets
+structural basket**. Install the carrier, R5.3 seats and empty rigid baskets
 first. Prepare, soak and test the planted cartridges separately, then lower
 them into the retained baskets. A cartridge can later be recovered without
 removing its rigid basket or disturbing the rail.
 
-[R5.2.md](R5.2.md) remains the selected basket-seat architecture for survey
+[R5.3.md](R5.3.md) remains the selected basket-seat architecture for survey
 and prototype, not an accepted batch fabrication design. It now specifies the
 broad-washer basket retainer, through-bushed stop interface and depth-variant hold
 points. Buy one B23 and one B27 attachment set first; buy the remaining seat
@@ -34,7 +34,7 @@ watercress, mint, crowfoot and hornwort and remove the cut material from the
 pond. Keep lily pads to about 20–30% of the surface.
 
 The fabric planting bag is the controlled root and growing-medium boundary.
-The rigid outer basket is the durable structural interface with R5.2, protects
+The rigid outer basket is the durable structural interface with R5.3, protects
 the cartridge and transfers its load into the seat. The cartridge guard keeps
 koi out of the medium. None of the planting bag, lifting harness, guard,
 foliage or growing medium receives structural credit for retaining the rigid
@@ -66,7 +66,7 @@ geometric envelopes, not guaranteed usable volumes.
 
 Never put PB25 in B23: it has 20 mm nominal interference before allowing for
 either product's construction. Do not substitute the available 30 cm Velda
-bag and a larger rigid basket without revisiting the R5.2 envelope, rail
+bag and a larger rigid basket without revisiting the R5.3 envelope, rail
 layout, open-water area and deck-edge removal route.
 
 ### PB25 fit and alteration
@@ -101,13 +101,13 @@ not water above the basket bottom.
 | Plant | Quantity and supplier type | Cartridge and preparation | Placement and depth |
 | --- | --- | --- | --- |
 | **Hard rush — *Juncus inflexus*** | [Sarracenia House](https://sarracenia.house/products/juncus-inflexus-hard-rush-marginal-pond-plants-mp067): **2 × 1 L bare-root** | **2 × PB25 in B27**, one plant per cartridge; loam-rich medium and gravel cap | Matching far-left and far-right corners. Crown at water level to **5 cm submerged**; keep crown and stems in open sky. |
-| **White flowering rush — *Butomus umbellatus* ‘Schneeweisschen’** | [Sarracenia House](https://sarracenia.house/products/butomus-umbellatus-schneeweisschen-marginal-pond-plants-mp012): **1 × 1 L bare-root** | **1 × PB25 in B27**; loam-rich medium and gravel cap | Offset on the far side in the sunniest position. Lower the complete basket/cartridge with a dedicated R5.2-compatible depth adaptor so the crown is **10–15 cm submerged**. |
+| **White flowering rush — *Butomus umbellatus* ‘Schneeweisschen’** | [Sarracenia House](https://sarracenia.house/products/butomus-umbellatus-schneeweisschen-marginal-pond-plants-mp012): **1 × 1 L bare-root** | **1 × PB25 in B27**; loam-rich medium and gravel cap | Offset on the far side in the sunniest position. Lower the complete basket/cartridge with a dedicated R5.3-compatible depth adaptor so the crown is **10–15 cm submerged**. |
 | **Hart's pennyroyal — *Mentha cervina*** | [Sarracenia House](https://sarracenia.house/products/preslia-cervina-mentha-cervina-marginal-pond-plants-mp097): **1 × 3 L bare-root** | Prepare **2 × PB18 in B23**. Divide only if there are two clearly rooted groups; otherwise plant one cartridge and divide in spring. | Two low side-wing positions in gentle circulation. Crown **0–5 cm submerged**. |
 | **Watercress — *Nasturtium officinale*** | **2 × 9 cm bare-root plants** or 1 L bare-root | **2 × PB18 in B23**, one plant per cartridge; use a loam-containing rooting mix rather than unproven LECA/gravel alone | Beside the filtered stream return in gentle flow. Crown at water level to **5 cm submerged**. Prevent a continuous mat and do not eat pond-grown watercress. |
 | **Water forget-me-not — *Myosotis scorpioides*** | [Sarracenia House](https://sarracenia.house/products/myosotis-scorpioides-water-forget-me-not-marginal-pond-plants-mp084): **1 × “3 / 7 cm bare-root” pack** | **2 × PB18 in B23**; put two plants in one and one in the other | Asymmetric side-wing/open-edge positions. Crown **0–5 cm submerged**; allow stems to trail into light. |
 | **White-flowered marsh marigold — *Caltha leptosepala*** | [Sarracenia House](https://sarracenia.house/products/caltha-palustris-leptosepala-marginal-pond-plants-mp016): **2 × “1 / 9 cm bare-root”** | Put both plants in **1 × PB18 in B23**; inspect for congestion annually | One visible sunny or partly shaded side-edge accent. Crown at water level to **5 cm submerged**. Divide when the cartridge becomes crowded. |
 | **Dwarf hairgrass — *Eleocharis acicularis*** | [Sarracenia House](https://sarracenia.house/products/eleocharis-acicularis-dwarf-hairgrass-marginal-pond-plants-pond-plants-water-plants-ox005): **1 × 3 L bare-root** | Divide into two substantial rooted halves for **2 × PB18 in B23** | Front ends of the two sunny side wings. Crown **0–2 cm submerged**; protect new shoots from koi. |
-| **Common water-crowfoot — *Ranunculus aquatilis*** | [Sarracenia House](https://sarracenia.house/products/ranunculus-aquatilis-1-50-bunch-oxygenating-pond-water-plants-ox022): **2 bunches** | Put both in **1 × PB18 in B23** with loam-rich medium, gravel cap and guard | Bright gentle-flow position away from shade and the direct return jet. Use the dedicated R5.2-compatible downstand so the rooting point is **20–35 cm submerged**. |
+| **Common water-crowfoot — *Ranunculus aquatilis*** | [Sarracenia House](https://sarracenia.house/products/ranunculus-aquatilis-1-50-bunch-oxygenating-pond-water-plants-ox022): **2 bunches** | Put both in **1 × PB18 in B23** with loam-rich medium, gravel cap and guard | Bright gentle-flow position away from shade and the direct return jet. Use the dedicated R5.3-compatible downstand so the rooting point is **20–35 cm submerged**. |
 | **Hornwort — *Ceratophyllum demersum*** | [Sarracenia House](https://sarracenia.house/products/ceratophyllum-hornwort-1-50-bunches-oxygenating-pond-water-plants-weighted-ox003): **5 bunches** | **1 × H70**; no planting medium or lead holders | Floor-standing in a bright corner/side, raised **5–10 cm** for cleaning. Keep the cage top **25–30 cm below water** and away from the lily, intake, jet and aerator plume. |
 | **Willow moss — *Fontinalis antipyretica*** | [Sarracenia House](https://sarracenia.house/products/fontinalis-willow-moss-1-50-bunches-oxygenating-pond-water-plants-weighted-ox007): **5 bunches** | **2 × M20**; tie two bunches to one slate and three to the other; no soil or lead | Side position **20–50 cm below water** in filtered light and gentle circulation. |
 | **Arc-en-Ciel hardy water lily — *Nymphaea* ‘Arc-en-Ciel’** | [Sarracenia House](https://sarracenia.house/products/arcenciel-water-lily-pond-plants-lw01): **1 × potted** | **1 × L35** with wet aquatic loam; retain the intact rootball | Floor/riser in a sunny calm quarter. Start at **20–30 cm over the crown**, then lower to about **40–60 cm** as it establishes. |
@@ -228,7 +228,7 @@ The guard must not carry the wet cartridge, act as the basket's structural
 uplift retainer or bridge an unsupported bag. Add an accessible positive
 cartridge keeper only if the completed flooded cartridge can lift or tip
 inside the outer basket; prove that keeper separately from the broad-washer
-R5.2 basket-to-seat connection.
+R5.3 basket-to-seat connection.
 
 ## Procurement allowances and hold points
 
@@ -236,14 +236,14 @@ R5.2 basket-to-seat connection.
 | --- | ---: | --- |
 | B23 rigid basket | **10** | Buy one first; measure rim, minimum internal width, base bands, taper and loaded deformation. |
 | PB18 planting bag | **10** | Buy one first when available; prove filled fit in B23. Do not substitute PB25. |
-| B27 rigid basket | **3** | Buy one first and coordinate its base with R5.2. |
+| B27 rigid basket | **3** | Buy one first and coordinate its base with R5.3. |
 | PB25 planting bag | **3** | Buy one first; reduce both plan dimensions symmetrically if the filled wet fit lacks clearance. |
 | 5–6 mm HDPE guard mesh | **1 × 1 m × 5 m roll** | Supplies replaceable cartridge guards, the lily guard and H70 cage; retain generous cutting allowance. |
 | Aquatic loam | **TBC after the two cartridge trials** | Rail cartridges have roughly 60–75 L gross rooting-mix demand before plant/rootball displacement; L35 separately needs about 25–30 L. Final loam demand depends on the accepted LECA fraction. |
 | LECA | **1 × 45 L bag for prototypes and initial production** | Pre-soak completely. One bag is ample for the proposed comparison and a likely 25% lightweight blend; do not buy the former second bag until the recipe is accepted. |
 | Washed lime-free gravel | Start with **2 × approximately 20 kg** | The nominal 20–30 mm caps occupy about 10–15 L before taper and plant displacement; remaining gravel is test ballast. |
 | Cartridge harness and guard fittings | **One PB18 and one PB25 prototype set first** | Final strap, thread, frame and clip quantities follow measured wet mass and the removal trial. |
-| Basket-to-seat retention | **One B23 and one B27 prototype set** | Use four internal 40 mm A4 penny washers and four M6 button-head fasteners per basket as detailed in `R5.2.md`. Release the remaining eleven only after wet creep, whitening, washer-dishing, snag and removal checks. The former 52 R3 lower ties are not the production take-off. |
+| Basket-to-seat retention | **One B23 and one B27 prototype set** | Use four purchased internal 40 mm stainless penny washers and four M6 button-head fasteners per basket as detailed in `R5.3.md`. Release the remaining eleven only after wet creep, plate damage, washer-dishing, snag and removal checks. The former 52 R3 lower ties are not the production take-off. |
 | H70 cage ties | **One small pack if useful for assembly** | Use only with permanent lacing; not sole structural closure or basket suspension. |
 
 The gross media figures are planning envelopes, not an order instruction.
@@ -272,14 +272,14 @@ gravel displacement, before ordering the production loam.
 8. Load-test the under-bag harness over dry ground. Repeat insertion and
    recovery beneath a full-size deck-edge mock-up, including the required
    pondward movement before lifting.
-   With the cartridge removed, release the R5.2 basket retainer and also
+   With the cartridge removed, release the R5.3 basket retainer and also
    demonstrate that the empty rigid basket can move pondward and lift past the
    finished deck edge and all final seat hardware for basket replacement and
    seat inspection.
 9. Finalise the root mix and production quantities only after the first
    PB18/B23 and PB25/B27 tests. Repeat the stability check with a representative
    tall hard-rush cartridge.
-10. Install and accept the rail, R5.2 seats, depth adaptors and empty rigid
+10. Install and accept the rail, R5.3 seats, depth adaptors and empty rigid
     baskets before adding planted cartridges. The *Butomus* and crowfoot
     depth components remain rail-dependent hold points.
 11. Lower each pre-soaked cartridge using both harness loops, fit any cartridge
@@ -289,7 +289,7 @@ gravel displacement, before ordering the production loam.
 Reject a cartridge if its mix segregates, its guard or bag seam takes lifting
 load, it loses its downward reserve, fines escape, it cannot be recovered
 without disturbing the rigid basket, or its drained mass exceeds the accepted
-R5.2/rail/deck load envelope.
+R5.3/rail/deck load envelope.
 
 ## Independent planted elements
 
@@ -314,7 +314,7 @@ R5.2/rail/deck load envelope.
 - Annually: during an appropriate plant-rest or cutback period, recover a
   representative PB18 and PB25 cartridge. Inspect bag fabric and seams, lifting
   straps, frame, guard, soil retention, roots, gravel cap, rigid basket,
-  cartridge keeper and the separate R5.2 basket retainer.
+  cartridge keeper and the separate R5.3 basket retainer.
 - Divide a plant when its cartridge becomes congested. Expect the Caltha,
   watercress, mint, hairgrass and forget-me-not cartridges to need the closest
   attention.

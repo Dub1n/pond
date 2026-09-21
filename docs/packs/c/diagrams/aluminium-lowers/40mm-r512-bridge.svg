@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<svg width="40mm" height="100mm" viewBox="0 0 40 100" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" xml:space="preserve" xmlns:affinity="https://www.affinity.studio/" style="fill-rule:evenodd;clip-rule:evenodd;stroke-linejoin:round;stroke-miterlimit:2;">
+    <g transform="scale(10)">
+    <g transform="matrix(1,0,0,1,-423,-387.2)">
+        <g id="H-shapes">
+            <path d="M425,389.2L425,394.8" style="fill:none;fill-rule:nonzero;"/>
+            <path d="M423,389.2C423,388.096 423.896,387.2 425,387.2C426.104,387.2 427,388.096 427,389.2L427,394.8C427,395.904 426.104,396.8 425,396.8C423.896,396.8 423,395.904 423,394.8L423,389.2ZM425,394.375C424.765,394.375 424.575,394.565 424.575,394.8C424.575,395.035 424.765,395.225 425,395.225C425.235,395.225 425.425,395.035 425.425,394.8C425.425,394.565 425.235,394.375 425,394.375ZM425,388.775C424.765,388.775 424.575,388.965 424.575,389.2C424.575,389.435 424.765,389.625 425,389.625C425.235,389.625 425.425,389.435 425.425,389.2C425.425,388.965 425.235,388.775 425,388.775Z"/>
+        </g>
+    </g>
+    </g>
+</svg>

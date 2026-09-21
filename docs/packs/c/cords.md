@@ -120,7 +120,7 @@ height as the force-line height. Nothing may project beyond a joist tip.
 
 ## Corner sling
 
-Retain the stiff split-plate corner in [corner-v2.md](corner-v2.md). Use the two
+Use the one-piece aluminium corner in [corner-v3.md](corner-v3.md). Retain the two
 separate C2 axes, approximately `(-140,55)` and `(55,-140)`, with ready-bored
 16 mm OD x 8.4 mm ID x 20 mm nylon spacers over the M8 posts and
 30 mm retaining roof washers as the purchase-study candidate. Start at 20 mm

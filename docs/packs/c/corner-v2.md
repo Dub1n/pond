@@ -1,12 +1,14 @@
 # Pack C corner v2 — split-plate corner seat
 
+> **Superseded.** The current one-piece aluminium corner is
+> [corner v3](corner-v3.md). Retain this document as design and calculation
+> history only.
+
 ## Status and scope
 
-Corner v2 is the current prototype corner for the 2,100 mm centreline GRP
-ring. It replaces the monolithic upper corner pod described in
-[corner-v1.md](corner-v1.md). It defines geometry, load paths, material and
-proof gates; all fabrication and installation procedure is kept in
-[install-walkthrough.md](install-walkthrough.md).
+Corner v2 was the selected split-GRP prototype corner before corner v3. It
+replaced the earlier monolithic pod in [corner-v1.md](corner-v1.md) and is now
+retained to record that geometry, load path and proof basis.
 
 Nothing here approves batch fabrication or deck loading. The delivered GRP,
 complete wet corner, basket interface, C2 sling and deck reactions still need
